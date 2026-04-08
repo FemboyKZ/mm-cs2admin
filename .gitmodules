@@ -1,0 +1,10 @@
+[submodule "metamod-source"]
+	path = metamod-source
+	url = https://github.com/alliedmodders/metamod-source
+[submodule "hl2sdk-cs2"]
+	path = hl2sdk-cs2
+	url = https://github.com/alliedmodders/hl2sdk
+	branch = cs2
+[submodule "vendor/sql_mm"]
+	path = vendor/sql_mm
+	url = https://github.com/zer0k-z/sql_mm

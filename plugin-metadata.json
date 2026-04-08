@@ -1,0 +1,11 @@
+{
+    "name": "cs2admin",
+    "alias": "cs2admin",
+    "display_name": "CS2 Admin",
+    "description": "Local/SourceBans++ ban management for CS2 via Metamod",
+    "author": "jvnipers",
+    "url": "https://github.com/FemboyKZ/mm-cs2admin",
+    "log_tag": "CS2Admin",
+    "license": "GNU General Public License v3",
+    "version": "1.3.0.{{git-shorthash}}"
+}

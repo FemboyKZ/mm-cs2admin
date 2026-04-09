@@ -40,6 +40,43 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 2. Extract the contents of the release archive in your server's root folder `/game/csgo/`.
 3. Configure the main cfg in `/game/csgo/cfg/cs2admin/core.cfg`.
 
+## Usage
+
+### Commands
+
+#### Chat Commands (in-game)
+
+| Command | Usage | Permissions | Description |
+| --- | --- | --- | --- |
+| `!ban` | `!ban <target> <time> [reason]` | `d` (Ban) | Ban a connected player. Time in minutes, 0 = permanent. |
+| `!unban` | `!unban <steamid>` | `e` (Unban) | Unban a player by SteamID. |
+| `!banip` | `!banip <ip> <time> [reason]` | `d` (Ban) | Ban an IP address. Time in minutes, 0 = permanent. |
+| `!mute` | `!mute <target> <time> [reason]` | `j` (Chat) | Mute a player (block voice). Time in minutes, 0 = permanent. |
+| `!unmute` | `!unmute <target>` | `j` (Chat) | Unmute a player. |
+| `!gag` | `!gag <target> <time> [reason]` | `j` (Chat) | Gag a player (block text chat). Time in minutes, 0 = permanent. |
+| `!ungag` | `!ungag <target>` | `j` (Chat) | Ungag a player. |
+| `!silence` | `!silence <target> <time> [reason]` | `j` (Chat) | Silence a player (mute + gag). Time in minutes, 0 = permanent. |
+| `!unsilence` | `!unsilence <target>` | `j` (Chat) | Unsilence a player (unmute + ungag). |
+| `!comms` | `!comms [target]` | `j` (Chat) | Show comm restriction status for a player (defaults to self). |
+| `!listbans` | `!listbans <target>` | `d` (Ban) | List active bans for a connected player. |
+| `!listcomms` | `!listcomms <target>` | `j` (Chat) | List active comm restrictions for a connected player. |
+| `!report` | `!report <target> <reason>` | None | Report a player to online admins. Subject to cooldown. |
+
+#### Console / RCON Commands
+
+| Command | Usage | Description |
+| --- | --- | --- |
+| `mm_ban` | `mm_ban <#userid\|name> <time> [reason]` | Ban a connected player from the server console. |
+| `mm_addban` | `mm_addban <time> <steamid> [reason]` | Add an offline ban by SteamID. |
+| `mm_unban` | `mm_unban <steamid>` | Unban a player by SteamID. |
+| `mm_banip` | `mm_banip <ip> <time> [reason]` | Ban an IP address. |
+| `mm_reload` | `mm_reload` | Reload config and admin cache, re-verify all connected players. |
+| `mm_rehash` | `mm_rehash` | Rebuild admin cache from database and flat files. |
+| `cs2admin_version` | `cs2admin_version` | Display the loaded CS2Admin version. |
+| `sc_fw_block` | `sc_fw_block <authid> <time> <type> <reason>` | (Web panel RCON) Apply a mute (type 1) or gag (type 2) to a connected player. |
+| `sc_fw_unmute` | `sc_fw_unmute <authid>` | (Web panel RCON) Unmute a connected player. |
+| `sc_fw_ungag` | `sc_fw_ungag <authid>` | (Web panel RCON) Ungag a connected player. |
+
 ## Build
 
 ### Prerequisites

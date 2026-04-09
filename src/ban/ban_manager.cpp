@@ -121,7 +121,7 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	ADMIN_LogAction(adminSlot, logMsg);
 
 	// Kick the player
-	g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKBANADDED);
+	g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 	META_CONPRINTF("[ADMIN] Banned player \"%s\" (%s) for %d min. Reason: %s\n",
 		targetName.c_str(), targetAuth.c_str(), time, reason ? reason : "No reason");
 }
@@ -438,7 +438,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 			// Kick
 			META_CONPRINTF("[ADMIN] Sleuth: kicking \"%s\" - %d IP bans found.\n",
 				player->name.c_str(), count);
-			g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKBANADDED);
+			g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 			return;
 		}
 
@@ -456,7 +456,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 		g_CS2ABanManager.InsertBan(player->ip.c_str(), player->authid.c_str(),
 			player->name.c_str(), banTime, reason, -1);
-		g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKBANADDED);
+		g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 	});
 }
 

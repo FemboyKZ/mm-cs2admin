@@ -83,7 +83,7 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 					{
 						META_CONPRINTF("[ADMIN] Reload: kicking banned player \"%s\" (%s).\n",
 							pp->name.c_str(), pp->authid.c_str());
-						g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKBANADDED);
+						g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 					}
 				}
 				else

@@ -369,7 +369,7 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 				ADMIN_PrintToClient(slotIdx, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
 				META_CONPRINTF("[ADMIN] Kicking banned player \"%s\" (%s). Reason: %s\n",
 					p->name.c_str(), p->authid.c_str(), reason.c_str());
-				g_pEngine->DisconnectClient(CPlayerSlot(slotIdx), NETWORK_DISCONNECT_KICKBANADDED);
+				g_pEngine->DisconnectClient(CPlayerSlot(slotIdx), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 			}
 		}
 		else
@@ -585,7 +585,7 @@ void CS2APlugin::OnLateLoad()
 					ADMIN_PrintToClient(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
 					META_CONPRINTF("[ADMIN] Late load: kicking banned player (%s). Reason: %s\n",
 						p->authid.c_str(), reason.c_str());
-					g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKBANADDED);
+					g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 				}
 			}
 			else

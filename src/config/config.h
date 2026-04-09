@@ -7,6 +7,8 @@ struct CS2AConfig
 {
 	std::string website = "http://www.yourwebsite.net/sourcebans";
 	std::string chatPrefix = "\x10[CS2 Admin]\x01 ";
+	std::string commandPrefix = "!";
+	std::string silentCommandPrefix = "/";
 	std::string databasePrefix = "sb";
 
 	// Database type: "mysql" or "sqlite"

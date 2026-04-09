@@ -40,21 +40,20 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 	if (msg.empty())
 		return false;
 
-	// Check for command prefix
+	// Check for command prefix (each character in the prefix string is a valid trigger)
 	bool silent = false;
 	char prefix = msg[0];
-	if (prefix == '!')
-	{
-		silent = false;
-	}
-	else if (prefix == '/')
-	{
+	bool isNormalPrefix = (!g_CS2AConfig.commandPrefix.empty() &&
+		g_CS2AConfig.commandPrefix.find(prefix) != std::string::npos);
+	bool isSilentPrefix = (!g_CS2AConfig.silentCommandPrefix.empty() &&
+		g_CS2AConfig.silentCommandPrefix.find(prefix) != std::string::npos);
+
+	if (isSilentPrefix)
 		silent = true;
-	}
+	else if (isNormalPrefix)
+		silent = false;
 	else
-	{
 		return false; // Not a command
-	}
 
 	// Parse command name and args
 	std::string rest = msg.substr(1);

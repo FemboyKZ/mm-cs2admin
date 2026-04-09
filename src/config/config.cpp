@@ -172,6 +172,10 @@ static void ConfigHandler(const std::string &section, const std::string &key,
 			cfg->website = value;
 		else if (k == "chatprefix")
 			cfg->chatPrefix = ADMIN_ResolveColorTags(value);
+		else if (k == "commandprefix")
+			cfg->commandPrefix = value;
+		else if (k == "silentcommandprefix")
+			cfg->silentCommandPrefix = value;
 		else if (k == "databaseprefix")
 			cfg->databasePrefix = value;
 		else if (k == "addban")

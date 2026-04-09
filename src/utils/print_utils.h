@@ -19,4 +19,8 @@ void ADMIN_ChatToAll(const char *fmt, ...);
 // Broadcast a formatted chat message to all connected admins.
 void ADMIN_ChatToAdmins(const char *fmt, ...);
 
+// Reply to a command: sends to player's console AND chat (with config prefix).
+// For console callers (slot < 0), prints to server console only.
+void ADMIN_ReplyToCommand(int slot, const char *fmt, ...);
+
 #endif //_INCLUDE_ADMIN_PRINT_UTILS_H_

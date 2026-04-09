@@ -374,7 +374,7 @@ void CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
 
 	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been muted for this session.\n");
-	ADMIN_ChatToAll("[CS2Admin] %s session-muted %s.\n", adminName.c_str(), target->name.c_str());
+	ADMIN_ChatToAll("%s%s session-muted %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Session-muted \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
@@ -396,7 +396,7 @@ void CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
 
 	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been gagged for this session.\n");
-	ADMIN_ChatToAll("[CS2Admin] %s session-gagged %s.\n", adminName.c_str(), target->name.c_str());
+	ADMIN_ChatToAll("%s%s session-gagged %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Session-gagged \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
@@ -463,48 +463,48 @@ void CS2ACommManager::PrintCommsStatus(int targetSlot, int callerSlot)
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
-		ADMIN_PrintToClient(callerSlot, "[ADMIN] Invalid target.\n");
+		ADMIN_ReplyToCommand(callerSlot, "Invalid target.\n");
 		return;
 	}
 
-	ADMIN_PrintToClient(callerSlot, "[ADMIN] Comm status for \"%s\" (%s):\n",
+	ADMIN_ReplyToCommand(callerSlot, "Comm status for \"%s\" (%s):\n",
 		target->name.c_str(), target->authid.c_str());
 
 	if (target->isMuted)
 	{
 		if (target->isSessionMuted)
-			ADMIN_PrintToClient(callerSlot, "  Muted: Session only\n");
+			ADMIN_ReplyToCommand(callerSlot, "  Muted: Session only\n");
 		else if (target->muteExpireTime > 0.0)
 		{
 			CGlobalVars *globals = GetGameGlobals();
 			int remaining = globals ? (int)(target->muteExpireTime - globals->curtime) : 0;
 			if (remaining < 0) remaining = 0;
-			ADMIN_PrintToClient(callerSlot, "  Muted: %d seconds remaining. Reason: %s\n", remaining, target->muteReason.c_str());
+			ADMIN_ReplyToCommand(callerSlot, "  Muted: %d seconds remaining. Reason: %s\n", remaining, target->muteReason.c_str());
 		}
 		else
-			ADMIN_PrintToClient(callerSlot, "  Muted: Permanent. Reason: %s\n", target->muteReason.c_str());
+			ADMIN_ReplyToCommand(callerSlot, "  Muted: Permanent. Reason: %s\n", target->muteReason.c_str());
 	}
 	else
 	{
-		ADMIN_PrintToClient(callerSlot, "  Muted: No\n");
+		ADMIN_ReplyToCommand(callerSlot, "  Muted: No\n");
 	}
 
 	if (target->isGagged)
 	{
 		if (target->isSessionGagged)
-			ADMIN_PrintToClient(callerSlot, "  Gagged: Session only\n");
+			ADMIN_ReplyToCommand(callerSlot, "  Gagged: Session only\n");
 		else if (target->gagExpireTime > 0.0)
 		{
 			CGlobalVars *globals = GetGameGlobals();
 			int remaining = globals ? (int)(target->gagExpireTime - globals->curtime) : 0;
 			if (remaining < 0) remaining = 0;
-			ADMIN_PrintToClient(callerSlot, "  Gagged: %d seconds remaining. Reason: %s\n", remaining, target->gagReason.c_str());
+			ADMIN_ReplyToCommand(callerSlot, "  Gagged: %d seconds remaining. Reason: %s\n", remaining, target->gagReason.c_str());
 		}
 		else
-			ADMIN_PrintToClient(callerSlot, "  Gagged: Permanent. Reason: %s\n", target->gagReason.c_str());
+			ADMIN_ReplyToCommand(callerSlot, "  Gagged: Permanent. Reason: %s\n", target->gagReason.c_str());
 	}
 	else
 	{
-		ADMIN_PrintToClient(callerSlot, "  Gagged: No\n");
+		ADMIN_ReplyToCommand(callerSlot, "  Gagged: No\n");
 	}
 }

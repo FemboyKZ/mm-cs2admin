@@ -135,3 +135,32 @@ void ADMIN_ChatToAdmins(const char *fmt, ...)
 		}
 	}
 }
+
+void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
+{
+	char buffer[512];
+	va_list args;
+	va_start(args, fmt);
+	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	va_end(args);
+
+	if (slot < 0)
+	{
+		// Server console
+		META_CONPRINTF("[ADMIN] %s", buffer);
+		return;
+	}
+
+	if (!g_pEngine || slot > MAXPLAYERS)
+		return;
+
+	// Console reply
+	char consoleBuffer[512];
+	snprintf(consoleBuffer, sizeof(consoleBuffer), "[ADMIN] %s", buffer);
+	g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
+
+	// Chat reply with config prefix
+	char chatBuffer[512];
+	snprintf(chatBuffer, sizeof(chatBuffer), " %s%s", g_CS2AConfig.chatPrefix.c_str(), buffer);
+	ADMIN_PrintToChat(slot, "%s", chatBuffer);
+}

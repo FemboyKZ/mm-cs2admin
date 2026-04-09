@@ -113,13 +113,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("ban", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "ban", "banning", ADMFLAG_BAN))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.size() < 2)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !ban <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !ban <target> <time> [reason]\n");
 			return;
 		}
 
@@ -130,7 +130,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		int time = std::atoi(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
 			return;
 		}
 		std::string reason = "Banned";
@@ -151,13 +151,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("unban", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unban", "banning", ADMFLAG_UNBAN))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.empty())
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !unban <steamid>\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !unban <steamid>\n");
 			return;
 		}
 
@@ -168,13 +168,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("mute", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "mute", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.size() < 2)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !mute <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !mute <target> <time> [reason]\n");
 			return;
 		}
 
@@ -185,7 +185,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		int time = std::atoi(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
 			return;
 		}
 		std::string reason = "Muted";
@@ -205,13 +205,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("unmute", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unmute", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.empty())
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !unmute <target>\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !unmute <target>\n");
 			return;
 		}
 
@@ -226,13 +226,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("gag", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "gag", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.size() < 2)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !gag <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !gag <target> <time> [reason]\n");
 			return;
 		}
 
@@ -243,7 +243,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		int time = std::atoi(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
 			return;
 		}
 		std::string reason = "Gagged";
@@ -263,13 +263,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("ungag", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "ungag", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.empty())
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !ungag <target>\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !ungag <target>\n");
 			return;
 		}
 
@@ -284,13 +284,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("silence", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "silence", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.size() < 2)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !silence <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !silence <target> <time> [reason]\n");
 			return;
 		}
 
@@ -301,7 +301,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		int time = std::atoi(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
 			return;
 		}
 		std::string reason = "Silenced";
@@ -321,13 +321,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("unsilence", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unsilence", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.empty())
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !unsilence <target>\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !unsilence <target>\n");
 			return;
 		}
 
@@ -342,13 +342,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("banip", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "banip", "banning", ADMFLAG_BAN))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.size() < 2)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !banip <ip> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !banip <ip> <time> [reason]\n");
 			return;
 		}
 
@@ -356,7 +356,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		int time = std::atoi(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
 			return;
 		}
 		std::string reason = "Banned";
@@ -377,7 +377,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("comms", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "comms", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
@@ -396,13 +396,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("listbans", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listbans", "banning", ADMFLAG_BAN))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.empty())
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !listbans <target>\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !listbans <target>\n");
 			return;
 		}
 
@@ -421,13 +421,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("listcomms", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listcomms", "comms", ADMFLAG_CHAT))
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You do not have permission to use this command.\n");
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
 		if (args.empty())
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !listcomms <target>\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !listcomms <target>\n");
 			return;
 		}
 
@@ -446,13 +446,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("report", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (slot < 0)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] This command cannot be used from console.\n");
+			ADMIN_ReplyToCommand(slot, "This command cannot be used from console.\n");
 			return;
 		}
 
 		if (args.size() < 2)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Usage: !report <target> <reason>\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !report <target> <reason>\n");
 			return;
 		}
 
@@ -466,7 +466,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			(globals->curtime - reporter->lastReportTime) < g_CS2AConfig.reportCooldown)
 		{
 			int remaining = (int)(g_CS2AConfig.reportCooldown - (globals->curtime - reporter->lastReportTime));
-			ADMIN_PrintToClient(slot, "[ADMIN] You must wait %d seconds before reporting again.\n", remaining);
+			ADMIN_ReplyToCommand(slot, "You must wait %d seconds before reporting again.\n", remaining);
 			return;
 		}
 
@@ -476,7 +476,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		if (target == slot)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] You cannot report yourself.\n");
+			ADMIN_ReplyToCommand(slot, "You cannot report yourself.\n");
 			return;
 		}
 
@@ -494,7 +494,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		if ((int)reason.size() < g_CS2AConfig.reportMinLength)
 		{
-			ADMIN_PrintToClient(slot, "[ADMIN] Report reason must be at least %d characters.\n", g_CS2AConfig.reportMinLength);
+			ADMIN_ReplyToCommand(slot, "Report reason must be at least %d characters.\n", g_CS2AConfig.reportMinLength);
 			return;
 		}
 
@@ -533,7 +533,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		// Notify admins
 		ADMIN_ChatToAdmins("[ADMIN] %s reported %s: %s\n",
 			reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str());
-		ADMIN_PrintToClient(slot, "[ADMIN] Report submitted against %s.\n", targetPlayer->name.c_str());
+		ADMIN_ReplyToCommand(slot, "Report submitted against %s.\n", targetPlayer->name.c_str());
 
 		ADMIN_LogAction(slot, (std::string("Reported ") + targetPlayer->name + ": " + reason).c_str());
 	});

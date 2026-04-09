@@ -6,6 +6,7 @@
 struct CS2AConfig
 {
 	std::string website = "http://www.yourwebsite.net/sourcebans";
+	std::string chatPrefix = "\x10[CS2 Admin]\x01 ";
 	std::string databasePrefix = "sb";
 
 	// Database type: "mysql" or "sqlite"
@@ -57,6 +58,9 @@ struct CS2AConfig
 // Load and parse core.cfg from the given path.
 // Returns true on success, false if file couldn't be opened/parsed.
 bool ADMIN_LoadConfig(const char *path, CS2AConfig &config);
+
+// Resolve color tags like {purple}, {green}, etc. to chat color codes.
+std::string ADMIN_ResolveColorTags(const std::string &input);
 
 // Global config instance
 extern CS2AConfig g_CS2AConfig;

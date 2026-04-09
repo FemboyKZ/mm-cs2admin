@@ -25,8 +25,6 @@
 #define CHAT_COLOR_BLUE     "\x0C"
 #define CHAT_COLOR_PURPLE   "\x10"
 
-#define ADMIN_CHAT_TAG  CHAT_COLOR_PURPLE "[CS2Admin]" CHAT_COLOR_DEFAULT " "
-
 // Engine interfaces
 extern IServerGameDLL *g_pServerGameDLL;
 extern IServerGameClients *g_pGameClients;

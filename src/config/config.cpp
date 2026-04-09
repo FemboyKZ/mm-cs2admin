@@ -170,6 +170,8 @@ static void ConfigHandler(const std::string &section, const std::string &key,
 	{
 		if (k == "website")
 			cfg->website = value;
+		else if (k == "chatprefix")
+			cfg->chatPrefix = ADMIN_ResolveColorTags(value);
 		else if (k == "databaseprefix")
 			cfg->databasePrefix = value;
 		else if (k == "addban")
@@ -272,4 +274,31 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 
 	ParseSection(file, root.value, ConfigHandler, &config);
 	return true;
+}
+
+std::string ADMIN_ResolveColorTags(const std::string &input)
+{
+	struct ColorTag { const char *tag; const char *code; };
+	static const ColorTag tags[] = {
+		{ "{default}",  "\x01" },
+		{ "{red}",      "\x02" },
+		{ "{team}",     "\x03" },
+		{ "{green}",    "\x04" },
+		{ "{olive}",    "\x05" },
+		{ "{lime}",     "\x06" },
+		{ "{gold}",     "\x09" },
+		{ "{grey}",     "\x0A" },
+		{ "{blue}",     "\x0C" },
+		{ "{purple}",   "\x10" },
+	};
+
+	std::string result = input;
+	for (const auto &t : tags)
+	{
+		std::string tag(t.tag);
+		size_t pos = 0;
+		while ((pos = result.find(tag, pos)) != std::string::npos)
+			result.replace(pos, tag.size(), t.code);
+	}
+	return result;
 }

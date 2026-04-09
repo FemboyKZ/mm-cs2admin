@@ -428,8 +428,8 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 		if (action == 4)
 		{
 			// Notify admins only
-			ADMIN_ChatToAdmins("[CS2Admin] WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n",
-				player->name.c_str(), player->authid.c_str(), count);
+			ADMIN_ChatToAdmins("%sWARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n",
+				g_CS2AConfig.chatPrefix.c_str(), player->name.c_str(), player->authid.c_str(), count);
 			return;
 		}
 
@@ -451,8 +451,8 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 		char reason[256];
 		snprintf(reason, sizeof(reason), "Sleuth auto-ban: %d matching IP ban(s)", count);
 
-		ADMIN_ChatToAdmins("[CS2Admin] Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n",
-			player->name.c_str(), player->authid.c_str(), count);
+		ADMIN_ChatToAdmins("%sSleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n",
+			g_CS2AConfig.chatPrefix.c_str(), player->name.c_str(), player->authid.c_str(), count);
 
 		g_CS2ABanManager.InsertBan(player->ip.c_str(), player->authid.c_str(),
 			player->name.c_str(), banTime, reason, -1);
@@ -464,7 +464,7 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		ADMIN_PrintToClient(callerSlot, "[ADMIN] Database not connected.\n");
+		ADMIN_ReplyToCommand(callerSlot, "Database not connected.\n");
 		return;
 	}
 
@@ -484,19 +484,19 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 	g_CS2ADatabase.Query(query, [callerSlot, authid = std::string(authid)](ISQLQuery *result) {
 		if (!result)
 		{
-			ADMIN_PrintToClient(callerSlot, "[ADMIN] Query failed.\n");
+			ADMIN_ReplyToCommand(callerSlot, "Query failed.\n");
 			return;
 		}
 
 		ISQLResult *rs = result->GetResultSet();
 		if (!rs || rs->GetRowCount() == 0)
 		{
-			ADMIN_PrintToClient(callerSlot, "[ADMIN] No bans found for %s.\n", authid.c_str());
+			ADMIN_ReplyToCommand(callerSlot, "No bans found for %s.\n", authid.c_str());
 			return;
 		}
 
-		ADMIN_PrintToClient(callerSlot, "[ADMIN] Ban history for %s (last 10):\n", authid.c_str());
-		ADMIN_PrintToClient(callerSlot, "  %-12s %-16s %-12s %-4s %s\n",
+		ADMIN_ReplyToCommand(callerSlot, "Ban history for %s (last 10):\n", authid.c_str());
+		ADMIN_ReplyToCommand(callerSlot, "  %-12s %-16s %-12s %-4s %s\n",
 			"Date", "Banned By", "Length", "R", "Reason");
 
 		while (rs->MoreRows())
@@ -513,7 +513,7 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 			const char *lengthStr = (length == 0) ? "Permanent" : "Temp";
 			const char *status = (removeType && *removeType) ? removeType : " ";
 
-			ADMIN_PrintToClient(callerSlot, "  %-12d %-16s %-12s %-4s %s\n",
+			ADMIN_ReplyToCommand(callerSlot, "  %-12d %-16s %-12s %-4s %s\n",
 				created, admin ? admin : "Unknown", lengthStr, status,
 				reason ? reason : "");
 		}
@@ -524,7 +524,7 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		ADMIN_PrintToClient(callerSlot, "[ADMIN] Database not connected.\n");
+		ADMIN_ReplyToCommand(callerSlot, "Database not connected.\n");
 		return;
 	}
 
@@ -544,19 +544,19 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 	g_CS2ADatabase.Query(query, [callerSlot, authid = std::string(authid)](ISQLQuery *result) {
 		if (!result)
 		{
-			ADMIN_PrintToClient(callerSlot, "[ADMIN] Query failed.\n");
+			ADMIN_ReplyToCommand(callerSlot, "Query failed.\n");
 			return;
 		}
 
 		ISQLResult *rs = result->GetResultSet();
 		if (!rs || rs->GetRowCount() == 0)
 		{
-			ADMIN_PrintToClient(callerSlot, "[ADMIN] No comm blocks found for %s.\n", authid.c_str());
+			ADMIN_ReplyToCommand(callerSlot, "No comm blocks found for %s.\n", authid.c_str());
 			return;
 		}
 
-		ADMIN_PrintToClient(callerSlot, "[ADMIN] Comm history for %s (last 10):\n", authid.c_str());
-		ADMIN_PrintToClient(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n",
+		ADMIN_ReplyToCommand(callerSlot, "Comm history for %s (last 10):\n", authid.c_str());
+		ADMIN_ReplyToCommand(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n",
 			"Date", "Admin", "Type", "Length", "R", "Reason");
 
 		while (rs->MoreRows())
@@ -575,7 +575,7 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 			const char *lengthStr = (length == 0) ? "Permanent" : "Temp";
 			const char *status = (removeType && *removeType) ? removeType : " ";
 
-			ADMIN_PrintToClient(callerSlot, "  %-12d %-16s %-6s %-12s %-4s %s\n",
+			ADMIN_ReplyToCommand(callerSlot, "  %-12d %-16s %-6s %-12s %-4s %s\n",
 				created, admin ? admin : "Unknown", typeStr, lengthStr, status,
 				reason ? reason : "");
 		}

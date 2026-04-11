@@ -21,6 +21,8 @@
 #include <schemasystem/schemasystem.h>
 #include <interfaces/interfaces.h>
 #include <entity2/entitysystem.h>
+#include <networksystem/inetworkmessages.h>
+#include <engine/igameeventsystem.h>
 
 // Entity system global (declared extern in common.h)
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
@@ -62,6 +64,7 @@ IServerGameClients *g_pGameClients = nullptr;
 IVEngineServer *g_pEngine = nullptr;
 IGameEventManager2 *g_pGameEvents = nullptr;
 ICvar *g_pICvar = nullptr;
+IGameEventSystem *g_pGameEventSystem = nullptr;
 
 CGlobalVars *GetGameGlobals()
 {
@@ -86,6 +89,8 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	GET_V_IFACE_ANY(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, g_pSchemaSystem, ISchemaSystem, SCHEMASYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, g_pGameResourceServiceServer, IGameResourceService, GAMERESOURCESERVICESERVER_INTERFACE_VERSION);
+	GET_V_IFACE_ANY(GetEngineFactory, g_pNetworkMessages, INetworkMessages, NETWORKMESSAGES_INTERFACE_VERSION);
+	GET_V_IFACE_ANY(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
 
 	g_SMAPI->AddListener(this, this);
 

@@ -32,6 +32,11 @@ extern IVEngineServer *g_pEngine;
 extern IGameEventManager2 *g_pGameEvents;
 extern ICvar *g_pICvar;
 
+class INetworkMessages;
+
+class IGameEventSystem;
+extern IGameEventSystem *g_pGameEventSystem;
+
 // Schema & entity system
 class CGameEntitySystem;
 extern CGameEntitySystem *g_pEntitySystem;

@@ -5,10 +5,50 @@
 #include "../admin/admin_manager.h"
 #include "../player/player_manager.h"
 
+#include <networksystem/inetworkmessages.h>
+#include <networksystem/inetworkserializer.h>
+#include <networksystem/netmessage.h>
+#include <engine/igameeventsystem.h>
+#include <usermessages.pb.h>
+
 #include <cstdarg>
 #include <cstdio>
 #include <ctime>
 #include <string>
+
+// Cache the SayText2 network message pointer (lazy init)
+static INetworkMessageInternal *GetSayText2Message()
+{
+	static INetworkMessageInternal *s_pSayText2 = nullptr;
+	if (!s_pSayText2 && g_pNetworkMessages)
+		s_pSayText2 = g_pNetworkMessages->FindNetworkMessage("CUserMessageSayText2");
+	return s_pSayText2;
+}
+
+// Send a HUD chat message to specific clients via bitmask
+static void SendChat(const uint64 *clients, int clientCount, const char *text)
+{
+	INetworkMessageInternal *pMsg = GetSayText2Message();
+	if (!pMsg || !g_pGameEventSystem)
+		return;
+
+	CNetMessage *pData = pMsg->AllocateMessage();
+	if (!pData)
+		return;
+
+	auto *pSayText2 = pData->ToPB<CUserMessageSayText2>();
+	pSayText2->set_entityindex(-1);
+	pSayText2->set_chat(false);
+	pSayText2->set_messagename(text);
+	pSayText2->set_param1("");
+	pSayText2->set_param2("");
+
+	g_pGameEventSystem->PostEventAbstract(
+		CSplitScreenSlot(0), false, clientCount, clients,
+		pMsg, pData, 0, BUF_DEFAULT);
+
+	g_pNetworkMessages->DeallocateNetMessageAbstract(pMsg, pData);
+}
 
 void ADMIN_PrintToClient(int slot, const char *fmt, ...)
 {
@@ -90,7 +130,24 @@ void ADMIN_PrintToChat(int slot, const char *fmt, ...)
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	ADMIN_PrintToClient(slot, "%s", buffer);
+	if (slot < 0)
+	{
+		META_CONPRINTF("[ADMIN] %s", buffer);
+		return;
+	}
+
+	if (slot > MAXPLAYERS)
+		return;
+
+	// Build the chat-formatted message with prefix
+	char chatBuf[512];
+	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s",
+		g_CS2AConfig.chatPrefix.c_str(),
+		CHAT_COLOR_DEFAULT,
+		buffer);
+
+	uint64 clientBit = (1ull << slot);
+	SendChat(&clientBit, 1, chatBuf);
 }
 
 void ADMIN_ChatToAll(const char *fmt, ...)
@@ -101,7 +158,15 @@ void ADMIN_ChatToAll(const char *fmt, ...)
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	ADMIN_PrintToAll("%s", buffer);
+	// Build the chat message (callers already include chatPrefix)
+	char chatBuf[512];
+	snprintf(chatBuf, sizeof(chatBuf), " %s", buffer);
+
+	// Send to all clients
+	SendChat(nullptr, -1, chatBuf);
+
+	// Also log to server console
+	META_CONPRINTF("[ADMIN] %s", buffer);
 }
 
 void ADMIN_ChatToAdmins(const char *fmt, ...)
@@ -115,19 +180,32 @@ void ADMIN_ChatToAdmins(const char *fmt, ...)
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
+	// Callers already include chatPrefix in format string
+	char chatBuf[512];
+	snprintf(chatBuf, sizeof(chatBuf), " %s", buffer);
+
 	CGlobalVars *globals = GetGameGlobals();
 	if (!globals)
 		return;
 
+	// Build bitmask of admin clients
+	uint64 adminBits = 0;
+	int adminCount = 0;
 	for (int i = 0; i < globals->maxClients; i++)
 	{
 		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
 		if (p && p->connected && !p->fakePlayer)
 		{
 			if (g_CS2AAdminManager.GetPlayerAdmin(i) != nullptr)
-				g_pEngine->ClientPrintf(CPlayerSlot(i), buffer);
+			{
+				adminBits |= (1ull << i);
+				adminCount++;
+			}
 		}
 	}
+
+	if (adminCount > 0)
+		SendChat(&adminBits, adminCount, chatBuf);
 }
 
 void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
@@ -145,11 +223,24 @@ void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
 		return;
 	}
 
-	if (!g_pEngine || slot > MAXPLAYERS)
+	if (slot > MAXPLAYERS)
 		return;
 
-	// Reply to player's console only
-	char consoleBuffer[512];
-	snprintf(consoleBuffer, sizeof(consoleBuffer), "[ADMIN] %s", buffer);
-	g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
+	// Send to player's console
+	if (g_pEngine)
+	{
+		char consoleBuffer[512];
+		snprintf(consoleBuffer, sizeof(consoleBuffer), "[ADMIN] %s", buffer);
+		g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
+	}
+
+	// Also send to player's chat HUD
+	char chatBuf[512];
+	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s",
+		g_CS2AConfig.chatPrefix.c_str(),
+		CHAT_COLOR_DEFAULT,
+		buffer);
+
+	uint64 clientBit = (1ull << slot);
+	SendChat(&clientBit, 1, chatBuf);
 }

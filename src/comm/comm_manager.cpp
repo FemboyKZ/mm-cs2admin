@@ -134,9 +134,10 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name,
 	std::string escapedAuth = g_CS2ADatabase.Escape(authid);
 	std::string escapedName = g_CS2ADatabase.Escape(name ? name : "");
 	std::string escapedReason = g_CS2ADatabase.Escape(reason ? reason : "");
-	std::string adminAuth = g_CS2ADatabase.Escape(GetAdminAuthId(adminSlot).c_str());
+	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
+	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
 	std::string adminIP = g_CS2ADatabase.Escape(GetAdminIP(adminSlot).c_str());
-	std::string adminSuffix = ExtractAuthSuffix(adminAuth);
+	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 
 	int lengthSec = (timeMinutes > 0 && timeMinutes <= INT_MAX / 60) ? timeMinutes * 60 : 0;
 	int sid = g_CS2AConfig.serverID != -1 ? g_CS2AConfig.serverID : 0;
@@ -177,8 +178,9 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 
 	std::string suffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(std::string(authid)).c_str());
 
-	std::string adminAuth = g_CS2ADatabase.Escape(GetAdminAuthId(adminSlot).c_str());
-	std::string adminSuffix = ExtractAuthSuffix(adminAuth);
+	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
+	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
+	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 
 	long long now = (long long)std::time(nullptr);
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminSuffix);
@@ -222,7 +224,7 @@ void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 	if (timeMinutes > 0)
 	{
 		CGlobalVars *globals = GetGameGlobals();
-		if (globals) target->muteExpireTime = globals->curtime + (timeMinutes * 60);
+		if (globals) target->muteExpireTime = globals->curtime + ((double)timeMinutes * 60.0);
 	}
 	else
 		target->muteExpireTime = 0.0;
@@ -265,7 +267,7 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 	if (timeMinutes > 0)
 	{
 		CGlobalVars *globals = GetGameGlobals();
-		if (globals) target->gagExpireTime = globals->curtime + (timeMinutes * 60);
+		if (globals) target->gagExpireTime = globals->curtime + ((double)timeMinutes * 60.0);
 	}
 	else
 		target->gagExpireTime = 0.0;

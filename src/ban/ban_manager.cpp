@@ -146,9 +146,10 @@ void CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 
 	std::string escapedIP = g_CS2ADatabase.Escape(ip);
 	std::string escapedReason = g_CS2ADatabase.Escape(reason ? reason : "");
-	std::string adminAuth = g_CS2ADatabase.Escape(GetAdminAuthId(adminSlot).c_str());
+	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
+	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
 	std::string adminIP = g_CS2ADatabase.Escape(GetAdminIP(adminSlot).c_str());
-	std::string adminSuffix = ExtractAuthSuffix(adminAuth);
+	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 	std::string prefix = g_CS2AConfig.databasePrefix;
 	int lengthSec = (time > 0 && time <= INT_MAX / 60) ? time * 60 : 0;
 
@@ -189,9 +190,10 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 	std::string escapedAuthId = g_CS2ADatabase.Escape(authid ? authid : "");
 	std::string escapedName = g_CS2ADatabase.Escape(name ? name : "");
 	std::string escapedReason = g_CS2ADatabase.Escape(reason ? reason : "");
-	std::string adminAuth = g_CS2ADatabase.Escape(GetAdminAuthId(adminSlot).c_str());
+	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
+	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
 	std::string adminIP = g_CS2ADatabase.Escape(GetAdminIP(adminSlot).c_str());
-	std::string adminAuthSuffix = ExtractAuthSuffix(adminAuth);
+	std::string adminAuthSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 
 	int lengthSec = (timeMinutes > 0 && timeMinutes <= INT_MAX / 60) ? timeMinutes * 60 : 0;
 	long long now = (long long)std::time(nullptr);
@@ -232,8 +234,9 @@ void CS2ABanManager::Unban(const char *authid, int adminSlot)
 	g_CS2AForwards.FireOnUnbanPlayer(authid, adminSlot);
 
 	std::string suffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(std::string(authid)).c_str());
-	std::string adminAuth = g_CS2ADatabase.Escape(GetAdminAuthId(adminSlot).c_str());
-	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(adminAuth).c_str());
+	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
+	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
+	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 	std::string prefix = g_CS2AConfig.databasePrefix;
 
 	long long now = (long long)std::time(nullptr);
@@ -272,8 +275,9 @@ void CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
 		return;
 
 	std::string escapedIP = g_CS2ADatabase.Escape(ip);
-	std::string adminAuth = g_CS2ADatabase.Escape(GetAdminAuthId(adminSlot).c_str());
-	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(adminAuth).c_str());
+	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
+	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
+	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 	std::string prefix = g_CS2AConfig.databasePrefix;
 
 	long long now = (long long)std::time(nullptr);

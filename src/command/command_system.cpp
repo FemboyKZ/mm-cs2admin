@@ -853,8 +853,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		ADMIN_PrintToClient(slot, "%d player(s) recently disconnected\n", (int)disconnected.size());
 	});
 
-	// !help [page] - List all available commands
-	RegisterCommand("help", [this](int slot, const std::vector<std::string> &args, bool silent) {
+	// !adminhelp [page] - List all available commands
+	RegisterCommand("adminhelp", [this](int slot, const std::vector<std::string> &args, bool silent) {
 		int page = 1;
 		if (!args.empty())
 		{
@@ -881,7 +881,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		for (int i = startIdx; i < endIdx; i++)
 			ADMIN_PrintToClient(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmds[i].c_str());
 		if (page < totalPages)
-			ADMIN_PrintToClient(slot, "Use !help %d for next page.\n", page + 1);
+			ADMIN_PrintToClient(slot, "Use !adminhelp %d for next page.\n", page + 1);
 	});
 
 	// !find <text> - Search commands by name

@@ -84,7 +84,7 @@ This means the following articles are valid here too:
 | `!pm` | `!pm <target> <message>` | `j` (Chat) | Private message a player. Echoes to all online admins. |
 | `!entfire` | `!entfire <entity> <input> [value]` | `n` (Cheats) | Fire an input on a map entity via `ent_fire`. |
 | `!report` | `!report <target> <reason>` | None | Report a player to online admins. Subject to cooldown. |
-| `!help` | `!help [page]` | None | List all available commands (paginated). |
+| `!adminhelp` | `!adminhelp [page]` | None | List all available commands (paginated). |
 | `!find` | `!find <text>` | None | Search commands by name. |
 
 #### Console / RCON Commands

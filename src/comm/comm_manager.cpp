@@ -297,6 +297,9 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 
 void CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
 {
+	if (g_CS2AForwards.FireOnSilencePlayer(targetSlot, adminSlot, timeMinutes, reason))
+		return;
+
 	MutePlayer(targetSlot, timeMinutes, reason, adminSlot);
 	GagPlayer(targetSlot, timeMinutes, reason, adminSlot);
 }
@@ -353,6 +356,7 @@ void CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
 
 void CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
 {
+	g_CS2AForwards.FireOnUnsilencePlayer(targetSlot, adminSlot);
 	UnmutePlayer(targetSlot, adminSlot);
 	UngagPlayer(targetSlot, adminSlot);
 }

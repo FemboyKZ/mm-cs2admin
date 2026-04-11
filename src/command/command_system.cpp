@@ -659,6 +659,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		std::string reason = JoinArgs(args, 1, "Kicked by admin");
 
+		if (g_CS2AForwards.FireOnKickPlayer(target, slot, reason.c_str()))
+			return;
+
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
 		ADMIN_ChatToAll("[ADMIN] %s kicked %s. Reason: %s\n",
@@ -703,6 +706,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 			PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
 			if (!targetPlayer || !targetPlayer->connected)
+				continue;
+
+			if (g_CS2AForwards.FireOnSlayPlayer(targetSlot, slot))
 				continue;
 
 			ConCommandRef killCmd("kill");
@@ -982,6 +988,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		std::string error;
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+
+		if (g_CS2AForwards.FireOnMapChange(args[0].c_str(), slot))
+			return;
 
 		if (!g_CS2AMapManager.ChangeMap(args[0].c_str(), error))
 		{

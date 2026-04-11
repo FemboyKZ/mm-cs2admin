@@ -227,6 +227,99 @@ public:
 
 		return srcImm > tgtImm;
 	}
+
+	// Player state queries
+
+	bool IsPlayerConnected(int slot) override
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		return p && p->connected;
+	}
+
+	const char *GetPlayerName(int slot) override
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		return (p && p->connected) ? p->name.c_str() : nullptr;
+	}
+
+	const char *GetPlayerAuthId(int slot) override
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		return (p && p->connected) ? p->authid.c_str() : nullptr;
+	}
+
+	uint64_t GetPlayerSteamID64(int slot) override
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		return (p && p->connected) ? p->steamid64 : 0;
+	}
+
+	const char *GetPlayerIP(int slot) override
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		return (p && p->connected) ? p->ip.c_str() : nullptr;
+	}
+
+	bool IsMuted(int slot) override
+	{
+		return g_CS2ACommManager.IsMuted(slot);
+	}
+
+	bool IsGagged(int slot) override
+	{
+		return g_CS2ACommManager.IsGagged(slot);
+	}
+
+	// Programmatic admin actions
+
+	void BanPlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason) override
+	{
+		g_CS2ABanManager.BanPlayer(targetSlot, timeMinutes, reason ? reason : "Banned", adminSlot);
+	}
+
+	void KickPlayer(int targetSlot, int adminSlot, const char *reason) override
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(targetSlot);
+		if (!p || !p->connected)
+			return;
+
+		if (g_CS2AForwards.FireOnKickPlayer(targetSlot, adminSlot, reason ? reason : "Kicked"))
+			return;
+
+		std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
+		ADMIN_LogAction(adminSlot, (std::string("Kicked ") + p->name + ": " + (reason ? reason : "Kicked")).c_str());
+		g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED);
+	}
+
+	void MutePlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason) override
+	{
+		g_CS2ACommManager.MutePlayer(targetSlot, timeMinutes, reason ? reason : "Muted", adminSlot);
+	}
+
+	void GagPlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason) override
+	{
+		g_CS2ACommManager.GagPlayer(targetSlot, timeMinutes, reason ? reason : "Gagged", adminSlot);
+	}
+
+	void SilencePlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason) override
+	{
+		g_CS2ACommManager.SilencePlayer(targetSlot, timeMinutes, reason ? reason : "Silenced", adminSlot);
+	}
+
+	void UnmutePlayer(int targetSlot, int adminSlot) override
+	{
+		g_CS2ACommManager.UnmutePlayer(targetSlot, adminSlot);
+	}
+
+	void UngagPlayer(int targetSlot, int adminSlot) override
+	{
+		g_CS2ACommManager.UngagPlayer(targetSlot, adminSlot);
+	}
+
+	void UnsilencePlayer(int targetSlot, int adminSlot) override
+	{
+		g_CS2ACommManager.UnsilencePlayer(targetSlot, adminSlot);
+	}
 };
 
 static CS2AdminAPI g_CS2AdminAPI;
@@ -386,6 +479,8 @@ void CS2APlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, u
 
 	META_CONPRINTF("[ADMIN] Client connected: \"%s\" (%s) [%s] slot=%d\n",
 		pszName, SteamID64ToAuthId(xuid).c_str(), pszAddress, slotIdx);
+
+	g_CS2AForwards.FireOnClientConnected(slotIdx, pszName, xuid, pszAddress);
 }
 
 void CS2APlugin::Hook_ClientActive(CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid)
@@ -405,6 +500,8 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 
 	META_CONPRINTF("[ADMIN] Client authenticated: \"%s\" (%s) slot=%d\n",
 		player->name.c_str(), player->authid.c_str(), slotIdx);
+
+	g_CS2AForwards.FireOnClientAuthorized(slotIdx, player->authid.c_str(), player->steamid64);
 
 	// Check for active bans
 	std::string playerIP = player->ip;
@@ -461,6 +558,7 @@ void CS2APlugin::Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionRe
 	const char *pszName, uint64 xuid, const char *pszNetworkID)
 {
 	int slotIdx = slot.Get();
+	g_CS2AForwards.FireOnClientDisconnect(slotIdx);
 	g_CS2ACommManager.OnClientDisconnect(slotIdx);
 	g_CS2APlayerManager.OnClientDisconnect(slotIdx);
 }

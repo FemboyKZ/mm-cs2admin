@@ -12,14 +12,20 @@
 
 void ADMIN_PrintToClient(int slot, const char *fmt, ...)
 {
-	if (slot < 0 || slot > MAXPLAYERS || !g_pEngine)
-		return;
-
 	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
+
+	if (slot < 0)
+	{
+		META_CONPRINTF("%s", buffer);
+		return;
+	}
+
+	if (slot > MAXPLAYERS || !g_pEngine)
+		return;
 
 	g_pEngine->ClientPrintf(CPlayerSlot(slot), buffer);
 }
@@ -142,13 +148,8 @@ void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
 	if (!g_pEngine || slot > MAXPLAYERS)
 		return;
 
-	// Console reply
+	// Reply to player's console only
 	char consoleBuffer[512];
 	snprintf(consoleBuffer, sizeof(consoleBuffer), "[ADMIN] %s", buffer);
 	g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
-
-	// Chat reply with config prefix
-	char chatBuffer[512];
-	snprintf(chatBuffer, sizeof(chatBuffer), " %s%s", g_CS2AConfig.chatPrefix.c_str(), buffer);
-	ADMIN_PrintToChat(slot, "%s", chatBuffer);
 }

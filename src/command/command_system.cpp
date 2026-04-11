@@ -766,15 +766,15 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			std::string group = admin->group.empty() ? "(no group)" : admin->group;
 			int immunity = admin->immunity;
 
-			ADMIN_ReplyToCommand(slot, "  %s [%s] flags: %s imm: %d\n",
+			ADMIN_PrintToClient(slot, "  %s [%s] flags: %s imm: %d\n",
 				p->name.c_str(), group.c_str(), flags.c_str(), immunity);
 			count++;
 		}
 
 		if (count == 0)
-			ADMIN_ReplyToCommand(slot, "  No admins currently online.\n");
+			ADMIN_PrintToClient(slot, "  No admins currently online.\n");
 		else
-			ADMIN_ReplyToCommand(slot, "%d admin(s) online\n", count);
+			ADMIN_PrintToClient(slot, "%d admin(s) online\n", count);
 	});
 
 	// !listdc - Show recently disconnected players
@@ -817,11 +817,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			else
 				timeAgo = std::to_string(secsAgo / 3600) + "h ago";
 
-			ADMIN_ReplyToCommand(slot, "  %s (%s) [%s] - %s\n",
+			ADMIN_PrintToClient(slot, "  %s (%s) [%s] - %s\n",
 				dc.name.c_str(), authid.c_str(), dc.ip.c_str(), timeAgo.c_str());
 		}
 
-		ADMIN_ReplyToCommand(slot, "%d player(s) recently disconnected\n", (int)disconnected.size());
+		ADMIN_PrintToClient(slot, "%d player(s) recently disconnected\n", (int)disconnected.size());
 	});
 
 	// !help [page] - List all available commands
@@ -850,8 +850,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		ADMIN_ReplyToCommand(slot, "Commands (page %d/%d):\n", page, totalPages);
 		for (int i = startIdx; i < endIdx; i++)
-			ADMIN_ReplyToCommand(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmds[i].c_str());
-		ADMIN_ReplyToCommand(slot, "Use !help %d for next page.\n", page < totalPages ? page + 1 : totalPages);
+			ADMIN_PrintToClient(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmds[i].c_str());
+		if (page < totalPages)
+			ADMIN_PrintToClient(slot, "Use !help %d for next page.\n", page + 1);
 	});
 
 	// !find <text> - Search commands by name
@@ -882,7 +883,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		std::sort(matches.begin(), matches.end());
 		ADMIN_ReplyToCommand(slot, "Commands matching '%s':\n", args[0].c_str());
 		for (const auto &cmd : matches)
-			ADMIN_ReplyToCommand(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmd.c_str());
+			ADMIN_PrintToClient(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmd.c_str());
 	});
 
 	// !rcon <command> - Execute a server console command
@@ -1039,12 +1040,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		for (int i = startIdx; i < endIdx; i++)
 		{
 			if (maps[i].isWorkshop)
-				ADMIN_ReplyToCommand(slot, "  %s [ws:%s]\n", maps[i].displayName.c_str(), maps[i].workshopId.c_str());
+				ADMIN_PrintToClient(slot, "  %s [ws:%s]\n", maps[i].displayName.c_str(), maps[i].workshopId.c_str());
 			else
-				ADMIN_ReplyToCommand(slot, "  %s\n", maps[i].mapName.c_str());
+				ADMIN_PrintToClient(slot, "  %s\n", maps[i].mapName.c_str());
 		}
 		if (page < totalPages)
-			ADMIN_ReplyToCommand(slot, "Use !maps %d for next page.\n", page + 1);
+			ADMIN_PrintToClient(slot, "Use !maps %d for next page.\n", page + 1);
 	});
 
 	// !entfire <entity> <input> [value] - Fire an input on an entity

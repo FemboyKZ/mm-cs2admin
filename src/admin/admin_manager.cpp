@@ -173,6 +173,11 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 				if (grpIt->second.immunity > merged.immunity)
 					merged.immunity = grpIt->second.immunity;
 			}
+			else
+			{
+				META_CONPRINTF("[ADMIN] Warning: admin \"%s\" references group \"%s\" which does not exist in admin_groups.cfg.\n",
+					normalized.c_str(), flatIt->second.group.c_str());
+			}
 		}
 		found = true;
 	}

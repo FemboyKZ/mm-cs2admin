@@ -220,7 +220,11 @@ bool CS2AAdminManager::PlayerHasFlag(int slot, uint32_t flag)
 bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName,
 	const char *commandGroup, uint32_t defaultFlag)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	// Server console always has full access
+	if (slot < 0)
+		return true;
+
+	if (slot > MAXPLAYERS)
 		return false;
 
 	if (!m_playerHasAdmin[slot])

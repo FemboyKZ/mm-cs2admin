@@ -1287,11 +1287,14 @@ static void ConsoleCommandCallback(const CCommandContext &context, const CComman
 	for (int i = 1; i < args.ArgC(); i++)
 		cmdArgs.push_back(args[i]);
 
-	// Dispatch with slot = -1 (server console), silent = false
-	g_CS2ACommandSystem.DispatchConsoleCommand(cmdName, cmdArgs);
+	// Use the player slot from the command context (-1 for server console)
+	int slot = context.GetPlayerSlot().Get();
+
+	// Dispatch with the caller's slot, silent = false
+	g_CS2ACommandSystem.DispatchConsoleCommand(cmdName, cmdArgs, slot);
 }
 
-void CS2ACommandSystem::DispatchConsoleCommand(const char *cmdName, const std::vector<std::string> &args)
+void CS2ACommandSystem::DispatchConsoleCommand(const char *cmdName, const std::vector<std::string> &args, int slot)
 {
 	std::string lower(cmdName);
 	std::transform(lower.begin(), lower.end(), lower.begin(),
@@ -1304,7 +1307,7 @@ void CS2ACommandSystem::DispatchConsoleCommand(const char *cmdName, const std::v
 		return;
 	}
 
-	it->second(-1, args, false);
+	it->second(slot, args, false);
 }
 
 void CS2ACommandSystem::RegisterConsoleCommands()
@@ -1321,6 +1324,6 @@ void CS2ACommandSystem::RegisterConsoleCommands()
 	for (auto &entry : m_consoleCommands)
 	{
 		entry.cmd = new ConCommand(entry.name.c_str(), ConsoleCommandCallback,
-			entry.desc.c_str(), FCVAR_NONE);
+			entry.desc.c_str(), FCVAR_CLIENT_CAN_EXECUTE);
 	}
 }

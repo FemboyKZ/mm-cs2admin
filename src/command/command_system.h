@@ -38,7 +38,8 @@ public:
 	// Dispatch a console command to the matching chat command handler.
 	// cmdName = command name without "mm_" prefix (e.g. "who").
 	// args = parsed arguments (excluding command name).
-	void DispatchConsoleCommand(const char *cmdName, const std::vector<std::string> &args);
+	// slot = player slot (-1 for server console).
+	void DispatchConsoleCommand(const char *cmdName, const std::vector<std::string> &args, int slot);
 
 	// Check if a gagged player should have their message blocked.
 	bool ShouldBlockChat(int slot);

@@ -82,9 +82,9 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					if (globals) player->muteExpireTime = globals->curtime + remaining;
 				}
 				if (length == 0)
-					ADMIN_PrintToClient(slot, "[ADMIN] You are permanently muted. Reason: %s\n", player->muteReason.c_str());
+					ADMIN_PrintToChat(slot, "You are permanently muted. Reason: %s\n", player->muteReason.c_str());
 				else
-					ADMIN_PrintToClient(slot, "[ADMIN] You are muted (%d seconds remaining). Reason: %s\n", remaining, player->muteReason.c_str());
+					ADMIN_PrintToChat(slot, "You are muted (%d seconds remaining). Reason: %s\n", remaining, player->muteReason.c_str());
 				META_CONPRINTF("[ADMIN] Player \"%s\" has active mute. Reason: %s\n",
 					player->name.c_str(), player->muteReason.c_str());
 			}
@@ -99,9 +99,9 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					if (globals) player->gagExpireTime = globals->curtime + remaining;
 				}
 				if (length == 0)
-					ADMIN_PrintToClient(slot, "[ADMIN] You are permanently gagged. Reason: %s\n", player->gagReason.c_str());
+					ADMIN_PrintToChat(slot, "You are permanently gagged. Reason: %s\n", player->gagReason.c_str());
 				else
-					ADMIN_PrintToClient(slot, "[ADMIN] You are gagged (%d seconds remaining). Reason: %s\n", remaining, player->gagReason.c_str());
+					ADMIN_PrintToChat(slot, "You are gagged (%d seconds remaining). Reason: %s\n", remaining, player->gagReason.c_str());
 				META_CONPRINTF("[ADMIN] Player \"%s\" has active gag. Reason: %s\n",
 					player->name.c_str(), player->gagReason.c_str());
 			}
@@ -233,14 +233,14 @@ void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 
 	// Notify target
 	if (timeMinutes == 0)
-		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been permanently muted. Reason: %s\n", reason ? reason : "No reason");
+		ADMIN_PrintToChat(targetSlot, "You have been permanently muted. Reason: %s\n", reason ? reason : "No reason");
 	else
-		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been muted for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
+		ADMIN_PrintToChat(targetSlot, "You have been muted for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
 
 	// Announce
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_PrintToAll("[ADMIN] %s muted %s (%d min). Reason: %s\n",
-		adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
+	ADMIN_ChatToAll("%s%s muted %s (%d min). Reason: %s\n",
+		g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 
 	// Log
 	char logMsg[512];
@@ -276,14 +276,14 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 
 	// Notify target
 	if (timeMinutes == 0)
-		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been permanently gagged. Reason: %s\n", reason ? reason : "No reason");
+		ADMIN_PrintToChat(targetSlot, "You have been permanently gagged. Reason: %s\n", reason ? reason : "No reason");
 	else
-		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been gagged for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
+		ADMIN_PrintToChat(targetSlot, "You have been gagged for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
 
 	// Announce
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_PrintToAll("[ADMIN] %s gagged %s (%d min). Reason: %s\n",
-		adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
+	ADMIN_ChatToAll("%s%s gagged %s (%d min). Reason: %s\n",
+		g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 
 	// Log
 	char logMsg[512];
@@ -319,10 +319,10 @@ void CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
 
 	RemoveComm(target->authid.c_str(), adminSlot, COMM_MUTE);
 
-	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been unmuted.\n");
+	ADMIN_PrintToChat(targetSlot, "You have been unmuted.\n");
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_PrintToAll("[ADMIN] %s unmuted %s.\n", adminName.c_str(), target->name.c_str());
+	ADMIN_ChatToAll("%s%s unmuted %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Unmuted \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
@@ -344,10 +344,10 @@ void CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
 
 	RemoveComm(target->authid.c_str(), adminSlot, COMM_GAG);
 
-	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been ungagged.\n");
+	ADMIN_PrintToChat(targetSlot, "You have been ungagged.\n");
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_PrintToAll("[ADMIN] %s ungagged %s.\n", adminName.c_str(), target->name.c_str());
+	ADMIN_ChatToAll("%s%s ungagged %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Ungagged \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
@@ -374,7 +374,7 @@ void CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 
-	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been muted for this session.\n");
+	ADMIN_PrintToChat(targetSlot, "You have been muted for this session.\n");
 	ADMIN_ChatToAll("%s%s session-muted %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
@@ -395,7 +395,7 @@ void CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 
-	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been gagged for this session.\n");
+	ADMIN_PrintToChat(targetSlot, "You have been gagged for this session.\n");
 	ADMIN_ChatToAll("%s%s session-gagged %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
@@ -422,7 +422,7 @@ void CS2ACommManager::CheckExpiredComms()
 			player->isMuted = false;
 			player->muteExpireTime = 0.0;
 			player->muteReason.clear();
-			ADMIN_PrintToClient(i, "[ADMIN] Your mute has expired.\n");
+			ADMIN_PrintToChat(i, "Your mute has expired.\n");
 			META_CONPRINTF("[ADMIN] Mute expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
 		}
 
@@ -431,7 +431,7 @@ void CS2ACommManager::CheckExpiredComms()
 			player->isGagged = false;
 			player->gagExpireTime = 0.0;
 			player->gagReason.clear();
-			ADMIN_PrintToClient(i, "[ADMIN] Your gag has expired.\n");
+			ADMIN_PrintToChat(i, "Your gag has expired.\n");
 			META_CONPRINTF("[ADMIN] Gag expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
 		}
 	}

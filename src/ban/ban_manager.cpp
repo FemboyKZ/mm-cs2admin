@@ -100,9 +100,9 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 
 	// Notify target player before kick
 	if (time == 0)
-		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been permanently banned. Reason: %s\n", reason ? reason : "No reason");
+		ADMIN_PrintToChat(targetSlot, "You have been permanently banned. Reason: %s\n", reason ? reason : "No reason");
 	else
-		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been banned for %d minutes. Reason: %s\n", time, reason ? reason : "No reason");
+		ADMIN_PrintToChat(targetSlot, "You have been banned for %d minutes. Reason: %s\n", time, reason ? reason : "No reason");
 
 	// Announce to all players
 	std::string adminName = "Console";
@@ -111,8 +111,8 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 		PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot);
 		if (admin) adminName = admin->name;
 	}
-	ADMIN_PrintToAll("[ADMIN] %s banned %s (%d min). Reason: %s\n",
-		adminName.c_str(), targetName.c_str(), time, reason ? reason : "No reason");
+	ADMIN_ChatToAll("%s%s banned %s (%d min). Reason: %s\n",
+		g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), targetName.c_str(), time, reason ? reason : "No reason");
 
 	// Log admin action
 	char logMsg[512];

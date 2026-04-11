@@ -10,7 +10,8 @@
 
 void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 {
-	m_groups.clear();
+	// NOTE: Do NOT clear m_groups here — flat file groups are already loaded
+	// and must be preserved. DB groups will be merged additively below.
 	m_groupIdToName.clear();
 	m_dbGroupsLoaded = false;
 
@@ -60,7 +61,19 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 
 			if (!group.name.empty())
 			{
-				m_groups[group.name] = group;
+				// Merge with existing group (flat-file groups may already exist)
+				auto existing = m_groups.find(group.name);
+				if (existing != m_groups.end())
+				{
+					existing->second.flags |= group.flags;
+					if (group.immunity > existing->second.immunity)
+						existing->second.immunity = group.immunity;
+					existing->second.id = group.id;
+				}
+				else
+				{
+					m_groups[group.name] = group;
+				}
 				m_groupIdToName[group.id] = group.name;
 			}
 		}

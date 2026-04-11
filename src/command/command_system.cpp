@@ -261,6 +261,35 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		g_CS2ABanManager.Unban(args[0].c_str(), slot);
 	});
 
+	// !addban <time> <steamid> [reason] - offline ban by SteamID
+	RegisterCommand("addban", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "addban", "banning", ADMFLAG_BAN))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.size() < 2)
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
+			return;
+		}
+
+		int time = ADMIN_ParseDuration(args[0].c_str());
+		if (time < 0)
+		{
+			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
+			return;
+		}
+
+		const char *authid = args[1].c_str();
+		std::string reason = JoinArgs(args, 2, "Banned");
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+
+		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "AddBan", authid, reason.c_str(), time);
+		g_CS2ABanManager.AddBan(authid, time, reason.c_str(), slot);
+	});
+
 	// !mute <target> <time> [reason]
 	RegisterCommand("mute", [](int slot, const std::vector<std::string> &args, bool silent) {
 		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "mute", "comms", ADMFLAG_CHAT))
@@ -1237,4 +1266,61 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			ADMIN_ReplyToCommand(slot, "No valid alive targets found.\n");
 		}
 	});
+}
+
+// Single static callback for all dynamically registered mm_ console commands.
+// Extracts command name, strips "mm_" prefix, and dispatches to the chat command handler.
+static void ConsoleCommandCallback(const CCommandContext &context, const CCommand &args)
+{
+	if (args.ArgC() < 1)
+		return;
+
+	const char *fullName = args[0]; // e.g. "mm_who"
+	const char *cmdName = fullName;
+
+	// Strip "mm_" prefix
+	if (strncmp(cmdName, "mm_", 3) == 0)
+		cmdName += 3;
+
+	// Build args vector from CCommand (skip arg 0 which is the command name)
+	std::vector<std::string> cmdArgs;
+	for (int i = 1; i < args.ArgC(); i++)
+		cmdArgs.push_back(args[i]);
+
+	// Dispatch with slot = -1 (server console), silent = false
+	g_CS2ACommandSystem.DispatchConsoleCommand(cmdName, cmdArgs);
+}
+
+void CS2ACommandSystem::DispatchConsoleCommand(const char *cmdName, const std::vector<std::string> &args)
+{
+	std::string lower(cmdName);
+	std::transform(lower.begin(), lower.end(), lower.begin(),
+		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+	auto it = m_commands.find(lower);
+	if (it == m_commands.end())
+	{
+		META_CONPRINTF("[ADMIN] Unknown command: %s\n", cmdName);
+		return;
+	}
+
+	it->second(-1, args, false);
+}
+
+void CS2ACommandSystem::RegisterConsoleCommands()
+{
+	for (auto &kv : m_commands)
+	{
+		ConsoleCmd entry;
+		entry.name = "mm_" + kv.first;
+		entry.desc = "CS2Admin: " + kv.first;
+		m_consoleCommands.push_back(std::move(entry));
+	}
+
+	// Create ConCommand objects after all entries are in the vector (stable pointers).
+	for (auto &entry : m_consoleCommands)
+	{
+		entry.cmd = new ConCommand(entry.name.c_str(), ConsoleCommandCallback,
+			entry.desc.c_str(), FCVAR_NONE);
+	}
 }

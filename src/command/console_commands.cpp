@@ -9,50 +9,8 @@
 #include "../cs2admin.h"
 
 // Console commands (server-side)
-CON_COMMAND_F(mm_ban, "Ban a player: mm_ban <#userid|name> <time> [reason]", FCVAR_NONE)
-{
-	if (args.ArgC() < 3)
-	{
-		META_CONPRINTF("Usage: mm_ban <#userid|name> <time_minutes> [reason]\n");
-		return;
-	}
-
-	int target = ADMIN_FindTarget(-1, args[1]);
-	if (target < 0)
-	{
-		META_CONPRINTF("[ADMIN] Target not found: %s\n", args[1]);
-		return;
-	}
-
-	int time = atoi(args[2]);
-	const char *reason = args.ArgC() > 3 ? args[3] : "Banned by server console";
-	g_CS2ABanManager.BanPlayer(target, time, reason, -1);
-}
-
-CON_COMMAND_F(mm_addban, "Add an offline ban: mm_addban <time> <steamid> [reason]", FCVAR_NONE)
-{
-	if (args.ArgC() < 3)
-	{
-		META_CONPRINTF("Usage: mm_addban <time_minutes> <steamid> [reason]\n");
-		return;
-	}
-
-	int time = atoi(args[1]);
-	const char *authid = args[2];
-	const char *reason = args.ArgC() > 3 ? args[3] : "Banned";
-	g_CS2ABanManager.AddBan(authid, time, reason, -1);
-}
-
-CON_COMMAND_F(mm_unban, "Unban a SteamID: mm_unban <steamid>", FCVAR_NONE)
-{
-	if (args.ArgC() < 2)
-	{
-		META_CONPRINTF("Usage: mm_unban <steamid>\n");
-		return;
-	}
-
-	g_CS2ABanManager.Unban(args[1], -1);
-}
+// Note: most mm_ commands are auto-registered by CS2ACommandSystem::RegisterConsoleCommands()
+// as mirrors of chat commands. Only console-only commands are defined here.
 
 CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 {
@@ -100,20 +58,6 @@ CON_COMMAND_F(mm_rehash, "Rebuild admin cache from database and flat files", FCV
 	META_CONPRINTF("[ADMIN] Rehashing admin cache...\n");
 	g_CS2AAdminManager.ReloadAdmins();
 	META_CONPRINTF("[ADMIN] Admin cache rebuilt.\n");
-}
-
-CON_COMMAND_F(mm_banip, "Ban an IP address: mm_banip <ip> <time> [reason]", FCVAR_NONE)
-{
-	if (args.ArgC() < 3)
-	{
-		META_CONPRINTF("Usage: mm_banip <ip> <time_minutes> [reason]\n");
-		return;
-	}
-
-	const char *ip = args[1];
-	int time = atoi(args[2]);
-	const char *reason = args.ArgC() > 3 ? args[3] : "Banned by server console";
-	g_CS2ABanManager.BanIP(ip, time, reason, -1);
 }
 
 CON_COMMAND_F(cs2admin_version, "Display CS2Admin version", FCVAR_NONE)

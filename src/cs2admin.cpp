@@ -149,6 +149,9 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	// Register chat commands
 	g_CS2ACommandSystem.RegisterBuiltinCommands();
 
+	// Register mm_ console command mirrors for all chat commands
+	g_CS2ACommandSystem.RegisterConsoleCommands();
+
 	// Load maplist
 	g_CS2AMapManager.LoadMapList();
 

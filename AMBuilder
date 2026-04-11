@@ -17,6 +17,7 @@ for sdk_target in MMSPlugin.sdk_targets:
     'src/comm/comm_manager.cpp',
     'src/command/command_system.cpp',
     'src/command/console_commands.cpp',
+    'src/command/map_manager.cpp',
     'src/admin/admin_manager.cpp',
     'src/admin/admin_flatfile.cpp',
     'src/admin/admin_db.cpp',

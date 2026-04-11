@@ -9,6 +9,7 @@
 #include "ban/ban_manager.h"
 #include "comm/comm_manager.h"
 #include "command/command_system.h"
+#include "command/map_manager.h"
 #include "admin/admin_manager.h"
 #include "public/forwards.h"
 #include "queue/offline_queue.h"
@@ -147,6 +148,9 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	// Register chat commands
 	g_CS2ACommandSystem.RegisterBuiltinCommands();
+
+	// Load maplist
+	g_CS2AMapManager.LoadMapList();
 
 	// Start Discord webhook worker thread
 	g_CS2ADiscord.Init();

@@ -108,6 +108,13 @@ for task in MMSPlugin.binaries:
     src = os.path.join(builder.sourcePath, 'configs', cfg)
     if os.path.isfile(src):
       builder.AddCopy(src, os.path.join(cfg_path, cfg))
+      
+  # Package maplist file into cfg/ (relative to game root, outside plugin folder)
+  maplist_path = os.path.join('cfg')
+  builder.AddFolder(maplist_path)
+  src = os.path.join(builder.sourcePath, 'configs', 'maplist.example.txt')
+  if os.path.isfile(src):
+    builder.AddCopy(src, os.path.join(maplist_path, 'maplist.example.txt'))
 
   # Package gamedata into addons/cs2admin/gamedata/
   gamedata_path = os.path.join('addons', MMSPlugin.metadata['name'], 'gamedata')

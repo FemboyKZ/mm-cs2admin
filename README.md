@@ -64,6 +64,13 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 | `!listcomms` | `!listcomms <target>` | `j` (Chat) | List active comm restrictions for a connected player. |
 | `!who` | `!who` | `b` (Generic) | List all online admins with their flags, group, and immunity level. |
 | `!listdc` | `!listdc` | `d` (Ban) | Show recently disconnected players (name, SteamID, IP, time ago). |
+| `!give` | `!give <target> <weapon>` | `n` (Cheats) | Give a weapon to player(s). Auto-prepends `weapon_` if missing. Supports multi-target. |
+| `!strip` | `!strip <target>` | `n` (Cheats) | Strip all weapons from player(s). Supports multi-target selectors. |
+| `!rcon` | `!rcon <command>` | `m` (RCON) | Execute a server console command. |
+| `!map` | `!map <mapname\|workshopid>` | `g` (Changemap) | Change the current map. Supports partial name match from maplist or raw workshop IDs. |
+| `!maps` | `!maps [page]` | `g` (Changemap) | List available maps from the maplist (paginated). |
+| `!pm` | `!pm <target> <message>` | `j` (Chat) | Private message a player. Echoes to all online admins. |
+| `!entfire` | `!entfire <entity> <input> [value]` | `n` (Cheats) | Fire an input on a map entity via `ent_fire`. |
 | `!report` | `!report <target> <reason>` | None | Report a player to online admins. Subject to cooldown. |
 | `!help` | `!help [page]` | None | List all available commands (paginated). |
 | `!find` | `!find <text>` | None | Search commands by name. |
@@ -72,10 +79,6 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 
 | Command | Usage | Description |
 | --- | --- | --- |
-| `mm_ban` | `mm_ban <#userid\|name> <time> [reason]` | Ban a connected player from the server console. |
-| `mm_addban` | `mm_addban <time> <steamid> [reason]` | Add an offline ban by SteamID. |
-| `mm_unban` | `mm_unban <steamid>` | Unban a player by SteamID. |
-| `mm_banip` | `mm_banip <ip> <time> [reason]` | Ban an IP address. |
 | `mm_reload` | `mm_reload` | Reload config and admin cache, re-verify all connected players. |
 | `mm_rehash` | `mm_rehash` | Rebuild admin cache from database and flat files. |
 | `cs2admin_version` | `cs2admin_version` | Display the loaded CS2Admin version. |

@@ -1,4 +1,5 @@
 #include "command_system.h"
+#include "map_manager.h"
 #include "../player/player_manager.h"
 #include "../ban/ban_manager.h"
 #include "../comm/comm_manager.h"
@@ -8,6 +9,8 @@
 #include "../public/forwards.h"
 #include "../utils/print_utils.h"
 #include "../utils/discord.h"
+#include "../entity/ccsplayercontroller.h"
+#include "../entity/ccsplayerpawn.h"
 
 #include <algorithm>
 #include <ctime>
@@ -815,5 +818,355 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		ADMIN_ReplyToCommand(slot, "Commands matching '%s':\n", args[0].c_str());
 		for (const auto &cmd : matches)
 			ADMIN_ReplyToCommand(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmd.c_str());
+	});
+
+	// !rcon <command> - Execute a server console command
+	RegisterCommand("rcon", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "rcon", "admin", ADMFLAG_RCON))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !rcon <command>\n");
+			return;
+		}
+
+		std::string cmd;
+		for (size_t i = 0; i < args.size(); i++)
+		{
+			if (i > 0) cmd += " ";
+			cmd += args[i];
+		}
+
+		// Append newline for ServerCommand
+		cmd += "\n";
+		g_pEngine->ServerCommand(cmd.c_str());
+
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+
+		ADMIN_ReplyToCommand(slot, "Executed: %s", cmd.c_str());
+		ADMIN_LogAction(slot, (std::string("RCON: ") + cmd).c_str());
+
+		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "RCON",
+			cmd.c_str(), "", -1);
+	});
+
+	// !pm <target> <message> - Private message a player
+	RegisterCommand("pm", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "pm", "admin", ADMFLAG_CHAT))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.size() < 2)
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !pm <target> <message>\n");
+			return;
+		}
+
+		int target = ADMIN_FindTarget(slot, args[0].c_str());
+		if (target < 0)
+			return;
+
+		std::string message;
+		for (size_t i = 1; i < args.size(); i++)
+		{
+			if (i > 1) message += " ";
+			message += args[i];
+		}
+
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string targetName = targetPlayer ? targetPlayer->name : "Unknown";
+
+		// Send to the target player
+		ADMIN_PrintToChat(target, "\x0E[PM from %s]\x01 %s\n", adminName.c_str(), message.c_str());
+
+		// Echo to the sender
+		if (slot >= 0)
+			ADMIN_PrintToChat(slot, "\x0E[PM to %s]\x01 %s\n", targetName.c_str(), message.c_str());
+
+		// Echo to all other admins
+		CGlobalVars *globals = GetGameGlobals();
+		int maxClients = globals ? globals->maxClients : MAXPLAYERS;
+		for (int i = 0; i < maxClients; i++)
+		{
+			if (i == slot || i == target)
+				continue;
+
+			if (g_CS2AAdminManager.PlayerHasFlag(i, ADMFLAG_GENERIC))
+			{
+				ADMIN_PrintToChat(i, "\x09[PM %s -> %s]\x01 %s\n",
+					adminName.c_str(), targetName.c_str(), message.c_str());
+			}
+		}
+
+		ADMIN_LogAction(slot, (std::string("PM to ") + targetName + ": " + message).c_str());
+	});
+
+	// !map <mapname|workshopid> - Change the current map
+	RegisterCommand("map", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "map", "admin", ADMFLAG_CHANGEMAP))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !map <mapname|workshopid>\n");
+			return;
+		}
+
+		std::string error;
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+
+		if (!g_CS2AMapManager.ChangeMap(args[0].c_str(), error))
+		{
+			ADMIN_ReplyToCommand(slot, "%s\n", error.c_str());
+			return;
+		}
+
+		ADMIN_ChatToAll("[ADMIN] %s changed map to %s.\n", adminName.c_str(), args[0].c_str());
+		ADMIN_LogAction(slot, (std::string("Changed map to ") + args[0]).c_str());
+
+		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Map Change",
+			args[0].c_str(), "", -1);
+	});
+
+	// !maps [page] - List available maps from maplist
+	RegisterCommand("maps", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "maps", "admin", ADMFLAG_CHANGEMAP))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		const auto &maps = g_CS2AMapManager.GetMaps();
+		if (maps.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No maps loaded. Check cfg/maplist.txt\n");
+			return;
+		}
+
+		int page = 1;
+		if (!args.empty())
+		{
+			page = std::atoi(args[0].c_str());
+			if (page < 1) page = 1;
+		}
+
+		const int perPage = 8;
+		int totalPages = ((int)maps.size() + perPage - 1) / perPage;
+		if (page > totalPages) page = totalPages;
+
+		int startIdx = (page - 1) * perPage;
+		int endIdx = startIdx + perPage;
+		if (endIdx > (int)maps.size()) endIdx = (int)maps.size();
+
+		ADMIN_ReplyToCommand(slot, "Maps (page %d/%d):\n", page, totalPages);
+		for (int i = startIdx; i < endIdx; i++)
+		{
+			if (maps[i].isWorkshop)
+				ADMIN_ReplyToCommand(slot, "  %s [ws:%s]\n", maps[i].displayName.c_str(), maps[i].workshopId.c_str());
+			else
+				ADMIN_ReplyToCommand(slot, "  %s\n", maps[i].mapName.c_str());
+		}
+		if (page < totalPages)
+			ADMIN_ReplyToCommand(slot, "Use !maps %d for next page.\n", page + 1);
+	});
+
+	// !entfire <entity> <input> [value] - Fire an input on an entity
+	RegisterCommand("entfire", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "entfire", "admin", ADMFLAG_CHEATS))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.size() < 2)
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !entfire <entity> <input> [value]\n");
+			return;
+		}
+
+		// Build the ent_fire command
+		std::string cmd = "ent_fire";
+		for (const auto &arg : args)
+		{
+			cmd += " ";
+			cmd += arg;
+		}
+		cmd += "\n";
+
+		g_pEngine->ServerCommand(cmd.c_str());
+
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+
+		ADMIN_ReplyToCommand(slot, "Fired: %s %s%s\n",
+			args[0].c_str(), args[1].c_str(),
+			args.size() > 2 ? (" " + args[2]).c_str() : "");
+		ADMIN_LogAction(slot, (std::string("EntFire: ") + cmd).c_str());
+	});
+
+	// !give <target> <weapon> - Give a weapon to a player
+	RegisterCommand("give", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "give", "admin", ADMFLAG_CHEATS))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.size() < 2)
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !give <target> <weapon>\n");
+			return;
+		}
+
+		TargetResult targets = ADMIN_FindTargets(slot, args[0].c_str());
+		if (!targets.error.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "%s\n", targets.error.c_str());
+			return;
+		}
+
+		// Normalize weapon name: prepend weapon_ if not present
+		std::string weapon = args[1];
+		std::transform(weapon.begin(), weapon.end(), weapon.begin(),
+			[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+		if (weapon.find("weapon_") != 0 && weapon.find("item_") != 0)
+			weapon = "weapon_" + weapon;
+
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		int given = 0;
+
+		for (int targetSlot : targets.slots)
+		{
+			PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
+			if (!targetPlayer || !targetPlayer->connected)
+				continue;
+
+			CCSPlayerController *controller = CCSPlayerController::FromSlot(targetSlot);
+			if (!controller || !controller->m_bPawnIsAlive())
+				continue;
+
+			CEntityHandle &hPawn = controller->m_hPawn();
+			CEntityInstance *pawnInst = ResolveEntityHandle(hPawn);
+			if (!pawnInst)
+				continue;
+
+			CBasePlayerPawn *pawn = reinterpret_cast<CBasePlayerPawn *>(pawnInst);
+			CCSPlayer_ItemServices *itemServices = pawn->m_pItemServices();
+			if (!itemServices)
+				continue;
+
+			itemServices->GiveNamedItem(weapon.c_str());
+			given++;
+		}
+
+		if (given > 0)
+		{
+			if (targets.isMultiTarget)
+			{
+				ADMIN_ChatToAll("[ADMIN] %s gave %s to %d players.\n",
+					adminName.c_str(), weapon.c_str(), given);
+				ADMIN_LogAction(slot, (std::string("Gave ") + weapon + " to " +
+					std::to_string(given) + " players").c_str());
+			}
+			else
+			{
+				PlayerInfo *tp = g_CS2APlayerManager.GetPlayer(targets.slots[0]);
+				std::string targetName = tp ? tp->name : "Unknown";
+				ADMIN_ChatToAll("[ADMIN] %s gave %s to %s.\n",
+					adminName.c_str(), weapon.c_str(), targetName.c_str());
+				ADMIN_LogAction(slot, (std::string("Gave ") + weapon + " to " + targetName).c_str());
+			}
+		}
+		else
+		{
+			ADMIN_ReplyToCommand(slot, "No valid alive targets found.\n");
+		}
+	});
+
+	// !strip <target> - Strip all weapons from a player
+	RegisterCommand("strip", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "strip", "admin", ADMFLAG_CHEATS))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !strip <target>\n");
+			return;
+		}
+
+		TargetResult targets = ADMIN_FindTargets(slot, args[0].c_str());
+		if (!targets.error.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "%s\n", targets.error.c_str());
+			return;
+		}
+
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		int stripped = 0;
+
+		for (int targetSlot : targets.slots)
+		{
+			PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
+			if (!targetPlayer || !targetPlayer->connected)
+				continue;
+
+			CCSPlayerController *controller = CCSPlayerController::FromSlot(targetSlot);
+			if (!controller || !controller->m_bPawnIsAlive())
+				continue;
+
+			CEntityHandle &hPawn = controller->m_hPawn();
+			CEntityInstance *pawnInst = ResolveEntityHandle(hPawn);
+			if (!pawnInst)
+				continue;
+
+			CBasePlayerPawn *pawn = reinterpret_cast<CBasePlayerPawn *>(pawnInst);
+			CCSPlayer_ItemServices *itemServices = pawn->m_pItemServices();
+			if (!itemServices)
+				continue;
+
+			itemServices->StripPlayerWeapons(true);
+			stripped++;
+		}
+
+		if (stripped > 0)
+		{
+			if (targets.isMultiTarget)
+			{
+				ADMIN_ChatToAll("[ADMIN] %s stripped weapons from %d players.\n",
+					adminName.c_str(), stripped);
+				ADMIN_LogAction(slot, (std::string("Stripped weapons from ") +
+					std::to_string(stripped) + " players").c_str());
+			}
+			else
+			{
+				PlayerInfo *tp = g_CS2APlayerManager.GetPlayer(targets.slots[0]);
+				std::string targetName = tp ? tp->name : "Unknown";
+				ADMIN_ChatToAll("[ADMIN] %s stripped weapons from %s.\n",
+					adminName.c_str(), targetName.c_str());
+				ADMIN_LogAction(slot, (std::string("Stripped weapons from ") + targetName).c_str());
+			}
+		}
+		else
+		{
+			ADMIN_ReplyToCommand(slot, "No valid alive targets found.\n");
+		}
 	});
 }

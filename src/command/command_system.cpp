@@ -693,7 +693,6 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			return;
 		}
 
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
 		int slayed = 0;
@@ -1105,6 +1104,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		for (int targetSlot : targets.slots)
 		{
+			if (!CheckImmunity(slot, targetSlot))
+				continue;
+
 			PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
 			if (!targetPlayer || !targetPlayer->connected)
 				continue;
@@ -1177,6 +1179,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		for (int targetSlot : targets.slots)
 		{
+			if (!CheckImmunity(slot, targetSlot))
+				continue;
+
 			PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
 			if (!targetPlayer || !targetPlayer->connected)
 				continue;

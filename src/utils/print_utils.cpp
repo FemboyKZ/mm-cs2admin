@@ -50,7 +50,10 @@ void ADMIN_PrintToAll(const char *fmt, ...)
 void ADMIN_LogAction(int adminSlot, const char *message)
 {
 	if (!g_CS2ADatabase.IsConnected())
+	{
+		META_CONPRINTF("[ADMIN] Log (no DB): %s\n", message ? message : "");
 		return;
+	}
 
 	std::string prefix = g_CS2AConfig.databasePrefix;
 	std::string escapedMsg = g_CS2ADatabase.Escape(message ? message : "");
@@ -75,39 +78,24 @@ void ADMIN_LogAction(int adminSlot, const char *message)
 
 void ADMIN_PrintToChat(int slot, const char *fmt, ...)
 {
-	if (slot < 0 || slot > MAXPLAYERS || !g_pEngine)
-		return;
-
 	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	g_pEngine->ClientPrintf(CPlayerSlot(slot), buffer);
+	ADMIN_PrintToClient(slot, "%s", buffer);
 }
 
 void ADMIN_ChatToAll(const char *fmt, ...)
 {
-	if (!g_pEngine)
-		return;
-
 	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	CGlobalVars *globals = GetGameGlobals();
-	if (!globals)
-		return;
-
-	for (int i = 0; i < globals->maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (p && p->connected && !p->fakePlayer)
-			g_pEngine->ClientPrintf(CPlayerSlot(i), buffer);
-	}
+	ADMIN_PrintToAll("%s", buffer);
 }
 
 void ADMIN_ChatToAdmins(const char *fmt, ...)

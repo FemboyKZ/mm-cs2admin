@@ -236,8 +236,7 @@ void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been muted for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
 
 	// Announce
-	std::string adminName = "Console";
-	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 	ADMIN_PrintToAll("[ADMIN] %s muted %s (%d min). Reason: %s\n",
 		adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 
@@ -280,8 +279,7 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 		ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been gagged for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
 
 	// Announce
-	std::string adminName = "Console";
-	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 	ADMIN_PrintToAll("[ADMIN] %s gagged %s (%d min). Reason: %s\n",
 		adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 
@@ -318,8 +316,7 @@ void CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
 
 	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been unmuted.\n");
 
-	std::string adminName = "Console";
-	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 	ADMIN_PrintToAll("[ADMIN] %s unmuted %s.\n", adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
@@ -344,8 +341,7 @@ void CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
 
 	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been ungagged.\n");
 
-	std::string adminName = "Console";
-	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 	ADMIN_PrintToAll("[ADMIN] %s ungagged %s.\n", adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
@@ -370,8 +366,7 @@ void CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 	target->muteExpireTime = 0.0;
 	target->muteReason = "Session mute";
 
-	std::string adminName = "Console";
-	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 
 	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been muted for this session.\n");
 	ADMIN_ChatToAll("%s%s session-muted %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());
@@ -392,8 +387,7 @@ void CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 	target->gagExpireTime = 0.0;
 	target->gagReason = "Session gag";
 
-	std::string adminName = "Console";
-	if (adminSlot >= 0) { PlayerInfo *a = g_CS2APlayerManager.GetPlayer(adminSlot); if (a) adminName = a->name; }
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 
 	ADMIN_PrintToClient(targetSlot, "[ADMIN] You have been gagged for this session.\n");
 	ADMIN_ChatToAll("%s%s session-gagged %s.\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str());

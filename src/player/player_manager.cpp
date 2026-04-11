@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <ctime>
 
 CS2APlayerManager g_CS2APlayerManager;
 
@@ -107,6 +108,18 @@ void CS2APlayerManager::AddDisconnectedPlayer(const PlayerInfo &player)
 }
 
 // Shared admin identity helpers
+
+std::string CS2APlayerManager::GetAdminName(int adminSlot)
+{
+	if (adminSlot < 0)
+		return "Console";
+
+	PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot);
+	if (admin)
+		return admin->name;
+
+	return "Console";
+}
 
 std::string GetAdminAuthId(int adminSlot)
 {
@@ -248,6 +261,12 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 		// For @random, pick one at random from the collected slots
 		if (group == "random" && !result.slots.empty())
 		{
+			static bool seeded = false;
+			if (!seeded)
+			{
+				srand(static_cast<unsigned int>(std::time(nullptr)));
+				seeded = true;
+			}
 			int idx = rand() % result.slots.size();
 			int picked = result.slots[idx];
 			result.slots.clear();

@@ -90,6 +90,9 @@ public:
 	PlayerInfo *FindPlayerBySteamID64(uint64_t steamid64);
 	int FindSlotBySteamID64(uint64_t steamid64);
 
+	// Get admin's display name for announcements (returns "Console" for console)
+	std::string GetAdminName(int adminSlot);
+
 	// Disconnected player tracking
 	void AddDisconnectedPlayer(const PlayerInfo &player);
 	const std::vector<DisconnectedPlayer> &GetDisconnectedPlayers() const { return m_disconnected; }

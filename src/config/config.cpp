@@ -175,6 +175,13 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	if (config.chatFloodMaxMessages < 1)
 		config.chatFloodMaxMessages = 1;
 
+	// Ensure command prefixes are different
+	if (!config.commandPrefix.empty() && config.commandPrefix == config.silentCommandPrefix)
+	{
+		META_CONPRINTF("[ADMIN] WARNING: commandPrefix and silentCommandPrefix are the same ('%s'). Silent commands will not work. Resetting silentCommandPrefix to '/'.\n", config.commandPrefix.c_str());
+		config.silentCommandPrefix = "/";
+	}
+
 	return true;
 }
 

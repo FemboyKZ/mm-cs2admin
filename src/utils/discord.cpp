@@ -219,6 +219,11 @@ void CS2ADiscord::SendPayload(const std::string &json)
 
 	{
 		std::lock_guard<std::mutex> lock(m_mutex);
+		if (m_queue.size() >= MAX_QUEUE_SIZE)
+		{
+			META_CONPRINTF("[ADMIN] Discord: Queue full (%zu items), dropping message.\n", m_queue.size());
+			return;
+		}
 		m_queue.push(json);
 	}
 	m_cv.notify_one();

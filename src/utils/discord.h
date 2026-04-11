@@ -44,6 +44,8 @@ private:
 	std::condition_variable m_cv;
 	std::queue<std::string> m_queue;
 	std::atomic<bool> m_running{false};
+
+	static constexpr size_t MAX_QUEUE_SIZE = 100;
 };
 
 extern CS2ADiscord g_CS2ADiscord;

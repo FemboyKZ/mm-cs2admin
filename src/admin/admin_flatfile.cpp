@@ -257,6 +257,10 @@ void CS2AAdminManager::LoadSimpleAdmins()
 					entry.flags = FlagsFromString(before.c_str());
 				}
 
+				// Strip leading '@' from group name (SM convention for group references)
+				if (!after.empty() && after[0] == '@')
+					after = after.substr(1);
+
 				entry.group = after;
 			}
 			else

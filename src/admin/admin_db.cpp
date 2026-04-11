@@ -10,8 +10,6 @@
 
 void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 {
-	// NOTE: Do NOT clear m_groups here — flat file groups are already loaded
-	// and must be preserved. DB groups will be merged additively below.
 	m_groupIdToName.clear();
 	m_dbGroupsLoaded = false;
 
@@ -243,7 +241,6 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 	}
 	else if (g_CS2AConfig.serverID == -1)
 	{
-		// match by IP:port
 		ConVarRefAbstract hostip_ref("hostip");
 		ConVarRefAbstract hostport_ref("hostport");
 
@@ -376,7 +373,6 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 
 void CS2AAdminManager::LoadDatabaseAdmins(std::function<void()> onComplete)
 {
-	// Load groups first, then group overrides, global overrides, and finally admins
 	LoadGroups([this, onComplete]() {
 		LoadGroupOverrides([this, onComplete]() {
 			LoadGlobalOverrides([this, onComplete]() {

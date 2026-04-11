@@ -101,10 +101,10 @@ for task in MMSPlugin.binaries:
   
   packages[sdk_name].addBinary(task.binary)
 
-  # Package config files into cfg/sbpp/ (relative to game root, outside plugin folder)
-  cfg_path = os.path.join('cfg', 'sbpp')
+  # Package config files into cfg/cs2admin/ (relative to game root, outside plugin folder)
+  cfg_path = os.path.join('cfg', 'cs2admin')
   builder.AddFolder(cfg_path)
-  for cfg in ['sourcebans.cfg', 'admins.cfg', 'admins_simple.ini', 'admin_groups.cfg', 'admin_overrides.cfg']:
+  for cfg in ['core.cfg', 'admins.cfg', 'admins_simple.ini', 'admin_groups.cfg', 'admin_overrides.cfg']:
     src = os.path.join(builder.sourcePath, 'configs', cfg)
     if os.path.isfile(src):
       builder.AddCopy(src, os.path.join(cfg_path, cfg))

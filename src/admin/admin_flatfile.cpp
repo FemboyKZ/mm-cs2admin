@@ -229,43 +229,51 @@ void CS2AAdminManager::LoadSimpleAdmins()
 		{
 			const std::string &flagToken = tokens[1];
 
-			// Check if it's "immunity:group" format (e.g., "99:Full Admins")
-			size_t colonPos = flagToken.find(':');
-			if (colonPos != std::string::npos)
+			// Check for "@GroupName" format (pure group reference)
+			if (!flagToken.empty() && flagToken[0] == '@')
 			{
-				// Everything before colon could be immunity or flags
-				std::string before = flagToken.substr(0, colonPos);
-				std::string after = flagToken.substr(colonPos + 1);
-
-				// If 'before' is all digits, it's immunity; otherwise flags
-				bool allDigits = !before.empty();
-				for (char c : before)
+				entry.group = flagToken.substr(1);
+			}
+			// Check if it's "immunity:group" format (e.g., "99:Full Admins")
+			else
+			{
+				size_t colonPos = flagToken.find(':');
+				if (colonPos != std::string::npos)
 				{
-					if (!std::isdigit(static_cast<unsigned char>(c)))
+					// Everything before colon could be immunity or flags
+					std::string before = flagToken.substr(0, colonPos);
+					std::string after = flagToken.substr(colonPos + 1);
+
+					// If 'before' is all digits, it's immunity; otherwise flags
+					bool allDigits = !before.empty();
+					for (char c : before)
 					{
-						allDigits = false;
-						break;
+						if (!std::isdigit(static_cast<unsigned char>(c)))
+						{
+							allDigits = false;
+							break;
+						}
 					}
-				}
 
-				if (allDigits)
-				{
-					entry.immunity = std::atoi(before.c_str());
+					if (allDigits)
+					{
+						entry.immunity = std::atoi(before.c_str());
+					}
+					else
+					{
+						entry.flags = FlagsFromString(before.c_str());
+					}
+
+					// Strip leading '@' from group name (SM convention for group references)
+					if (!after.empty() && after[0] == '@')
+						after = after.substr(1);
+
+					entry.group = after;
 				}
 				else
 				{
-					entry.flags = FlagsFromString(before.c_str());
+					entry.flags = FlagsFromString(flagToken.c_str());
 				}
-
-				// Strip leading '@' from group name (SM convention for group references)
-				if (!after.empty() && after[0] == '@')
-					after = after.substr(1);
-
-				entry.group = after;
-			}
-			else
-			{
-				entry.flags = FlagsFromString(flagToken.c_str());
 			}
 		}
 

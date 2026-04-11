@@ -1,5 +1,6 @@
 #include "config.h"
 #include "kv_parser.h"
+#include "../common.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
@@ -154,6 +155,26 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 		return false;
 
 	kv::ParseSection(file, root.value, ConfigHandler, &config);
+
+	// Validate databasePrefix: only alphanumeric and underscore allowed
+	for (char c : config.databasePrefix)
+	{
+		if (!isalnum(static_cast<unsigned char>(c)) && c != '_')
+		{
+			META_CONPRINTF("[ADMIN] ERROR: Invalid character '%c' in databasePrefix. Only alphanumeric and underscore allowed.\n", c);
+			return false;
+		}
+	}
+	if (config.databasePrefix.empty())
+	{
+		META_CONPRINTF("[ADMIN] ERROR: databasePrefix cannot be empty.\n");
+		return false;
+	}
+
+	// Clamp chatFloodMaxMessages to sane range
+	if (config.chatFloodMaxMessages < 1)
+		config.chatFloodMaxMessages = 1;
+
 	return true;
 }
 

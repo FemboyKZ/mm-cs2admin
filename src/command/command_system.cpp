@@ -16,6 +16,97 @@
 #include <ctime>
 #include <cctype>
 
+// Helpers
+
+// Join args from startIdx into a single string, or return defaultVal if not enough args.
+static std::string JoinArgs(const std::vector<std::string> &args, size_t start, const char *defaultVal)
+{
+	if (args.size() <= start)
+		return defaultVal;
+	std::string result;
+	for (size_t i = start; i < args.size(); i++)
+	{
+		if (i > start) result += " ";
+		result += args[i];
+	}
+	return result;
+}
+
+// Strip characters that could be interpreted as command separators by the engine.
+static std::string SanitizeForServerCommand(const std::string &input)
+{
+	std::string result;
+	result.reserve(input.size());
+	for (char c : input)
+	{
+		if (c != ';' && c != '\n' && c != '\r')
+			result += c;
+	}
+	return result;
+}
+
+// Validate an IPv4 address string (e.g. "192.168.1.1").
+static bool IsValidIPv4(const char *ip)
+{
+	if (!ip || !*ip)
+		return false;
+	int parts = 0;
+	int num = 0;
+	bool hasDigit = false;
+	for (const char *p = ip; ; p++)
+	{
+		if (*p >= '0' && *p <= '9')
+		{
+			num = num * 10 + (*p - '0');
+			if (num > 255) return false;
+			hasDigit = true;
+		}
+		else if (*p == '.' || *p == '\0')
+		{
+			if (!hasDigit) return false;
+			parts++;
+			if (*p == '\0') break;
+			num = 0;
+			hasDigit = false;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	return parts == 4;
+}
+
+// Check if caller has higher immunity than target. Returns true if action is allowed.
+// Console (slot < 0) always passes. Non-admin targets always pass.
+static bool CheckImmunity(int callerSlot, int targetSlot)
+{
+	if (callerSlot < 0)
+		return true; // Console bypasses immunity
+
+	if (callerSlot == targetSlot)
+		return true; // Can always target self
+
+	// Root flag bypasses immunity
+	if (g_CS2AAdminManager.PlayerHasFlag(callerSlot, ADMFLAG_ROOT))
+		return true;
+
+	const AdminEntry *targetAdmin = g_CS2AAdminManager.GetPlayerAdmin(targetSlot);
+	if (!targetAdmin)
+		return true; // Non-admin target, always allowed
+
+	const AdminEntry *callerAdmin = g_CS2AAdminManager.GetPlayerAdmin(callerSlot);
+	int callerImm = callerAdmin ? callerAdmin->immunity : 0;
+	int targetImm = targetAdmin->immunity;
+
+	if (targetImm > 0 && callerImm <= targetImm)
+	{
+		ADMIN_ReplyToCommand(callerSlot, "Cannot target this player (higher immunity).\n");
+		return false;
+	}
+	return true;
+}
+
 CS2ACommandSystem g_CS2ACommandSystem;
 
 void CS2ACommandSystem::RegisterCommand(const char *name, ChatCommandCallback callback)
@@ -130,29 +221,23 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
+		if (!CheckImmunity(slot, target))
+			return;
+
 		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
 			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
-		std::string reason = "Banned";
-		if (args.size() > 2)
-		{
-			reason.clear();
-			for (size_t i = 2; i < args.size(); i++)
-			{
-				if (i > 2) reason += " ";
-				reason += args[i];
-			}
-		}
+		std::string reason = JoinArgs(args, 2, "Banned");
 
 		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 		if (targetPlayer)
 		{
 			g_CS2ADiscord.NotifyAdminAction(
-				adminPlayer ? adminPlayer->name.c_str() : "Console",
+				adminName.c_str(),
 				"Ban", targetPlayer->name.c_str(), reason.c_str(), time);
 		}
 
@@ -194,29 +279,23 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
+		if (!CheckImmunity(slot, target))
+			return;
+
 		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
 			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
-		std::string reason = "Muted";
-		if (args.size() > 2)
-		{
-			reason.clear();
-			for (size_t i = 2; i < args.size(); i++)
-			{
-				if (i > 2) reason += " ";
-				reason += args[i];
-			}
-		}
+		std::string reason = JoinArgs(args, 2, "Muted");
 
 		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 		if (targetPlayer)
 		{
 			g_CS2ADiscord.NotifyAdminAction(
-				adminPlayer ? adminPlayer->name.c_str() : "Console",
+				adminName.c_str(),
 				"Mute", targetPlayer->name.c_str(), reason.c_str(), time);
 		}
 
@@ -262,22 +341,16 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
+		if (!CheckImmunity(slot, target))
+			return;
+
 		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
 			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
-		std::string reason = "Gagged";
-		if (args.size() > 2)
-		{
-			reason.clear();
-			for (size_t i = 2; i < args.size(); i++)
-			{
-				if (i > 2) reason += " ";
-				reason += args[i];
-			}
-		}
+		std::string reason = JoinArgs(args, 2, "Gagged");
 		g_CS2ACommManager.GagPlayer(target, time, reason.c_str(), slot);
 	});
 
@@ -320,22 +393,16 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
+		if (!CheckImmunity(slot, target))
+			return;
+
 		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
 			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
-		std::string reason = "Silenced";
-		if (args.size() > 2)
-		{
-			reason.clear();
-			for (size_t i = 2; i < args.size(); i++)
-			{
-				if (i > 2) reason += " ";
-				reason += args[i];
-			}
-		}
+		std::string reason = JoinArgs(args, 2, "Silenced");
 		g_CS2ACommManager.SilencePlayer(target, time, reason.c_str(), slot);
 	});
 
@@ -375,22 +442,19 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		}
 
 		const char *ip = args[0].c_str();
+		if (!IsValidIPv4(ip))
+		{
+			ADMIN_ReplyToCommand(slot, "Invalid IP address format.\n");
+			return;
+		}
+
 		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
 			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
-		std::string reason = "Banned";
-		if (args.size() > 2)
-		{
-			reason.clear();
-			for (size_t i = 2; i < args.size(); i++)
-			{
-				if (i > 2) reason += " ";
-				reason += args[i];
-			}
-		}
+		std::string reason = JoinArgs(args, 2, "Banned");
 
 		g_CS2ABanManager.BanIP(ip, time, reason.c_str(), slot);
 	});
@@ -586,23 +650,16 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			return;
 		}
 
+		if (!CheckImmunity(slot, target))
+			return;
+
 		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
 		if (!targetPlayer || !targetPlayer->connected)
 			return;
 
-		std::string reason = "Kicked by admin";
-		if (args.size() > 1)
-		{
-			reason.clear();
-			for (size_t i = 1; i < args.size(); i++)
-			{
-				if (i > 1) reason += " ";
-				reason += args[i];
-			}
-		}
+		std::string reason = JoinArgs(args, 1, "Kicked by admin");
 
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
 		ADMIN_ChatToAll("[ADMIN] %s kicked %s. Reason: %s\n",
 			adminName.c_str(), targetPlayer->name.c_str(), reason.c_str());
@@ -637,11 +694,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		}
 
 		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
 		int slayed = 0;
 		for (int targetSlot : targets.slots)
 		{
+			if (!CheckImmunity(slot, targetSlot))
+				continue;
+
 			PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
 			if (!targetPlayer || !targetPlayer->connected)
 				continue;
@@ -834,19 +894,17 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			return;
 		}
 
-		std::string cmd;
-		for (size_t i = 0; i < args.size(); i++)
-		{
-			if (i > 0) cmd += " ";
-			cmd += args[i];
-		}
+		std::string cmd = JoinArgs(args, 0, "");
+
+		// Strip newlines to prevent command injection after the terminator
+		cmd.erase(std::remove(cmd.begin(), cmd.end(), '\n'), cmd.end());
+		cmd.erase(std::remove(cmd.begin(), cmd.end(), '\r'), cmd.end());
 
 		// Append newline for ServerCommand
 		cmd += "\n";
 		g_pEngine->ServerCommand(cmd.c_str());
 
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
 		ADMIN_ReplyToCommand(slot, "Executed: %s", cmd.c_str());
 		ADMIN_LogAction(slot, (std::string("RCON: ") + cmd).c_str());
@@ -880,9 +938,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			message += args[i];
 		}
 
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
 		std::string targetName = targetPlayer ? targetPlayer->name : "Unknown";
 
 		// Send to the target player
@@ -925,8 +982,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		}
 
 		std::string error;
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
 		if (!g_CS2AMapManager.ChangeMap(args[0].c_str(), error))
 		{
@@ -997,19 +1053,18 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			return;
 		}
 
-		// Build the ent_fire command
+		// Build the ent_fire command with sanitized args
 		std::string cmd = "ent_fire";
 		for (const auto &arg : args)
 		{
 			cmd += " ";
-			cmd += arg;
+			cmd += SanitizeForServerCommand(arg);
 		}
 		cmd += "\n";
 
 		g_pEngine->ServerCommand(cmd.c_str());
 
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
 		ADMIN_ReplyToCommand(slot, "Fired: %s %s%s\n",
 			args[0].c_str(), args[1].c_str(),
@@ -1045,8 +1100,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (weapon.find("weapon_") != 0 && weapon.find("item_") != 0)
 			weapon = "weapon_" + weapon;
 
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 		int given = 0;
 
 		for (int targetSlot : targets.slots)
@@ -1118,8 +1172,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			return;
 		}
 
-		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 		int stripped = 0;
 
 		for (int targetSlot : targets.slots)

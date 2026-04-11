@@ -40,7 +40,7 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 
 1. Get the latest [release](https://github.com/FemboyKZ/mm-cs2admin/releases) for your operating system (linux/windows).
 2. Extract the contents of the release archive in your server's root folder ``/game/csgo/``.
-3. Configure the main cfg in ``/game/csgo/cfg/cs2admin/core.cfg` with database credentials and other preferences.
+3. Configure the main cfg in ``/game/csgo/cfg/cs2admin/core.cfg`` with database credentials and other preferences.
 4. Configure Admins in ``admins.cfg`` or ``admins.ini``, Admin Groups in ``adming_groups.cfg`` and Admin overrides in ``admin_overrides.cfg``
     (these can be directly copied from existing SM cfg with the same names)
 5. Create a new file called ``maplist.txt`` or rename the bundled ``maplist.example.txt`` file to it, then add your maps to the file.

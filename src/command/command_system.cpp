@@ -1069,12 +1069,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		for (int i = startIdx; i < endIdx; i++)
 		{
 			if (maps[i].isWorkshop)
-				ADMIN_PrintToClient(slot, "  %s [ws:%s]\n", maps[i].displayName.c_str(), maps[i].workshopId.c_str());
+				ADMIN_ReplyToCommand(slot, "  %s [ws:%s]\n", maps[i].displayName.c_str(), maps[i].workshopId.c_str());
 			else
-				ADMIN_PrintToClient(slot, "  %s\n", maps[i].mapName.c_str());
+				ADMIN_ReplyToCommand(slot, "  %s\n", maps[i].mapName.c_str());
 		}
 		if (page < totalPages)
-			ADMIN_PrintToClient(slot, "Use !maps %d for next page.\n", page + 1);
+			ADMIN_ReplyToCommand(slot, "Use !maps %d for next page.\n", page + 1);
 	});
 
 	// !entfire <entity> <input> [value] - Fire an input on an entity

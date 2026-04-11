@@ -9,6 +9,7 @@
 #include <networksystem/inetworkserializer.h>
 #include <networksystem/netmessage.h>
 #include <engine/igameeventsystem.h>
+#include <irecipientfilter.h>
 #include <usermessages.pb.h>
 
 #include <cstdarg>
@@ -16,38 +17,64 @@
 #include <ctime>
 #include <string>
 
-// Cache the SayText2 network message pointer (lazy init)
-static INetworkMessageInternal *GetSayText2Message()
+#define HUD_PRINTTALK 3
+
+// Simple recipient filter for a single player slot
+class CSingleRecipientFilter : public IRecipientFilter
 {
-	static INetworkMessageInternal *s_pSayText2 = nullptr;
-	if (!s_pSayText2 && g_pNetworkMessages)
-		s_pSayText2 = g_pNetworkMessages->FindNetworkMessage("CUserMessageSayText2");
-	return s_pSayText2;
+public:
+	CSingleRecipientFilter(int slot) { m_Recipients.Set(slot); }
+	~CSingleRecipientFilter() override {}
+	NetChannelBufType_t GetNetworkBufType(void) const override { return BUF_RELIABLE; }
+	bool IsInitMessage(void) const override { return false; }
+	const CPlayerBitVec &GetRecipients(void) const override { return m_Recipients; }
+	CPlayerSlot GetPredictedPlayerSlot(void) const override { return CPlayerSlot(-1); }
+private:
+	CPlayerBitVec m_Recipients;
+};
+
+// Recipient filter with manually added slots
+class CAdminRecipientFilter : public IRecipientFilter
+{
+public:
+	CAdminRecipientFilter() {}
+	~CAdminRecipientFilter() override {}
+	void AddRecipient(int slot) { m_Recipients.Set(slot); }
+	NetChannelBufType_t GetNetworkBufType(void) const override { return BUF_RELIABLE; }
+	bool IsInitMessage(void) const override { return false; }
+	const CPlayerBitVec &GetRecipients(void) const override { return m_Recipients; }
+	CPlayerSlot GetPredictedPlayerSlot(void) const override { return CPlayerSlot(-1); }
+private:
+	CPlayerBitVec m_Recipients;
+};
+
+// Cache the TextMsg network message pointer (lazy init)
+static INetworkMessageInternal *GetTextMsgMessage()
+{
+	static INetworkMessageInternal *s_pTextMsg = nullptr;
+	if (!s_pTextMsg && g_pNetworkMessages)
+		s_pTextMsg = g_pNetworkMessages->FindNetworkMessagePartial("TextMsg");
+	return s_pTextMsg;
 }
 
-// Send a HUD chat message to specific clients via bitmask
-static void SendChat(const uint64 *clients, int clientCount, const char *text)
+// Send a HUD chat message to a recipient filter
+static void SendChatToFilter(IRecipientFilter *pFilter, const char *text)
 {
-	INetworkMessageInternal *pMsg = GetSayText2Message();
-	if (!pMsg || !g_pGameEventSystem)
+	INetworkMessageInternal *pNetMsg = GetTextMsgMessage();
+	if (!pNetMsg || !g_pGameEventSystem)
 		return;
 
-	CNetMessage *pData = pMsg->AllocateMessage();
+	CNetMessage *pData = pNetMsg->AllocateMessage();
 	if (!pData)
 		return;
 
-	auto *pSayText2 = pData->ToPB<CUserMessageSayText2>();
-	pSayText2->set_entityindex(-1);
-	pSayText2->set_chat(false);
-	pSayText2->set_messagename(text);
-	pSayText2->set_param1("");
-	pSayText2->set_param2("");
+	auto *pTextMsg = pData->ToPB<CUserMessageTextMsg>();
+	pTextMsg->set_dest(HUD_PRINTTALK);
+	pTextMsg->add_param(text);
 
-	g_pGameEventSystem->PostEventAbstract(
-		CSplitScreenSlot(0), false, clientCount, clients,
-		pMsg, pData, 0, BUF_DEFAULT);
+	g_pGameEventSystem->PostEventAbstract(-1, false, pFilter, pNetMsg, pData, 0);
 
-	g_pNetworkMessages->DeallocateNetMessageAbstract(pMsg, pData);
+	g_pNetworkMessages->DeallocateNetMessageAbstract(pNetMsg, pData);
 }
 
 void ADMIN_PrintToClient(int slot, const char *fmt, ...)
@@ -146,8 +173,8 @@ void ADMIN_PrintToChat(int slot, const char *fmt, ...)
 		CHAT_COLOR_DEFAULT,
 		buffer);
 
-	uint64 clientBit = (1ull << slot);
-	SendChat(&clientBit, 1, chatBuf);
+	CSingleRecipientFilter filter(slot);
+	SendChatToFilter(&filter, chatBuf);
 }
 
 void ADMIN_ChatToAll(const char *fmt, ...)
@@ -162,8 +189,20 @@ void ADMIN_ChatToAll(const char *fmt, ...)
 	char chatBuf[512];
 	snprintf(chatBuf, sizeof(chatBuf), " %s", buffer);
 
-	// Send to all clients
-	SendChat(nullptr, -1, chatBuf);
+	// Build a filter of all connected non-bot players
+	CAdminRecipientFilter filter;
+	CGlobalVars *globals = GetGameGlobals();
+	if (globals)
+	{
+		for (int i = 0; i < globals->maxClients; i++)
+		{
+			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+			if (p && p->connected && !p->fakePlayer)
+				filter.AddRecipient(i);
+		}
+	}
+
+	SendChatToFilter(&filter, chatBuf);
 
 	// Also log to server console
 	META_CONPRINTF("[ADMIN] %s", buffer);
@@ -188,8 +227,8 @@ void ADMIN_ChatToAdmins(const char *fmt, ...)
 	if (!globals)
 		return;
 
-	// Build bitmask of admin clients
-	uint64 adminBits = 0;
+	// Build filter of admin clients
+	CAdminRecipientFilter filter;
 	int adminCount = 0;
 	for (int i = 0; i < globals->maxClients; i++)
 	{
@@ -198,14 +237,14 @@ void ADMIN_ChatToAdmins(const char *fmt, ...)
 		{
 			if (g_CS2AAdminManager.GetPlayerAdmin(i) != nullptr)
 			{
-				adminBits |= (1ull << i);
+				filter.AddRecipient(i);
 				adminCount++;
 			}
 		}
 	}
 
 	if (adminCount > 0)
-		SendChat(&adminBits, adminCount, chatBuf);
+		SendChatToFilter(&filter, chatBuf);
 }
 
 void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
@@ -241,6 +280,6 @@ void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
 		CHAT_COLOR_DEFAULT,
 		buffer);
 
-	uint64 clientBit = (1ull << slot);
-	SendChat(&clientBit, 1, chatBuf);
+	CSingleRecipientFilter filter(slot);
+	SendChatToFilter(&filter, chatBuf);
 }

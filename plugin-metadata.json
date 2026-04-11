@@ -7,5 +7,5 @@
     "url": "https://github.com/FemboyKZ/mm-cs2admin",
     "log_tag": "CS2Admin",
     "license": "GNU General Public License v3",
-    "version": "2.2.0.{{git-shorthash}}"
+    "version": "2.4.0.{{git-shorthash}}"
 }

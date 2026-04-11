@@ -10,6 +10,7 @@ for sdk_target in MMSPlugin.sdk_targets:
   binary.sources += [
     'src/cs2admin.cpp',
     'src/config/config.cpp',
+    'src/config/gamedata.cpp',
     'src/db/database.cpp',
     'src/player/player_manager.cpp',
     'src/ban/ban_manager.cpp',
@@ -21,6 +22,8 @@ for sdk_target in MMSPlugin.sdk_targets:
     'src/admin/admin_db.cpp',
     'src/queue/offline_queue.cpp',
     'src/utils/print_utils.cpp',
+    'src/utils/discord.cpp',
+    'src/entity/schema.cpp',
   ]
 
   binary.custom = [builder.tools.Protoc(protoc = sdk_target.protoc, sources = [

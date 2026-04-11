@@ -1,121 +1,11 @@
 #include "config.h"
+#include "kv_parser.h"
 #include <fstream>
 #include <sstream>
 #include <algorithm>
 #include <cstdlib>
 
 CS2AConfig g_CS2AConfig;
-
-// Minimal Valve KeyValues parser, handles nested sections and key-value pairs.
-// Only supports the subset used by core.cfg.
-
-enum class TokenType
-{
-	String,
-	OpenBrace,
-	CloseBrace,
-	EndOfFile
-};
-
-struct Token
-{
-	TokenType kind;
-	std::string value;
-};
-
-static Token NextToken(std::istream &in)
-{
-	Token tok;
-	while (in.good())
-	{
-		int ch = in.get();
-		if (ch == EOF)
-		{
-			tok.kind = TokenType::EndOfFile;
-			return tok;
-		}
-
-		// Skip whitespace
-		if (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')
-			continue;
-
-		// Skip single-line comments
-		if (ch == '/')
-		{
-			int next = in.peek();
-			if (next == '/')
-			{
-				// Consume until end of line
-				while (in.good() && in.get() != '\n')
-					;
-				continue;
-			}
-		}
-
-		if (ch == '{')
-		{
-			tok.kind = TokenType::OpenBrace;
-			return tok;
-		}
-		if (ch == '}')
-		{
-			tok.kind = TokenType::CloseBrace;
-			return tok;
-		}
-
-		// Quoted string
-		if (ch == '"')
-		{
-			tok.kind = TokenType::String;
-			tok.value.clear();
-			while (in.good())
-			{
-				ch = in.get();
-				if (ch == '"' || ch == EOF)
-					break;
-				if (ch == '\\')
-				{
-					int esc = in.get();
-					if (esc == '"')
-						tok.value += '"';
-					else if (esc == '\\')
-						tok.value += '\\';
-					else if (esc == 'n')
-						tok.value += '\n';
-					else if (esc == 't')
-						tok.value += '\t';
-					else
-					{
-						tok.value += '\\';
-						tok.value += static_cast<char>(esc);
-					}
-				}
-				else
-				{
-					tok.value += static_cast<char>(ch);
-				}
-			}
-			return tok;
-		}
-
-		// Unquoted string (token until whitespace or brace)
-		tok.kind = TokenType::String;
-		tok.value.clear();
-		tok.value += static_cast<char>(ch);
-		while (in.good())
-		{
-			int next = in.peek();
-			if (next == ' ' || next == '\t' || next == '\r' || next == '\n' ||
-				next == '{' || next == '}' || next == '"' || next == EOF)
-				break;
-			tok.value += static_cast<char>(in.get());
-		}
-		return tok;
-	}
-
-	tok.kind = TokenType::EndOfFile;
-	return tok;
-}
 
 static std::string ToLower(const std::string &s)
 {
@@ -128,36 +18,7 @@ static std::string ToLower(const std::string &s)
 // Parse a section body (after the opening brace).
 // Calls handler(sectionName, key, value) for each keyvalue pair.
 // Recurses into subsections.
-typedef void (*KVHandler)(const std::string &section, const std::string &key,
-	const std::string &value, void *userdata);
-
-static bool ParseSection(std::istream &in, const std::string &sectionName,
-	KVHandler handler, void *userdata)
-{
-	while (true)
-	{
-		Token tok = NextToken(in);
-		if (tok.kind == TokenType::CloseBrace || tok.kind == TokenType::EndOfFile)
-			return true;
-
-		if (tok.kind != TokenType::String)
-			continue;
-
-		std::string key = tok.value;
-		Token next = NextToken(in);
-
-		if (next.kind == TokenType::OpenBrace)
-		{
-			// Subsection
-			ParseSection(in, key, handler, userdata);
-		}
-		else if (next.kind == TokenType::String)
-		{
-			// Keyvalue pair
-			handler(sectionName, key, next.value, userdata);
-		}
-	}
-}
+typedef kv::Handler KVHandler;
 
 static void ConfigHandler(const std::string &section, const std::string &key,
 	const std::string &value, void *userdata)
@@ -259,6 +120,22 @@ static void ConfigHandler(const std::string &section, const std::string &key,
 		else if (k == "excludetime")
 			cfg->sleuthExcludeTime = std::atoi(value.c_str());
 	}
+	else if (sec == "discordconfig")
+	{
+		if (k == "webhookurl")
+			cfg->discordWebhookUrl = value;
+		else if (k == "footertext")
+			cfg->discordFooterText = value;
+	}
+	else if (sec == "chatfloodconfig")
+	{
+		if (k == "cooldown")
+			cfg->chatFloodCooldown = static_cast<float>(std::atof(value.c_str()));
+		else if (k == "maxmessages")
+			cfg->chatFloodMaxMessages = std::atoi(value.c_str());
+		else if (k == "muteduration")
+			cfg->chatFloodMuteDuration = std::atoi(value.c_str());
+	}
 }
 
 bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
@@ -268,15 +145,15 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 		return false;
 
 	// Expect: "cs2admin" { ... }
-	Token root = NextToken(file);
-	if (root.kind != TokenType::String)
+	kv::Token root = kv::NextToken(file);
+	if (root.kind != kv::TokenType::String)
 		return false;
 
-	Token brace = NextToken(file);
-	if (brace.kind != TokenType::OpenBrace)
+	kv::Token brace = kv::NextToken(file);
+	if (brace.kind != kv::TokenType::OpenBrace)
 		return false;
 
-	ParseSection(file, root.value, ConfigHandler, &config);
+	kv::ParseSection(file, root.value, ConfigHandler, &config);
 	return true;
 }
 

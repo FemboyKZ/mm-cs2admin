@@ -55,6 +55,15 @@ struct CS2AConfig
 	bool sleuthAdminBypass = false;  // ADMFLAG_BAN users exempt
 	bool sleuthExcludeOld = false;
 	int sleuthExcludeTime = 31536000; // 1 year in seconds
+
+	// Discord config
+	std::string discordWebhookUrl = "";
+	std::string discordFooterText = "CS2Admin";
+
+	// Chat flood config
+	float chatFloodCooldown = 0.75f;   // Minimum seconds between messages
+	int chatFloodMaxMessages = 5;      // Messages in window before action
+	int chatFloodMuteDuration = 0;     // Minutes to auto-mute (0 = block only)
 };
 
 // Load and parse core.cfg from the given path.

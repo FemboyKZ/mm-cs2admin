@@ -3,6 +3,7 @@
 #include <ctime>
 #include "cs2admin.h"
 #include "config/config.h"
+#include "config/gamedata.h"
 #include "db/database.h"
 #include "player/player_manager.h"
 #include "ban/ban_manager.h"
@@ -12,8 +13,30 @@
 #include "public/forwards.h"
 #include "queue/offline_queue.h"
 #include "utils/print_utils.h"
+#include "utils/discord.h"
 
 #include <sql_mm.h>
+
+#include <schemasystem/schemasystem.h>
+#include <interfaces/interfaces.h>
+#include <entity2/entitysystem.h>
+
+// Entity system global (declared extern in common.h)
+// Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
+CGameEntitySystem *g_pEntitySystem = nullptr;
+
+CGameEntitySystem *GameEntitySystem()
+{
+	if (!g_pGameResourceServiceServer)
+		return nullptr;
+
+	int offset = g_CS2AGameData.GetOffset("GameEntitySystem");
+	if (offset < 0)
+		return nullptr;
+
+	return *reinterpret_cast<CGameEntitySystem **>(
+		reinterpret_cast<uintptr_t>(g_pGameResourceServiceServer) + offset);
+}
 
 // SourceHook hook declarations - must match interface method signatures exactly
 SH_DECL_HOOK3_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
@@ -60,6 +83,8 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	GET_V_IFACE_ANY(GetServerFactory, g_pServerGameDLL, IServerGameDLL, INTERFACEVERSION_SERVERGAMEDLL);
 	GET_V_IFACE_ANY(GetServerFactory, g_pGameClients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
 	GET_V_IFACE_ANY(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
+	GET_V_IFACE_ANY(GetEngineFactory, g_pSchemaSystem, ISchemaSystem, SCHEMASYSTEM_INTERFACE_VERSION);
+	GET_V_IFACE_ANY(GetEngineFactory, g_pGameResourceServiceServer, IGameResourceService, GAMERESOURCESERVICESERVER_INTERFACE_VERSION);
 
 	g_SMAPI->AddListener(this, this);
 
@@ -67,6 +92,22 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	META_CONPRINTF("[ADMIN] CS2Admin %s loading...%s\n", PLUGIN_FULL_VERSION,
 		late ? " (late)" : "");
+
+	// Load gamedata
+	char gamedataPath[512];
+	snprintf(gamedataPath, sizeof(gamedataPath), "%s/addons/cs2admin/gamedata/cs2admin.txt",
+		g_SMAPI->GetBaseDir());
+
+	if (!g_CS2AGameData.Load(gamedataPath))
+	{
+		META_CONPRINTF("[ADMIN] ERROR: Could not load gamedata from %s\n", gamedataPath);
+		META_CONPRINTF("[ADMIN] Entity access (team/alive targeting) will not work.\n");
+	}
+	else
+	{
+		META_CONPRINTF("[ADMIN] Gamedata loaded. GameEntitySystem offset: %d\n",
+			g_CS2AGameData.GetOffset("GameEntitySystem"));
+	}
 
 	// Load config
 	char configPath[512];
@@ -107,6 +148,9 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	// Register chat commands
 	g_CS2ACommandSystem.RegisterBuiltinCommands();
 
+	// Start Discord webhook worker thread
+	g_CS2ADiscord.Init();
+
 	META_CONPRINTF("[ADMIN] Plugin loaded successfully.\n");
 	return true;
 }
@@ -122,6 +166,9 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	SH_REMOVE_HOOK(IServerGameClients, ClientConnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientConnect), false);
 	SH_REMOVE_HOOK(IServerGameClients, ClientCommand, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientCommand), false);
 	SH_REMOVE_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
+
+	// Shut down Discord worker thread
+	g_CS2ADiscord.Shutdown();
 
 	// Save any pending offline queries before shutdown
 	if (g_CS2AOfflineQueue.HasItems())
@@ -446,6 +493,57 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 
 	const char *message = args.ArgC() > 1 ? args.Arg(1) : "";
 
+	// Chat flood detection (before command processing)
+	if (g_CS2AConfig.chatFloodCooldown > 0.0f)
+	{
+		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slotIdx);
+		if (player && player->connected && !player->fakePlayer)
+		{
+			CGlobalVars *globals = GetGameGlobals();
+			double curtime = globals ? globals->curtime : 0.0;
+
+			if (curtime > 0.0)
+			{
+				double timeSince = curtime - player->lastChatTime;
+
+				if (timeSince < g_CS2AConfig.chatFloodCooldown)
+				{
+					player->chatMessageCount++;
+
+					if (player->chatMessageCount >= g_CS2AConfig.chatFloodMaxMessages)
+					{
+						if (g_CS2AConfig.chatFloodMuteDuration > 0 && !player->isGagged)
+						{
+							// Auto gag the player
+							g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteDuration,
+								"Chat flood", -1);
+							ADMIN_PrintToChat(slotIdx,
+								"You have been gagged for %d minute(s) for chat flooding.\n",
+								g_CS2AConfig.chatFloodMuteDuration);
+							ADMIN_ChatToAdmins("[ADMIN] %s was auto-gagged for chat flooding.\n",
+								player->name.c_str());
+						}
+						else
+						{
+							ADMIN_PrintToChat(slotIdx, "Slow down! You are sending messages too fast.\n");
+						}
+
+						player->chatMessageCount = 0;
+						player->lastChatTime = curtime;
+						RETURN_META(MRES_SUPERCEDE);
+					}
+				}
+				else
+				{
+					// Reset counter if enough time passed
+					player->chatMessageCount = 0;
+				}
+
+				player->lastChatTime = curtime;
+			}
+		}
+	}
+
 	// Process chat commands (! and / prefixed) BEFORE checking gag.
 	// This allows gagged players to still run commands like !ungag requests.
 	if (g_CS2ACommandSystem.ProcessChatMessage(slotIdx, message, isSayTeam))
@@ -532,6 +630,10 @@ void CS2APlugin::OnLateLoad()
 {
 	META_CONPRINTF("[ADMIN] Late load detected - processing existing players...\n");
 
+	// Grab entity system pointer on late load (map already active)
+	if (!g_pEntitySystem)
+		g_pEntitySystem = GameEntitySystem();
+
 	CGlobalVars *globals = GetGameGlobals();
 	if (!globals)
 		return;
@@ -604,6 +706,11 @@ void CS2APlugin::OnLevelInit(char const *pMapName, char const *pMapEntities,
 	bool loadGame, bool background)
 {
 	META_CONPRINTF("[ADMIN] Map loading: %s\n", pMapName);
+
+	// Grab entity system pointer (available once a map is loaded)
+	g_pEntitySystem = GameEntitySystem();
+	if (!g_pEntitySystem)
+		META_CONPRINTF("[ADMIN] WARNING: Could not acquire CGameEntitySystem\n");
 
 	// Reload admins on map change (matches SM behavior)
 	g_CS2AAdminManager.ReloadAdmins();

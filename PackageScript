@@ -109,6 +109,13 @@ for task in MMSPlugin.binaries:
     if os.path.isfile(src):
       builder.AddCopy(src, os.path.join(cfg_path, cfg))
 
+  # Package gamedata into addons/cs2admin/gamedata/
+  gamedata_path = os.path.join('addons', MMSPlugin.metadata['name'], 'gamedata')
+  builder.AddFolder(gamedata_path)
+  gamedata_src = os.path.join(builder.sourcePath, 'gamedata', 'cs2admin.txt')
+  if os.path.isfile(gamedata_src):
+    builder.AddCopy(gamedata_src, os.path.join(gamedata_path, 'cs2admin.txt'))
+
   if task.debug:
     pdb_list.append(task.debug)
 

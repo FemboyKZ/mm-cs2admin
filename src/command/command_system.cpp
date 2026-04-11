@@ -7,6 +7,7 @@
 #include "../db/database.h"
 #include "../public/forwards.h"
 #include "../utils/print_utils.h"
+#include "../utils/discord.h"
 
 #include <algorithm>
 #include <ctime>
@@ -118,7 +119,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		if (args.size() < 2)
 		{
-			ADMIN_ReplyToCommand(slot, "Usage: !ban <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !ban <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 			return;
 		}
 
@@ -126,10 +127,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
-		int time = std::atoi(args[1].c_str());
+		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
 		std::string reason = "Banned";
@@ -141,6 +142,15 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 				if (i > 2) reason += " ";
 				reason += args[i];
 			}
+		}
+
+		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		if (targetPlayer)
+		{
+			g_CS2ADiscord.NotifyAdminAction(
+				adminPlayer ? adminPlayer->name.c_str() : "Console",
+				"Ban", targetPlayer->name.c_str(), reason.c_str(), time);
 		}
 
 		g_CS2ABanManager.BanPlayer(target, time, reason.c_str(), slot);
@@ -173,7 +183,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		if (args.size() < 2)
 		{
-			ADMIN_ReplyToCommand(slot, "Usage: !mute <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 			return;
 		}
 
@@ -181,10 +191,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
-		int time = std::atoi(args[1].c_str());
+		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
 		std::string reason = "Muted";
@@ -197,6 +207,16 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 				reason += args[i];
 			}
 		}
+
+		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		if (targetPlayer)
+		{
+			g_CS2ADiscord.NotifyAdminAction(
+				adminPlayer ? adminPlayer->name.c_str() : "Console",
+				"Mute", targetPlayer->name.c_str(), reason.c_str(), time);
+		}
+
 		g_CS2ACommManager.MutePlayer(target, time, reason.c_str(), slot);
 	});
 
@@ -231,7 +251,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		if (args.size() < 2)
 		{
-			ADMIN_ReplyToCommand(slot, "Usage: !gag <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 			return;
 		}
 
@@ -239,10 +259,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
-		int time = std::atoi(args[1].c_str());
+		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
 		std::string reason = "Gagged";
@@ -289,7 +309,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		if (args.size() < 2)
 		{
-			ADMIN_ReplyToCommand(slot, "Usage: !silence <target> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 			return;
 		}
 
@@ -297,10 +317,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		if (target < 0)
 			return;
 
-		int time = std::atoi(args[1].c_str());
+		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
 		std::string reason = "Silenced";
@@ -347,15 +367,15 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		if (args.size() < 2)
 		{
-			ADMIN_ReplyToCommand(slot, "Usage: !banip <ip> <time> [reason]\n");
+			ADMIN_ReplyToCommand(slot, "Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 			return;
 		}
 
 		const char *ip = args[0].c_str();
-		int time = std::atoi(args[1].c_str());
+		int time = ADMIN_ParseDuration(args[1].c_str());
 		if (time < 0)
 		{
-			ADMIN_ReplyToCommand(slot, "Time must be 0 (permanent) or positive.\n");
+			ADMIN_ReplyToCommand(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 			return;
 		}
 		std::string reason = "Banned";
@@ -534,6 +554,266 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str());
 		ADMIN_ReplyToCommand(slot, "Report submitted against %s.\n", targetPlayer->name.c_str());
 
+		g_CS2ADiscord.NotifyReport(reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str());
+
 		ADMIN_LogAction(slot, (std::string("Reported ") + targetPlayer->name + ": " + reason).c_str());
+	});
+
+	// !kick <target> [reason]
+	RegisterCommand("kick", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "kick", "kicking", ADMFLAG_KICK))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !kick <target> [reason]\n");
+			return;
+		}
+
+		int target = ADMIN_FindTarget(slot, args[0].c_str());
+		if (target < 0)
+			return;
+
+		if (target == slot)
+		{
+			ADMIN_ReplyToCommand(slot, "You cannot kick yourself.\n");
+			return;
+		}
+
+		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+		if (!targetPlayer || !targetPlayer->connected)
+			return;
+
+		std::string reason = "Kicked by admin";
+		if (args.size() > 1)
+		{
+			reason.clear();
+			for (size_t i = 1; i < args.size(); i++)
+			{
+				if (i > 1) reason += " ";
+				reason += args[i];
+			}
+		}
+
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+
+		ADMIN_ChatToAll("[ADMIN] %s kicked %s. Reason: %s\n",
+			adminName.c_str(), targetPlayer->name.c_str(), reason.c_str());
+
+		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Kick",
+			targetPlayer->name.c_str(), reason.c_str(), -1);
+
+		ADMIN_LogAction(slot, (std::string("Kicked ") + targetPlayer->name + ": " + reason).c_str());
+
+		g_pEngine->DisconnectClient(CPlayerSlot(target), NETWORK_DISCONNECT_KICKED);
+	});
+
+	// !slay <target>
+	RegisterCommand("slay", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "slay", "slaying", ADMFLAG_SLAY))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		if (args.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !slay <target>\n");
+			return;
+		}
+
+		TargetResult targets = ADMIN_FindTargets(slot, args[0].c_str());
+		if (!targets.error.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "%s\n", targets.error.c_str());
+			return;
+		}
+
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+		std::string adminName = adminPlayer ? adminPlayer->name : "Console";
+
+		int slayed = 0;
+		for (int targetSlot : targets.slots)
+		{
+			PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
+			if (!targetPlayer || !targetPlayer->connected)
+				continue;
+
+			ConCommandRef killCmd("kill");
+			if (killCmd.IsValidRef())
+			{
+				CCommand killArgs;
+				CCommandContext killCtx(CT_NO_TARGET, CPlayerSlot(targetSlot));
+				g_pICvar->DispatchConCommand(killCmd, killCtx, killArgs);
+			}
+			slayed++;
+		}
+
+		if (slayed > 0)
+		{
+			if (targets.isMultiTarget)
+			{
+				ADMIN_ChatToAll("[ADMIN] %s slayed %d players.\n", adminName.c_str(), slayed);
+				ADMIN_LogAction(slot, (std::string("Slayed ") + std::to_string(slayed) + " players").c_str());
+			}
+			else
+			{
+				PlayerInfo *tp = g_CS2APlayerManager.GetPlayer(targets.slots[0]);
+				std::string targetName = tp ? tp->name : "Unknown";
+				ADMIN_ChatToAll("[ADMIN] %s slayed %s.\n", adminName.c_str(), targetName.c_str());
+				ADMIN_LogAction(slot, (std::string("Slayed ") + targetName).c_str());
+			}
+		}
+	});
+
+	// !who - List all online admins and their flags
+	RegisterCommand("who", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "who", "admin", ADMFLAG_GENERIC))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		CGlobalVars *globals = GetGameGlobals();
+		int maxClients = globals ? globals->maxClients : MAXPLAYERS;
+
+		ADMIN_ReplyToCommand(slot, "Online Admins:\n");
+		int count = 0;
+
+		for (int i = 0; i < maxClients; i++)
+		{
+			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+			if (!p || !p->connected || p->fakePlayer)
+				continue;
+
+			const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(i);
+			if (!admin)
+				continue;
+
+			std::string flags = CS2AAdminManager::FlagsToString(admin->flags);
+			std::string group = admin->group.empty() ? "(no group)" : admin->group;
+			int immunity = admin->immunity;
+
+			ADMIN_ReplyToCommand(slot, "  %s [%s] flags: %s imm: %d\n",
+				p->name.c_str(), group.c_str(), flags.c_str(), immunity);
+			count++;
+		}
+
+		if (count == 0)
+			ADMIN_ReplyToCommand(slot, "  No admins currently online.\n");
+		else
+			ADMIN_ReplyToCommand(slot, "%d admin(s) online\n", count);
+	});
+
+	// !listdc - Show recently disconnected players
+	RegisterCommand("listdc", [](int slot, const std::vector<std::string> &args, bool silent) {
+		if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listdc", "admin", ADMFLAG_BAN))
+		{
+			ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		const auto &disconnected = g_CS2APlayerManager.GetDisconnectedPlayers();
+
+		if (disconnected.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No recently disconnected players.\n");
+			return;
+		}
+
+		CGlobalVars *globals = GetGameGlobals();
+		double curtime = globals ? globals->curtime : 0.0;
+
+		ADMIN_ReplyToCommand(slot, "Recently Disconnected Players:\n");
+
+		// Show most recent first
+		for (int i = (int)disconnected.size() - 1; i >= 0; i--)
+		{
+			const DisconnectedPlayer &dc = disconnected[i];
+
+			std::string authid = SteamID64ToAuthId(dc.steamid64);
+
+			int secsAgo = 0;
+			if (curtime > 0.0 && dc.disconnectTime > 0.0)
+				secsAgo = (int)(curtime - dc.disconnectTime);
+
+			std::string timeAgo;
+			if (secsAgo < 60)
+				timeAgo = std::to_string(secsAgo) + "s ago";
+			else if (secsAgo < 3600)
+				timeAgo = std::to_string(secsAgo / 60) + "m ago";
+			else
+				timeAgo = std::to_string(secsAgo / 3600) + "h ago";
+
+			ADMIN_ReplyToCommand(slot, "  %s (%s) [%s] - %s\n",
+				dc.name.c_str(), authid.c_str(), dc.ip.c_str(), timeAgo.c_str());
+		}
+
+		ADMIN_ReplyToCommand(slot, "%d player(s) recently disconnected\n", (int)disconnected.size());
+	});
+
+	// !help [page] - List all available commands
+	RegisterCommand("help", [this](int slot, const std::vector<std::string> &args, bool silent) {
+		int page = 1;
+		if (!args.empty())
+		{
+			page = std::atoi(args[0].c_str());
+			if (page < 1) page = 1;
+		}
+
+		std::vector<std::string> cmds;
+		cmds.reserve(m_commands.size());
+		for (const auto &pair : m_commands)
+			cmds.push_back(pair.first);
+
+		std::sort(cmds.begin(), cmds.end());
+
+		const int perPage = 8;
+		int totalPages = ((int)cmds.size() + perPage - 1) / perPage;
+		if (page > totalPages) page = totalPages;
+
+		int startIdx = (page - 1) * perPage;
+		int endIdx = startIdx + perPage;
+		if (endIdx > (int)cmds.size()) endIdx = (int)cmds.size();
+
+		ADMIN_ReplyToCommand(slot, "Commands (page %d/%d):\n", page, totalPages);
+		for (int i = startIdx; i < endIdx; i++)
+			ADMIN_ReplyToCommand(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmds[i].c_str());
+		ADMIN_ReplyToCommand(slot, "Use !help %d for next page.\n", page < totalPages ? page + 1 : totalPages);
+	});
+
+	// !find <text> - Search commands by name
+	RegisterCommand("find", [this](int slot, const std::vector<std::string> &args, bool silent) {
+		if (args.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "Usage: !find <text>\n");
+			return;
+		}
+
+		std::string search = args[0];
+		std::transform(search.begin(), search.end(), search.begin(),
+			[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+
+		std::vector<std::string> matches;
+		for (const auto &pair : m_commands)
+		{
+			if (pair.first.find(search) != std::string::npos)
+				matches.push_back(pair.first);
+		}
+
+		if (matches.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No commands found matching '%s'.\n", args[0].c_str());
+			return;
+		}
+
+		std::sort(matches.begin(), matches.end());
+		ADMIN_ReplyToCommand(slot, "Commands matching '%s':\n", args[0].c_str());
+		for (const auto &cmd : matches)
+			ADMIN_ReplyToCommand(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmd.c_str());
 	});
 }

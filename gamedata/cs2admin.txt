@@ -1,0 +1,17 @@
+// CS2Admin - Game Data
+// Offsets that may change between CS2 updates.
+// Values sourced from CS2Fixes gamedata.
+// https://github.com/Source2ZE/CS2Fixes/blob/main/gamedata/cs2fixes.games.txt
+"GameData"
+{
+	"Offsets"
+	{
+		// Offset from IGameResourceService to CGameEntitySystem pointer.
+		// CS2Fixes: "GameEntitySystem"
+		"GameEntitySystem"
+		{
+			"windows"		"88"
+			"linux"			"80"
+		}
+	}
+}

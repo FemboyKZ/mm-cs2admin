@@ -2,6 +2,8 @@
 
 Metamod Admin plugin for CS2 with SM style configuration and SB++ support.
 
+Shared maplist with [cs2-rockthevote](https://github.com/FemboyKZ/cs2-rockthevote).
+
 ## API
 
 Other Metamod: Source plugins can access public methods found in [ics2admin.h](/src/public/ics2admin.h) and [forwards.h](/src/public/forwards.h)
@@ -37,8 +39,18 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 ### How to
 
 1. Get the latest [release](https://github.com/FemboyKZ/mm-cs2admin/releases) for your operating system (linux/windows).
-2. Extract the contents of the release archive in your server's root folder `/game/csgo/`.
-3. Configure the main cfg in `/game/csgo/cfg/cs2admin/core.cfg`.
+2. Extract the contents of the release archive in your server's root folder ``/game/csgo/``.
+3. Configure the main cfg in ``/game/csgo/cfg/cs2admin/core.cfg` with database credentials and other preferences.
+4. Configure Admins in ``admins.cfg`` or ``admins.ini``, Admin Groups in ``adming_groups.cfg`` and Admin overrides in ``admin_overrides.cfg``
+    (these can be directly copied from existing SM cfg with the same names)
+5. Create a new file called ``maplist.txt`` or rename the bundled ``maplist.example.txt`` file to it, then add your maps to the file.
+
+The cs2admin plugin mirrors SourceMod's Admin configuration structure completely.
+This means the following articles are valid here too:
+
+* [Adding Admins](https://wiki.alliedmods.net/Adding_Admins_(SourceMod))
+* [Adding Groups](https://wiki.alliedmods.net/Adding_Groups_(SourceMod))
+* [Overriding Commands](https://wiki.alliedmods.net/Overriding_Command_Access_(SourceMod))
 
 ## Usage
 

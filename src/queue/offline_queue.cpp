@@ -12,6 +12,11 @@ static const char *QUEUE_DELIMITER = "---END_QUERY---";
 
 void CS2AOfflineQueue::Enqueue(const std::string &query)
 {
+	if (m_queries.size() >= MAX_QUEUE_SIZE)
+	{
+		META_CONPRINTF("[ADMIN] Offline queue full (%zu items), dropping query.\n", m_queries.size());
+		return;
+	}
 	m_queries.push_back(query);
 	SaveToFile();
 	META_CONPRINTF("[ADMIN] Query queued offline (%zu in queue).\n", m_queries.size());

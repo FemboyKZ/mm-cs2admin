@@ -25,6 +25,8 @@ public:
 
 	size_t GetQueueSize() const { return m_queries.size(); }
 
+	static constexpr size_t MAX_QUEUE_SIZE = 500;
+
 private:
 	std::vector<std::string> m_queries;
 };

@@ -197,31 +197,18 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 	long long now = (long long)std::time(nullptr);
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminAuthSuffix);
 
+	int sid = g_CS2AConfig.serverID != -1 ? g_CS2AConfig.serverID : 0;
+
 	char query[2048];
-	if (g_CS2AConfig.serverID != -1)
-	{
-		snprintf(query, sizeof(query),
-			"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) "
-			"VALUES ('%s', '%s', '%s', %lld, %lld, %d, '%s', "
-			"IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR %s), 0), "
-			"'%s', %d, ' ')",
-			prefix.c_str(), escapedIP.c_str(), escapedAuthId.c_str(), escapedName.c_str(),
-			now, now + lengthSec, lengthSec, escapedReason.c_str(),
-			prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(),
-			adminIP.c_str(), g_CS2AConfig.serverID);
-	}
-	else
-	{
-		snprintf(query, sizeof(query),
-			"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) "
-			"VALUES ('%s', '%s', '%s', %lld, %lld, %d, '%s', "
-			"IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR %s), 0), "
-			"'%s', 0, ' ')",
-			prefix.c_str(), escapedIP.c_str(), escapedAuthId.c_str(), escapedName.c_str(),
-			now, now + lengthSec, lengthSec, escapedReason.c_str(),
-			prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(),
-			adminIP.c_str());
-	}
+	snprintf(query, sizeof(query),
+		"INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country) "
+		"VALUES ('%s', '%s', '%s', %lld, %lld, %d, '%s', "
+		"IFNULL((SELECT aid FROM %s_admins WHERE authid = '%s' OR %s), 0), "
+		"'%s', %d, ' ')",
+		prefix.c_str(), escapedIP.c_str(), escapedAuthId.c_str(), escapedName.c_str(),
+		now, now + lengthSec, lengthSec, escapedReason.c_str(),
+		prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(),
+		adminIP.c_str(), sid);
 
 	g_CS2ADatabase.Query(query, [queryStr = std::string(query)](ISQLQuery *result) {
 		if (!result)
@@ -402,7 +389,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 	char query[1024];
 	snprintf(query, sizeof(query),
-		"SELECT COUNT(*), length FROM %s_bans WHERE ip = '%s' AND RemoveType IS NULL "
+		"SELECT COUNT(*), MAX(length) FROM %s_bans WHERE ip = '%s' AND RemoveType IS NULL "
 		"AND (length = '0' OR ends > %lld)%s%s",
 		prefix.c_str(), escapedIP.c_str(), now, typeFilter.c_str(), timeFilter.c_str());
 

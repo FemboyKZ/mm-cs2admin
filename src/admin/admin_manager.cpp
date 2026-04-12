@@ -46,6 +46,13 @@ bool CS2AAdminManager::HasFlag(uint32_t playerFlags, uint32_t requiredFlag)
 	return (playerFlags & requiredFlag) != 0;
 }
 
+std::string CS2AAdminManager::StripCommandPrefix(const std::string &name)
+{
+	if (name.size() > 3 && (name.compare(0, 3, "sm_") == 0 || name.compare(0, 3, "mm_") == 0))
+		return name.substr(3);
+	return name;
+}
+
 uint64_t CS2AAdminManager::AuthIdToSteamID64(const char *authid)
 {
 	// Parse STEAM_X:Y:Z format

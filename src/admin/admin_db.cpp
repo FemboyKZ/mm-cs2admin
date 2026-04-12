@@ -140,7 +140,7 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 			// Build override key: "cmd:<name>" or "grp:<name>"
 			std::string key;
 			if (strcmp(type, "command") == 0)
-				key = "cmd:" + std::string(name);
+				key = "cmd:" + StripCommandPrefix(std::string(name));
 			else if (strcmp(type, "group") == 0)
 				key = "grp:" + std::string(name);
 			else
@@ -202,7 +202,7 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 
 			std::string key;
 			if (strcmp(type, "command") == 0)
-				key = "cmd:" + std::string(name);
+				key = "cmd:" + StripCommandPrefix(std::string(name));
 			else if (strcmp(type, "group") == 0)
 				key = "grp:" + std::string(name);
 			else

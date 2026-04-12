@@ -84,6 +84,9 @@ public:
 	// Convert a bitmask to a flag string like "abcde"
 	static std::string FlagsToString(uint32_t flags);
 
+	// Strip sm_/mm_ prefix from a command name for override key normalization
+	static std::string StripCommandPrefix(const std::string &name);
+
 	// Check if a flag set includes a specific flag (root always passes)
 	static bool HasFlag(uint32_t playerFlags, uint32_t requiredFlag);
 

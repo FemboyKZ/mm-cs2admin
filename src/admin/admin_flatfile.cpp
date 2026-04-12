@@ -467,7 +467,7 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			}
 			else
 			{
-				std::string key = "cmd:" + cmdName;
+				std::string key = "cmd:" + StripCommandPrefix(cmdName);
 				currentGroup.overrides[key] = rule;
 			}
 		}
@@ -541,7 +541,7 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 					if (typeLower == "group")
 						key = "grp:" + currentName;
 					else
-						key = "cmd:" + currentName;
+						key = "cmd:" + StripCommandPrefix(currentName);
 
 					// Only add if not already set by DB
 					if (m_globalOverrides.find(key) == m_globalOverrides.end())
@@ -576,7 +576,7 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				if (name[0] == '@')
 					key = "grp:" + name.substr(1);
 				else
-					key = "cmd:" + name;
+					key = "cmd:" + StripCommandPrefix(name);
 
 				if (m_globalOverrides.find(key) == m_globalOverrides.end())
 				{

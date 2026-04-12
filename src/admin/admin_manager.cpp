@@ -76,6 +76,17 @@ std::string CS2AAdminManager::NormalizeSteamID(const char *input)
 		return buf;
 	}
 
+	// If it's SteamID3 format [U:1:AccountID]
+	unsigned int universe, accountId;
+	if (sscanf(input, "[U:%u:%u]", &universe, &accountId) == 2)
+	{
+		unsigned int authY = accountId & 1;
+		unsigned int authZ = accountId >> 1;
+		char buf[64];
+		snprintf(buf, sizeof(buf), "STEAM_0:%u:%u", authY, authZ);
+		return buf;
+	}
+
 	// If it's a raw SteamID64 number
 	if (strlen(input) >= 15)
 	{

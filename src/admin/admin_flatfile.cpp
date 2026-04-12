@@ -234,7 +234,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			{
 				entry.group = flagToken.substr(1);
 			}
-			// Check if it's "immunity:group" format (e.g., "99:Full Admins")
+			// Check if it's "immunity:flags" or "immunity:@group" format
 			else
 			{
 				size_t colonPos = flagToken.find(':');
@@ -264,11 +264,15 @@ void CS2AAdminManager::LoadSimpleAdmins()
 						entry.flags = FlagsFromString(before.c_str());
 					}
 
-					// Strip leading '@' from group name (SM convention for group references)
+					// After colon: '@' prefix means group, otherwise it's flags
 					if (!after.empty() && after[0] == '@')
-						after = after.substr(1);
-
-					entry.group = after;
+					{
+						entry.group = after.substr(1);
+					}
+					else if (!after.empty())
+					{
+						entry.flags |= FlagsFromString(after.c_str());
+					}
 				}
 				else
 				{

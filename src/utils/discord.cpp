@@ -146,24 +146,30 @@ void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, i
 }
 
 void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, const char *targetName,
-	const char *reason, int durationMinutes)
+	const char *reason, int durationMinutes, uint64_t adminSteamid64, uint64_t targetSteamid64)
 {
 	if (!IsEnabled())
 		return;
 
 	std::string desc;
-	desc += "**Admin:** " + "``" + JsonEscape(adminName ? adminName : "Console") + "``\n";
-	desc += "**Action:** " + "``" + JsonEscape(action ? action : "") + "``\n";
-	desc += "**Target:** " + "``" + JsonEscape(targetName ? targetName : "") + "``\n";
+	desc += "**Admin:** ``" + JsonEscape(adminName ? adminName : "Console") + "``";
+	if (adminSteamid64 != 0)
+		desc += " - ``" + std::to_string(adminSteamid64) + "``";
+	desc += "\n";
+	desc += "**Action:** ``" + JsonEscape(action ? action : "") + "``\n";
+	desc += "**Target:** ``" + JsonEscape(targetName ? targetName : "") + "``";
+	if (targetSteamid64 != 0)
+		desc += " - ``" + std::to_string(targetSteamid64) + "``";
+	desc += "\n";
 
 	if (durationMinutes >= 0)
 	{
 		std::string dur = (durationMinutes == 0) ? "Permanent" : ADMIN_FormatDuration(durationMinutes);
-		desc += "**Duration:** " + "``" + JsonEscape(dur) + "``\n";
+		desc += "**Duration:** ``" + JsonEscape(dur) + "``\n";
 	}
 
 	if (reason && *reason)
-		desc += "**Reason:** " + "``" + JsonEscape(reason) + "``\n";
+		desc += "**Reason:** ``" + JsonEscape(reason) + "``\n";
 
 	int color = 0xE74C3C; // red default
 
@@ -181,15 +187,22 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 	SendEmbedMessage("Admin Action", desc.c_str(), color, g_CS2AConfig.discordFooterText.c_str());
 }
 
-void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName, const char *reason)
+void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName, const char *reason,
+	uint64_t reporterSteamid64, uint64_t targetSteamid64)
 {
 	if (!IsEnabled())
 		return;
 
 	std::string desc;
-	desc += "**Reporter:** " + "``" + JsonEscape(reporterName ? reporterName : "") + "``\n";
-	desc += "**Target:** " + "``" + JsonEscape(targetName ? targetName : "") + "``\n";
-	desc += "**Reason:** " + "``" + JsonEscape(reason ? reason : "") + "``\n";
+	desc += "**Reporter:** ``" + JsonEscape(reporterName ? reporterName : "") + "``";
+	if (reporterSteamid64 != 0)
+		desc += " - ``" + std::to_string(reporterSteamid64) + "``";
+	desc += "\n";
+	desc += "**Target:** ``" + JsonEscape(targetName ? targetName : "") + "``";
+	if (targetSteamid64 != 0)
+		desc += " - ``" + std::to_string(targetSteamid64) + "``";
+	desc += "\n";
+	desc += "**Reason:** ``" + JsonEscape(reason ? reason : "") + "``\n";
 
 	SendEmbedMessage("Player Report", desc.c_str(), 0xF39C12, g_CS2AConfig.discordFooterText.c_str());
 }

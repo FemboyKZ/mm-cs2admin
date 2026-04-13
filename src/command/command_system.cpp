@@ -234,11 +234,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 		if (targetPlayer)
 		{
 			g_CS2ADiscord.NotifyAdminAction(
 				adminName.c_str(),
-				"Ban", targetPlayer->name.c_str(), reason.c_str(), time);
+				"Ban", targetPlayer->name.c_str(), reason.c_str(), time,
+				adminPlayer ? adminPlayer->steamid64 : 0, targetPlayer->steamid64);
 		}
 
 		g_CS2ABanManager.BanPlayer(target, time, reason.c_str(), slot);
@@ -285,8 +287,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		const char *authid = args[1].c_str();
 		std::string reason = JoinArgs(args, 2, "Banned");
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 
-		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "AddBan", authid, reason.c_str(), time);
+		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "AddBan", authid, reason.c_str(), time,
+			adminPlayer ? adminPlayer->steamid64 : 0);
 		g_CS2ABanManager.AddBan(authid, time, reason.c_str(), slot);
 	});
 
@@ -321,11 +325,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 		if (targetPlayer)
 		{
 			g_CS2ADiscord.NotifyAdminAction(
 				adminName.c_str(),
-				"Mute", targetPlayer->name.c_str(), reason.c_str(), time);
+				"Mute", targetPlayer->name.c_str(), reason.c_str(), time,
+				adminPlayer ? adminPlayer->steamid64 : 0, targetPlayer->steamid64);
 		}
 
 		g_CS2ACommManager.MutePlayer(target, time, reason.c_str(), slot);
@@ -650,7 +656,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str());
 		ADMIN_ReplyToCommand(slot, "Report submitted against %s.\n", targetPlayer->name.c_str());
 
-		g_CS2ADiscord.NotifyReport(reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str());
+		g_CS2ADiscord.NotifyReport(reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str(),
+			reporter->steamid64, targetPlayer->steamid64);
 
 		ADMIN_LogAction(slot, (std::string("Reported ") + targetPlayer->name + ": " + reason).c_str());
 	});
@@ -692,12 +699,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			return;
 
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 
 		ADMIN_ChatToAll("[ADMIN] %s kicked %s. Reason: %s\n",
 			adminName.c_str(), targetPlayer->name.c_str(), reason.c_str());
 
 		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Kick",
-			targetPlayer->name.c_str(), reason.c_str(), -1);
+			targetPlayer->name.c_str(), reason.c_str(), -1,
+			adminPlayer ? adminPlayer->steamid64 : 0, targetPlayer->steamid64);
 
 		ADMIN_LogAction(slot, (std::string("Kicked ") + targetPlayer->name + ": " + reason).c_str());
 
@@ -940,12 +949,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		g_pEngine->ServerCommand(cmd.c_str());
 
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 
 		ADMIN_ReplyToCommand(slot, "Executed: %s", cmd.c_str());
 		ADMIN_LogAction(slot, (std::string("RCON: ") + cmd).c_str());
 
 		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "RCON",
-			cmd.c_str(), "", -1);
+			cmd.c_str(), "", -1,
+			adminPlayer ? adminPlayer->steamid64 : 0);
 	});
 
 	// !pm <target> <message> - Private message a player
@@ -1018,6 +1029,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 		std::string error;
 		std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+		PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 
 		if (g_CS2AForwards.FireOnMapChange(args[0].c_str(), slot))
 			return;
@@ -1032,7 +1044,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		ADMIN_LogAction(slot, (std::string("Changed map to ") + args[0]).c_str());
 
 		g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Map Change",
-			args[0].c_str(), "", -1);
+			args[0].c_str(), "", -1,
+			adminPlayer ? adminPlayer->steamid64 : 0);
 	});
 
 	// !maps [page] - List available maps from maplist

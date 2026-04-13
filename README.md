@@ -30,7 +30,7 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 
 ### Requirements
 
-* CS2 Server (Recommended to use SteamRT3 Docker)
+* CS2 Server (Recommended to use [SteamRT3 Docker](https://gitlab.steamos.cloud/steamrt/sniper/sdk/-/blob/steamrt/sniper/README.md)
 * [MetaMod: Source 2.0](https://www.metamodsource.net/downloads.php/?branch=master)
 * [sql_mm](https://github.com/zer0k-z/sql_mm)
 * (Optional) MySQL Database

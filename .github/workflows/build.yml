@@ -114,8 +114,9 @@ jobs:
           name: cs2admin-windows
           path: staging
 
-  package:
-    name: Package
+  release:
+    name: Release
+    if: startsWith(github.ref, 'refs/tags/')
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
 
@@ -124,11 +125,23 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: cs2admin-linux
-          path: package
+          path: cs2admin-linux
 
       - name: Download Windows artifact
         uses: actions/download-artifact@v8
         with:
           name: cs2admin-windows
-          path: package
-          merge-multiple: true
+          path: cs2admin-windows
+
+      - name: Create archives
+        run: |
+          cd cs2admin-linux && zip -r ../cs2admin-${{ github.ref_name }}-linux.zip . && cd ..
+          cd cs2admin-windows && zip -r ../cs2admin-${{ github.ref_name }}-windows.zip . && cd ..
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            cs2admin-${{ github.ref_name }}-linux.zip
+            cs2admin-${{ github.ref_name }}-windows.zip
+          generate_release_notes: true

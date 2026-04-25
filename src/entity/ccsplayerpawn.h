@@ -8,10 +8,10 @@
 // We define all virtual methods to ensure correct vtable indices for derived classes.
 class CPlayerPawnComponent
 {
-	virtual ~CPlayerPawnComponent() = 0;
+	virtual void unk_00() = 0;
 	virtual void unk_01() = 0;
 	virtual void unk_02() = 0;
-	virtual void unk_03() = 0;
+	virtual ~CPlayerPawnComponent() = 0;
 	virtual void unk_04() = 0;
 	virtual void unk_05() = 0;
 	virtual void unk_06() = 0;
@@ -27,6 +27,7 @@ class CPlayerPawnComponent
 	virtual void unk_16() = 0;
 	virtual void unk_17() = 0;
 	virtual void unk_18() = 0;
+	virtual void unk_19() = 0;
 };
 
 class CPlayer_ItemServices : public CPlayerPawnComponent

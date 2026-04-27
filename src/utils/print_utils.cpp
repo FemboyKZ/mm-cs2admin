@@ -205,7 +205,7 @@ void ADMIN_ChatToAll(const char *fmt, ...)
 	SendChatToFilter(&filter, chatBuf);
 
 	// Also log to server console
-	META_CONPRINTF("[ADMIN] %s", buffer);
+	META_CONPRINTF("%s", buffer);
 }
 
 void ADMIN_ChatToAdmins(const char *fmt, ...)

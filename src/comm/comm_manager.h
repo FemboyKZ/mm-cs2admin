@@ -1,8 +1,8 @@
 #ifndef _INCLUDE_ADMIN_COMM_MANAGER_H_
 #define _INCLUDE_ADMIN_COMM_MANAGER_H_
 
-#include "../common.h"
-#include "../player/player_manager.h"
+#include "src/common.h"
+#include "src/player/player_manager.h"
 
 #include <string>
 #include <functional>

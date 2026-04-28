@@ -31,12 +31,16 @@ inline std::string ExtractAuthSuffix(const std::string &authid)
 {
 	// Find second colon in "STEAM_0:X:Y" => skip past "STEAM_0:" (8 chars)
 	if (authid.size() > 10 && authid[7] == ':' && authid[9] == ':')
+	{
 		return authid.substr(8);
+	}
 
 	// Fallback: try to find first colon manually, return everything after it
 	size_t first = authid.find(':');
 	if (first != std::string::npos && first + 1 < authid.size())
+	{
 		return authid.substr(first + 1);
+	}
 
 	return authid;
 }

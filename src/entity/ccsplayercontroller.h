@@ -12,22 +12,30 @@ inline CEntityInstance *ResolveEntityHandle(const CEntityHandle &handle)
 {
 	extern CGameEntitySystem *g_pEntitySystem;
 	if (!handle.IsValid() || !g_pEntitySystem)
+	{
 		return nullptr;
+	}
 
 	int entIndex = handle.GetEntryIndex();
 	int chunk = entIndex / MAX_ENTITIES_IN_LIST;
 	int offset = entIndex % MAX_ENTITIES_IN_LIST;
 
 	if (chunk < 0 || chunk >= MAX_ENTITY_LISTS)
+	{
 		return nullptr;
+	}
 
 	CEntityIdentity *pChunk = g_pEntitySystem->m_EntityList.m_pIdentityChunks[chunk];
 	if (!pChunk)
+	{
 		return nullptr;
+	}
 
 	CEntityIdentity *pIdent = &pChunk[offset];
 	if (!pIdent || !pIdent->m_pInstance)
+	{
 		return nullptr;
+	}
 
 	return pIdent->m_pInstance;
 }
@@ -56,7 +64,9 @@ public:
 	{
 		extern CGameEntitySystem *g_pEntitySystem;
 		if (!g_pEntitySystem)
+		{
 			return nullptr;
+		}
 
 		// Player controllers are at entity index (slot + 1)
 		int entIndex = slot + 1;
@@ -66,15 +76,21 @@ public:
 		int offset = entIndex % MAX_ENTITIES_IN_LIST;
 
 		if (chunk < 0 || chunk >= MAX_ENTITY_LISTS)
+		{
 			return nullptr;
+		}
 
 		CEntityIdentity *pChunk = g_pEntitySystem->m_EntityList.m_pIdentityChunks[chunk];
 		if (!pChunk)
+		{
 			return nullptr;
+		}
 
 		CEntityIdentity *pIdent = &pChunk[offset];
 		if (!pIdent || !pIdent->m_pInstance)
+		{
 			return nullptr;
+		}
 
 		return reinterpret_cast<CCSPlayerController *>(pIdent->m_pInstance);
 	}

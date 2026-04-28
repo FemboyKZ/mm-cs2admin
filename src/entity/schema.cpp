@@ -1,5 +1,5 @@
 #include "schema.h"
-#include "../common.h"
+#include "src/common.h"
 
 #include <map>
 #include <string>
@@ -40,8 +40,7 @@ static void InitSchemaFieldsForClass(const char *className, uint32_t classKey)
 	}
 }
 
-int16_t schema::GetOffset(const char *className, uint32_t classKey,
-	const char *fieldName, uint32_t fieldKey)
+int16_t schema::GetOffset(const char *className, uint32_t classKey, const char *fieldName, uint32_t fieldKey)
 {
 	auto classIt = g_schemaCache.find(classKey);
 	if (classIt == g_schemaCache.end())
@@ -54,10 +53,11 @@ int16_t schema::GetOffset(const char *className, uint32_t classKey,
 	{
 		auto fieldIt = classIt->second.find(fieldKey);
 		if (fieldIt != classIt->second.end())
+		{
 			return fieldIt->second;
+		}
 	}
 
-	META_CONPRINTF("[ADMIN] Schema: Could not find offset for %s::%s\n",
-		className, fieldName);
+	META_CONPRINTF("[ADMIN] Schema: Could not find offset for %s::%s\n", className, fieldName);
 	return 0;
 }

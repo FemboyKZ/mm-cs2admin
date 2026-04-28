@@ -1,10 +1,10 @@
 #include "comm_manager.h"
-#include "../common.h"
-#include "../config/config.h"
-#include "../db/database.h"
-#include "../public/forwards.h"
-#include "../queue/offline_queue.h"
-#include "../utils/print_utils.h"
+#include "src/common.h"
+#include "src/config/config.h"
+#include "src/db/database.h"
+#include "src/public/forwards.h"
+#include "src/queue/offline_queue.h"
+#include "src/utils/print_utils.h"
 
 #include <sql_mm.h>
 #include <climits>
@@ -231,18 +231,15 @@ void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 
 	InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_MUTE);
 
-	// Notify target
 	if (timeMinutes == 0)
 		ADMIN_PrintToChat(targetSlot, "You have been permanently muted. Reason: %s\n", reason ? reason : "No reason");
 	else
 		ADMIN_PrintToChat(targetSlot, "You have been muted for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
 
-	// Announce
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 	ADMIN_ChatToAll("%s%s muted %s (%d min). Reason: %s\n",
 		g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 
-	// Log
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Muted \"%s\" (%s) for %d min. Reason: %s",
 		target->name.c_str(), target->authid.c_str(), timeMinutes, reason ? reason : "No reason");
@@ -274,18 +271,15 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 
 	InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_GAG);
 
-	// Notify target
 	if (timeMinutes == 0)
 		ADMIN_PrintToChat(targetSlot, "You have been permanently gagged. Reason: %s\n", reason ? reason : "No reason");
 	else
 		ADMIN_PrintToChat(targetSlot, "You have been gagged for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
 
-	// Announce
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 	ADMIN_ChatToAll("%s%s gagged %s (%d min). Reason: %s\n",
 		g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 
-	// Log
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Gagged \"%s\" (%s) for %d min. Reason: %s",
 		target->name.c_str(), target->authid.c_str(), timeMinutes, reason ? reason : "No reason");

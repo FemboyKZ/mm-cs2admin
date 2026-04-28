@@ -1,16 +1,16 @@
-#include "../common.h"
-#include "../config/config.h"
-#include "../db/database.h"
-#include "../player/player_manager.h"
-#include "../ban/ban_manager.h"
-#include "../comm/comm_manager.h"
-#include "../admin/admin_manager.h"
-#include "../utils/print_utils.h"
-#include "../cs2admin.h"
+#include "src/common.h"
+#include "src/config/config.h"
+#include "src/db/database.h"
+#include "src/player/player_manager.h"
+#include "src/ban/ban_manager.h"
+#include "src/comm/comm_manager.h"
+#include "src/admin/admin_manager.h"
+#include "src/utils/print_utils.h"
+#include "src/cs2admin.h"
 
 // Console commands (server-side)
-// Note: most mm_ commands are auto-registered by CS2ACommandSystem::RegisterConsoleCommands()
-// as mirrors of chat commands. Only console-only commands are defined here.
+// Note: most mm_ commands are auto-registered by CS2ACommandSystem::RegisterConsoleCommands() as mirrors of chat commands.
+// Only console-only commands are defined here.
 
 CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 {

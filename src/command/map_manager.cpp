@@ -1,5 +1,5 @@
 #include "map_manager.h"
-#include "../common.h"
+#include "src/common.h"
 
 #include <algorithm>
 #include <cctype>
@@ -48,7 +48,6 @@ bool CS2AMapManager::LoadMapList()
 	{
 		line = TrimString(line);
 
-		// Skip empty lines and comments
 		if (line.empty() || line[0] == '/' || line[0] == '#')
 			continue;
 
@@ -61,7 +60,6 @@ bool CS2AMapManager::LoadMapList()
 			std::string beforeColon = TrimString(line.substr(0, colonPos));
 			std::string afterColon = TrimString(line.substr(colonPos + 1));
 
-			// Check if after colon is all digits (workshop ID)
 			bool isWorkshopId = !afterColon.empty() &&
 				std::all_of(afterColon.begin(), afterColon.end(), ::isdigit);
 
@@ -113,21 +111,18 @@ const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error) c
 
 	std::string search = ToLower(input);
 
-	// First: try exact match on map name
 	for (const auto &entry : m_maps)
 	{
 		if (ToLower(entry.mapName) == search)
 			return &entry;
 	}
 
-	// Second: try exact match on workshop ID
 	for (const auto &entry : m_maps)
 	{
 		if (entry.isWorkshop && entry.workshopId == input)
 			return &entry;
 	}
 
-	// Third: partial match on map name
 	std::vector<const MapEntry *> matches;
 	for (const auto &entry : m_maps)
 	{
@@ -167,14 +162,12 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 		return false;
 	}
 
-	// Check if input is a raw workshop ID (all digits, reasonable length)
 	std::string inputStr(input);
 	bool isRawWorkshopId = inputStr.length() >= 6 &&
 		std::all_of(inputStr.begin(), inputStr.end(), ::isdigit);
 
 	if (isRawWorkshopId)
 	{
-		// Check if it's in our maplist first
 		const MapEntry *entry = FindMap(input, error);
 		if (entry && entry->isWorkshop)
 		{
@@ -184,7 +177,6 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 			return true;
 		}
 
-		// Not in maplist but is a valid workshop ID format, use directly
 		error.clear();
 		char cmd[256];
 		snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", input);
@@ -192,7 +184,6 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 		return true;
 	}
 
-	// Try to find in maplist
 	const MapEntry *entry = FindMap(input, error);
 	if (!entry)
 		return false;

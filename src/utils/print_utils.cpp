@@ -1,9 +1,9 @@
 #include "print_utils.h"
-#include "../common.h"
-#include "../config/config.h"
-#include "../db/database.h"
-#include "../admin/admin_manager.h"
-#include "../player/player_manager.h"
+#include "src/common.h"
+#include "src/config/config.h"
+#include "src/db/database.h"
+#include "src/admin/admin_manager.h"
+#include "src/player/player_manager.h"
 
 #include <networksystem/inetworkmessages.h>
 #include <networksystem/inetworkserializer.h>
@@ -23,12 +23,33 @@
 class CSingleRecipientFilter : public IRecipientFilter
 {
 public:
-	CSingleRecipientFilter(int slot) { m_Recipients.Set(slot); }
+	CSingleRecipientFilter(int slot)
+	{
+		m_Recipients.Set(slot);
+	}
+
 	~CSingleRecipientFilter() override {}
-	NetChannelBufType_t GetNetworkBufType(void) const override { return BUF_RELIABLE; }
-	bool IsInitMessage(void) const override { return false; }
-	const CPlayerBitVec &GetRecipients(void) const override { return m_Recipients; }
-	CPlayerSlot GetPredictedPlayerSlot(void) const override { return CPlayerSlot(-1); }
+
+	NetChannelBufType_t GetNetworkBufType(void) const override
+	{
+		return BUF_RELIABLE;
+	}
+
+	bool IsInitMessage(void) const override
+	{
+		return false;
+	}
+
+	const CPlayerBitVec &GetRecipients(void) const override
+	{
+		return m_Recipients;
+	}
+
+	CPlayerSlot GetPredictedPlayerSlot(void) const override
+	{
+		return CPlayerSlot(-1);
+	}
+
 private:
 	CPlayerBitVec m_Recipients;
 };
@@ -38,12 +59,34 @@ class CAdminRecipientFilter : public IRecipientFilter
 {
 public:
 	CAdminRecipientFilter() {}
+
 	~CAdminRecipientFilter() override {}
-	void AddRecipient(int slot) { m_Recipients.Set(slot); }
-	NetChannelBufType_t GetNetworkBufType(void) const override { return BUF_RELIABLE; }
-	bool IsInitMessage(void) const override { return false; }
-	const CPlayerBitVec &GetRecipients(void) const override { return m_Recipients; }
-	CPlayerSlot GetPredictedPlayerSlot(void) const override { return CPlayerSlot(-1); }
+
+	void AddRecipient(int slot)
+	{
+		m_Recipients.Set(slot);
+	}
+
+	NetChannelBufType_t GetNetworkBufType(void) const override
+	{
+		return BUF_RELIABLE;
+	}
+
+	bool IsInitMessage(void) const override
+	{
+		return false;
+	}
+
+	const CPlayerBitVec &GetRecipients(void) const override
+	{
+		return m_Recipients;
+	}
+
+	CPlayerSlot GetPredictedPlayerSlot(void) const override
+	{
+		return CPlayerSlot(-1);
+	}
+
 private:
 	CPlayerBitVec m_Recipients;
 };
@@ -53,7 +96,9 @@ static INetworkMessageInternal *GetTextMsgMessage()
 {
 	static INetworkMessageInternal *s_pTextMsg = nullptr;
 	if (!s_pTextMsg && g_pNetworkMessages)
+	{
 		s_pTextMsg = g_pNetworkMessages->FindNetworkMessagePartial("TextMsg");
+	}
 	return s_pTextMsg;
 }
 
@@ -62,11 +107,15 @@ static void SendChatToFilter(IRecipientFilter *pFilter, const char *text)
 {
 	INetworkMessageInternal *pNetMsg = GetTextMsgMessage();
 	if (!pNetMsg || !g_pGameEventSystem)
+	{
 		return;
+	}
 
 	CNetMessage *pData = pNetMsg->AllocateMessage();
 	if (!pData)
+	{
 		return;
+	}
 
 	auto *pTextMsg = pData->ToPB<CUserMessageTextMsg>();
 	pTextMsg->set_dest(HUD_PRINTTALK);
@@ -92,7 +141,9 @@ void ADMIN_PrintToClient(int slot, const char *fmt, ...)
 	}
 
 	if (slot > MAXPLAYERS || !g_pEngine)
+	{
 		return;
+	}
 
 	g_pEngine->ClientPrintf(CPlayerSlot(slot), buffer);
 }
@@ -100,7 +151,9 @@ void ADMIN_PrintToClient(int slot, const char *fmt, ...)
 void ADMIN_PrintToAll(const char *fmt, ...)
 {
 	if (!g_pEngine)
+	{
 		return;
+	}
 
 	char buffer[512];
 	va_list args;
@@ -110,13 +163,17 @@ void ADMIN_PrintToAll(const char *fmt, ...)
 
 	CGlobalVars *globals = GetGameGlobals();
 	if (!globals)
+	{
 		return;
+	}
 
 	for (int i = 0; i < globals->maxClients; i++)
 	{
 		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
 		if (p && p->connected && !p->fakePlayer)
+		{
 			g_pEngine->ClientPrintf(CPlayerSlot(i), buffer);
+		}
 	}
 }
 
@@ -136,15 +193,17 @@ void ADMIN_LogAction(int adminSlot, const char *message)
 	{
 		const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(adminSlot);
 		if (admin)
+		{
 			aid = admin->adminId;
+		}
 	}
 
 	char query[2048];
 	long long now = (long long)std::time(nullptr);
 	snprintf(query, sizeof(query),
-		"INSERT INTO %s_log (type, title, message, function, query, aid, host, created) "
-		"VALUES ('m', 'Admin Command', '%s', 'cs2admin', '', %d, '', %lld)",
-		prefix.c_str(), escapedMsg.c_str(), aid, now);
+			 "INSERT INTO %s_log (type, title, message, function, query, aid, host, created) "
+			 "VALUES ('m', 'Admin Command', '%s', 'cs2admin', '', %d, '', %lld)",
+			 prefix.c_str(), escapedMsg.c_str(), aid, now);
 
 	g_CS2ADatabase.Query(query, nullptr);
 }
@@ -164,14 +223,13 @@ void ADMIN_PrintToChat(int slot, const char *fmt, ...)
 	}
 
 	if (slot > MAXPLAYERS)
+	{
 		return;
+	}
 
 	// Build the chat-formatted message with prefix
 	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s",
-		g_CS2AConfig.chatPrefix.c_str(),
-		CHAT_COLOR_DEFAULT,
-		buffer);
+	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
 
 	CSingleRecipientFilter filter(slot);
 	SendChatToFilter(&filter, chatBuf);
@@ -198,7 +256,9 @@ void ADMIN_ChatToAll(const char *fmt, ...)
 		{
 			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
 			if (p && p->connected && !p->fakePlayer)
+			{
 				filter.AddRecipient(i);
+			}
 		}
 	}
 
@@ -211,7 +271,9 @@ void ADMIN_ChatToAll(const char *fmt, ...)
 void ADMIN_ChatToAdmins(const char *fmt, ...)
 {
 	if (!g_pEngine)
+	{
 		return;
+	}
 
 	char buffer[512];
 	va_list args;
@@ -219,15 +281,15 @@ void ADMIN_ChatToAdmins(const char *fmt, ...)
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	// Callers already include chatPrefix in format string
 	char chatBuf[512];
 	snprintf(chatBuf, sizeof(chatBuf), " %s", buffer);
 
 	CGlobalVars *globals = GetGameGlobals();
 	if (!globals)
+	{
 		return;
+	}
 
-	// Build filter of admin clients
 	CAdminRecipientFilter filter;
 	int adminCount = 0;
 	for (int i = 0; i < globals->maxClients; i++)
@@ -244,7 +306,9 @@ void ADMIN_ChatToAdmins(const char *fmt, ...)
 	}
 
 	if (adminCount > 0)
+	{
 		SendChatToFilter(&filter, chatBuf);
+	}
 }
 
 void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
@@ -263,7 +327,9 @@ void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
 	}
 
 	if (slot > MAXPLAYERS)
+	{
 		return;
+	}
 
 	// Send to player's console
 	if (g_pEngine)
@@ -273,12 +339,9 @@ void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
 		g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
 	}
 
-	// Also send to player's chat HUD
+	// Also send to player's chat
 	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s",
-		g_CS2AConfig.chatPrefix.c_str(),
-		CHAT_COLOR_DEFAULT,
-		buffer);
+	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
 
 	CSingleRecipientFilter filter(slot);
 	SendChatToFilter(&filter, chatBuf);

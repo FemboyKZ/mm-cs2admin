@@ -26,13 +26,12 @@ public:
 	void SendEmbedMessage(const char *title, const char *description, int color = 0x3498DB, const char *footer = nullptr);
 
 	// Notify of an admin action
-	void NotifyAdminAction(const char *adminName, const char *action, const char *targetName,
-		const char *reason = nullptr, int durationMinutes = -1,
-		uint64_t adminSteamid64 = 0, uint64_t targetSteamid64 = 0);
+	void NotifyAdminAction(const char *adminName, const char *action, const char *targetName, const char *reason = nullptr, int durationMinutes = -1,
+						   uint64_t adminSteamid64 = 0, uint64_t targetSteamid64 = 0);
 
 	// Notify of a player report
-	void NotifyReport(const char *reporterName, const char *targetName, const char *reason,
-		uint64_t reporterSteamid64 = 0, uint64_t targetSteamid64 = 0);
+	void NotifyReport(const char *reporterName, const char *targetName, const char *reason, uint64_t reporterSteamid64 = 0,
+					  uint64_t targetSteamid64 = 0);
 
 	bool IsEnabled() const;
 
@@ -45,7 +44,7 @@ private:
 	std::mutex m_mutex;
 	std::condition_variable m_cv;
 	std::queue<std::string> m_queue;
-	std::atomic<bool> m_running{false};
+	std::atomic<bool> m_running {false};
 
 	static constexpr size_t MAX_QUEUE_SIZE = 100;
 };

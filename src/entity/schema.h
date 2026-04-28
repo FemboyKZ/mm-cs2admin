@@ -6,8 +6,7 @@
 
 namespace schema
 {
-	int16_t GetOffset(const char *className, uint32_t classKey,
-		const char *fieldName, uint32_t fieldKey);
+	int16_t GetOffset(const char *className, uint32_t classKey, const char *fieldName, uint32_t fieldKey);
 }
 
 // FNV1a hash at compile time
@@ -30,12 +29,11 @@ constexpr uint32_t FNV1a(const char *str)
 
 // Read only schema field accessor.
 // Creates an inline method that returns a reference to the field at the cached offset.
-#define SCHEMA_FIELD(type, fieldName)                                           \
-	type &fieldName()                                                           \
-	{                                                                           \
-		static constexpr uint32_t fieldHash = FNV1a(#fieldName);                \
-		static int16_t offset = schema::GetOffset(m_className, m_classNameHash, \
-			#fieldName, fieldHash);                                             \
+#define SCHEMA_FIELD(type, fieldName) \
+	type &fieldName() \
+	{ \
+		static constexpr uint32_t fieldHash = FNV1a(#fieldName); \
+		static int16_t offset = schema::GetOffset(m_className, m_classNameHash, #fieldName, fieldHash); \
 		return *reinterpret_cast<type *>(reinterpret_cast<uintptr_t>(this) + offset); \
 	}
 

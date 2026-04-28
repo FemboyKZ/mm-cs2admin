@@ -8,28 +8,28 @@
 // Admin flag bits, mirrors SourceMod's admin flag letters a-z.
 enum CS2AdminFlag : uint32_t
 {
-	CS2ADMIN_FLAG_NONE          = 0,
-	CS2ADMIN_FLAG_RESERVATION   = (1 << 0),   // a - Reserved slot
-	CS2ADMIN_FLAG_GENERIC       = (1 << 1),   // b - Generic admin
-	CS2ADMIN_FLAG_KICK          = (1 << 2),   // c - Kick
-	CS2ADMIN_FLAG_BAN           = (1 << 3),   // d - Ban
-	CS2ADMIN_FLAG_UNBAN         = (1 << 4),   // e - Unban
-	CS2ADMIN_FLAG_SLAY          = (1 << 5),   // f - Slay
-	CS2ADMIN_FLAG_CHANGEMAP     = (1 << 6),   // g - Map change
-	CS2ADMIN_FLAG_CONVARS       = (1 << 7),   // h - ConVar access
-	CS2ADMIN_FLAG_CONFIG        = (1 << 8),   // i - Config
-	CS2ADMIN_FLAG_CHAT          = (1 << 9),   // j - Chat commands
-	CS2ADMIN_FLAG_VOTE          = (1 << 10),  // k - Vote
-	CS2ADMIN_FLAG_PASSWORD      = (1 << 11),  // l - Password
-	CS2ADMIN_FLAG_RCON          = (1 << 12),  // m - RCON
-	CS2ADMIN_FLAG_CHEATS        = (1 << 13),  // n - Cheats
-	CS2ADMIN_FLAG_CUSTOM1       = (1 << 14),  // o - Custom 1
-	CS2ADMIN_FLAG_CUSTOM2       = (1 << 15),  // p - Custom 2
-	CS2ADMIN_FLAG_CUSTOM3       = (1 << 16),  // q - Custom 3
-	CS2ADMIN_FLAG_CUSTOM4       = (1 << 17),  // r - Custom 4
-	CS2ADMIN_FLAG_CUSTOM5       = (1 << 18),  // s - Custom 5
-	CS2ADMIN_FLAG_CUSTOM6       = (1 << 19),  // t - Custom 6
-	CS2ADMIN_FLAG_ROOT          = (1 << 25),  // z - Root (all access)
+	CS2ADMIN_FLAG_NONE = 0,
+	CS2ADMIN_FLAG_RESERVATION = (1 << 0), // a - Reserved slot
+	CS2ADMIN_FLAG_GENERIC = (1 << 1),     // b - Generic admin
+	CS2ADMIN_FLAG_KICK = (1 << 2),        // c - Kick
+	CS2ADMIN_FLAG_BAN = (1 << 3),         // d - Ban
+	CS2ADMIN_FLAG_UNBAN = (1 << 4),       // e - Unban
+	CS2ADMIN_FLAG_SLAY = (1 << 5),        // f - Slay
+	CS2ADMIN_FLAG_CHANGEMAP = (1 << 6),   // g - Map change
+	CS2ADMIN_FLAG_CONVARS = (1 << 7),     // h - ConVar access
+	CS2ADMIN_FLAG_CONFIG = (1 << 8),      // i - Config
+	CS2ADMIN_FLAG_CHAT = (1 << 9),        // j - Chat commands
+	CS2ADMIN_FLAG_VOTE = (1 << 10),       // k - Vote
+	CS2ADMIN_FLAG_PASSWORD = (1 << 11),   // l - Password
+	CS2ADMIN_FLAG_RCON = (1 << 12),       // m - RCON
+	CS2ADMIN_FLAG_CHEATS = (1 << 13),     // n - Cheats
+	CS2ADMIN_FLAG_CUSTOM1 = (1 << 14),    // o - Custom 1
+	CS2ADMIN_FLAG_CUSTOM2 = (1 << 15),    // p - Custom 2
+	CS2ADMIN_FLAG_CUSTOM3 = (1 << 16),    // q - Custom 3
+	CS2ADMIN_FLAG_CUSTOM4 = (1 << 17),    // r - Custom 4
+	CS2ADMIN_FLAG_CUSTOM5 = (1 << 18),    // s - Custom 5
+	CS2ADMIN_FLAG_CUSTOM6 = (1 << 19),    // t - Custom 6
+	CS2ADMIN_FLAG_ROOT = (1 << 25),       // z - Root (all access)
 };
 
 // Public admin interface for CS2Admin.
@@ -58,8 +58,7 @@ public:
 	// commandName: the command without prefix, e.g. "ban".
 	// commandGroup: optional group name, e.g. "admin". Can be nullptr.
 	// defaultFlag: the default required flag if no override applies.
-	virtual bool CanUseCommand(int slot, const char *commandName,
-		const char *commandGroup, uint32_t defaultFlag) = 0;
+	virtual bool CanUseCommand(int slot, const char *commandName, const char *commandGroup, uint32_t defaultFlag) = 0;
 
 	// Get the immunity level of a player.
 	// Returns 0 if the player is not an admin or the slot is invalid.

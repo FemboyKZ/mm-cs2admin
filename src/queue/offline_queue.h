@@ -21,9 +21,15 @@ public:
 	void LoadFromFile();
 
 	// Returns true if there are pending queries
-	bool HasItems() const { return !m_queries.empty(); }
+	bool HasItems() const
+	{
+		return !m_queries.empty();
+	}
 
-	size_t GetQueueSize() const { return m_queries.size(); }
+	size_t GetQueueSize() const
+	{
+		return m_queries.size();
+	}
 
 	static constexpr size_t MAX_QUEUE_SIZE = 500;
 

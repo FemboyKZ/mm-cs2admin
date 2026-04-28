@@ -1,5 +1,5 @@
 #include "admin_manager.h"
-#include "../common.h"
+#include "src/common.h"
 
 #include <fstream>
 #include <sstream>
@@ -8,9 +8,6 @@
 #include <cstring>
 #include <cstdio>
 
-// Parse a quoted string from a line at position pos.
-// Returns the unquoted content, or "" if no quoted string found.
-// Advances pos past the closing quote.
 static std::string ParseQuotedToken(const std::string &line, size_t &pos)
 {
 	while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t'))
@@ -62,13 +59,11 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 
 	while (std::getline(file, line))
 	{
-		// Strip leading/trailing whitespace
 		size_t start = line.find_first_not_of(" \t\r\n");
 		if (start == std::string::npos)
 			continue;
 		line = line.substr(start);
 
-		// Skip comments
 		if (line.empty() || line[0] == '/' || line[0] == '#')
 			continue;
 
@@ -83,7 +78,6 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 			depth--;
 			if (depth == 1 && inAdmin)
 			{
-				// Finished parsing one admin block
 				if (!currentEntry.identity.empty())
 				{
 					std::string normalized = NormalizeSteamID(currentEntry.identity.c_str());
@@ -105,8 +99,6 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 		// Parse keyvalue pairs: "key" "value"
 		if (depth == 1)
 		{
-			// Admin name line, just a quoted string before a {
-			// Strip quotes
 			std::string stripped = line;
 			if (stripped.front() == '"')
 			{
@@ -121,7 +113,6 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 		}
 		else if (depth == 2 && inAdmin)
 		{
-			// Parse key "value" pairs
 			size_t pos = 0;
 			std::string key = ParseQuotedToken(line, pos);
 			std::string value = ParseQuotedToken(line, pos);
@@ -129,7 +120,6 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 			if (key.empty())
 				continue;
 
-			// Lowercase key for comparison
 			std::string keyLower = key;
 			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
 				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
@@ -170,22 +160,18 @@ void CS2AAdminManager::LoadSimpleAdmins()
 
 	while (std::getline(file, line))
 	{
-		// Strip leading whitespace
 		size_t start = line.find_first_not_of(" \t\r\n");
 		if (start == std::string::npos)
 			continue;
 		line = line.substr(start);
 
-		// Skip comments and empty lines
 		if (line.empty() || line[0] == '/' || line[0] == ';' || line[0] == '#')
 			continue;
 
-		// Parse quoted tokens
 		std::vector<std::string> tokens;
 		size_t pos = 0;
 		while (pos < line.size() && tokens.size() < 4)
 		{
-			// Skip whitespace
 			while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t'))
 				pos++;
 			if (pos >= line.size())
@@ -203,7 +189,6 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			}
 			else
 			{
-				// Unquoted token
 				size_t tstart = pos;
 				while (pos < line.size() && line[pos] != ' ' && line[pos] != '\t')
 					pos++;
@@ -369,16 +354,12 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			depth--;
 			if (depth == 2 && inOverrides)
 			{
-				// Closing the Overrides sub block
 				inOverrides = false;
 			}
 			else if (depth == 1 && inGroup)
 			{
-				// Finished parsing one group block
 				if (!currentGroupName.empty())
 				{
-					// Merge with existing group (DB groups take priority, but flat file
-					// can add groups that don't exist in DB)
 					auto it = m_groups.find(currentGroupName);
 					if (it == m_groups.end())
 					{
@@ -405,12 +386,10 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			continue;
 		}
 
-		// Parse keyvalue pairs
 		size_t pos = 0;
 
 		if (depth == 1)
 		{
-			// Group name
 			std::string name = ParseQuotedToken(line, pos);
 			if (!name.empty())
 			{
@@ -425,7 +404,6 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			if (key.empty())
 				continue;
 
-			// Check if this is the "Overrides" sub section header
 			std::string keyLower = key;
 			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
 				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
@@ -530,7 +508,6 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 			depth--;
 			if (depth == 1 && inOverride)
 			{
-				// Finished parsing a block style override entry
 				if (!currentName.empty() && !currentFlag.empty())
 				{
 					std::string typeLower = currentType;

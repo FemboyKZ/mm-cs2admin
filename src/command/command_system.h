@@ -1,7 +1,7 @@
 #ifndef _INCLUDE_ADMIN_COMMAND_SYSTEM_H_
 #define _INCLUDE_ADMIN_COMMAND_SYSTEM_H_
 
-#include "../common.h"
+#include "src/common.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -51,10 +51,11 @@ private:
 	// Stored as raw pointers with persistent name/desc strings.
 	struct ConsoleCmd
 	{
-		std::string name;   // "mm_ban", "mm_who", etc.
-		std::string desc;   // description string
+		std::string name; // "mm_ban", "mm_who", etc.
+		std::string desc; // description string
 		ConCommand *cmd;
 	};
+
 	std::vector<ConsoleCmd> m_consoleCommands;
 };
 

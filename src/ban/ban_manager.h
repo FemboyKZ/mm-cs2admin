@@ -1,7 +1,7 @@
 #ifndef _INCLUDE_ADMIN_BAN_MANAGER_H_
 #define _INCLUDE_ADMIN_BAN_MANAGER_H_
 
-#include "../common.h"
+#include "src/common.h"
 #include <string>
 #include <functional>
 

@@ -52,7 +52,7 @@ struct CS2AConfig
 	int sleuthDuration = 0;         // Ban time for action 2 (min, 0=permanent)
 	int sleuthBansAllowed = 0;      // IP ban count threshold before acting
 	int sleuthBanType = 0;          // 0=all, 1=permanent only
-	bool sleuthAdminBypass = false;  // ADMFLAG_BAN users exempt
+	bool sleuthAdminBypass = false; // ADMFLAG_BAN users exempt
 	bool sleuthExcludeOld = false;
 	int sleuthExcludeTime = 31536000; // 1 year in seconds
 
@@ -61,9 +61,9 @@ struct CS2AConfig
 	std::string discordFooterText = "CS2Admin";
 
 	// Chat flood config
-	float chatFloodCooldown = 0.75f;   // Minimum seconds between messages
-	int chatFloodMaxMessages = 5;      // Messages in window before action
-	int chatFloodMuteDuration = 0;     // Minutes to auto-mute (0 = block only)
+	float chatFloodCooldown = 0.75f; // Minimum seconds between messages
+	int chatFloodMaxMessages = 5;    // Messages in window before action
+	int chatFloodMuteDuration = 0;   // Minutes to auto-mute (0 = block only)
 };
 
 // Load and parse core.cfg from the given path.

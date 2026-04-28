@@ -1,12 +1,12 @@
 #include "ban_manager.h"
-#include "../common.h"
-#include "../config/config.h"
-#include "../db/database.h"
-#include "../player/player_manager.h"
-#include "../public/forwards.h"
-#include "../queue/offline_queue.h"
-#include "../admin/admin_manager.h"
-#include "../utils/print_utils.h"
+#include "src/common.h"
+#include "src/config/config.h"
+#include "src/db/database.h"
+#include "src/player/player_manager.h"
+#include "src/public/forwards.h"
+#include "src/queue/offline_queue.h"
+#include "src/admin/admin_manager.h"
+#include "src/utils/print_utils.h"
 
 #include <sql_mm.h>
 #include <algorithm>
@@ -98,13 +98,11 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	InsertBan(targetIP.c_str(), targetAuth.c_str(), targetName.c_str(),
 		time, reason, adminSlot);
 
-	// Notify target player before kick
 	if (time == 0)
 		ADMIN_PrintToChat(targetSlot, "You have been permanently banned. Reason: %s\n", reason ? reason : "No reason");
 	else
 		ADMIN_PrintToChat(targetSlot, "You have been banned for %d minutes. Reason: %s\n", time, reason ? reason : "No reason");
 
-	// Announce to all players
 	std::string adminName = "Console";
 	if (adminSlot >= 0)
 	{
@@ -114,13 +112,11 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	ADMIN_ChatToAll("%s%s banned %s (%d min). Reason: %s\n",
 		g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), targetName.c_str(), time, reason ? reason : "No reason");
 
-	// Log admin action
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Banned \"%s\" (%s) for %d min. Reason: %s",
 		targetName.c_str(), targetAuth.c_str(), time, reason ? reason : "No reason");
 	ADMIN_LogAction(adminSlot, logMsg);
 
-	// Kick the player
 	g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 	META_CONPRINTF("[ADMIN] Banned player \"%s\" (%s) for %d min. Reason: %s\n",
 		targetName.c_str(), targetAuth.c_str(), time, reason ? reason : "No reason");
@@ -215,7 +211,6 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 	g_CS2ADatabase.Query(query, [queryStr = std::string(query)](ISQLQuery *result) {
 		if (!result)
 		{
-			// Query dispatch failed, queue the already escaped query for retry
 			g_CS2AOfflineQueue.Enqueue(queryStr);
 			return;
 		}
@@ -367,7 +362,6 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 	if (!g_CS2ADatabase.IsConnected() || g_CS2AConfig.sleuthActions <= 0 || !ip || !*ip)
 		return;
 
-	// Check if player is admin and bypass is enabled
 	if (g_CS2AConfig.sleuthAdminBypass && g_CS2AAdminManager.PlayerHasFlag(slot, ADMFLAG_BAN))
 		return;
 
@@ -376,7 +370,6 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 	long long now = (long long)std::time(nullptr);
 
-	// Build time filter
 	std::string timeFilter;
 	if (g_CS2AConfig.sleuthExcludeOld)
 	{
@@ -386,7 +379,6 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 		timeFilter = timeBuf;
 	}
 
-	// Ban type filter
 	std::string typeFilter;
 	if (g_CS2AConfig.sleuthBanType == 1)
 		typeFilter = " AND length = 0";
@@ -418,7 +410,6 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 		if (action == 4)
 		{
-			// Notify admins only
 			ADMIN_ChatToAdmins("%sWARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n",
 				g_CS2AConfig.chatPrefix.c_str(), player->name.c_str(), player->authid.c_str(), count);
 			return;
@@ -426,14 +417,12 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 		if (action == 5)
 		{
-			// Kick
 			META_CONPRINTF("[ADMIN] Sleuth: kicking \"%s\" - %d IP bans found.\n",
 				player->name.c_str(), count);
 			g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 			return;
 		}
 
-		// Actions 1-3: ban
 		int banTime = 0;
 		if (action == 1) banTime = originalLength / 60; // original length
 		else if (action == 2) banTime = g_CS2AConfig.sleuthDuration;

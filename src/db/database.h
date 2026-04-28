@@ -35,21 +35,41 @@ public:
 	void Shutdown();
 
 	// Is the database connection established?
-	bool IsConnected() const { return m_bConnected; }
+	bool IsConnected() const
+	{
+		return m_bConnected;
+	}
 
 	// Was Init() successful (sql_mm available)?
-	bool IsInitialized() const { return m_bInitialized; }
+	bool IsInitialized() const
+	{
+		return m_bInitialized;
+	}
 
 	// Get the active database type.
-	DatabaseType GetType() const { return m_dbType; }
-	bool IsSQLite() const { return m_dbType == DatabaseType::SQLite; }
-	bool IsMySQL() const { return m_dbType == DatabaseType::MySQL; }
+	DatabaseType GetType() const
+	{
+		return m_dbType;
+	}
+
+	bool IsSQLite() const
+	{
+		return m_dbType == DatabaseType::SQLite;
+	}
+
+	bool IsMySQL() const
+	{
+		return m_dbType == DatabaseType::MySQL;
+	}
 
 	// Attempt reconnection (called periodically when connection is lost)
 	void Reconnect(std::function<void(bool)> callback);
 
 	// Get the raw connection for queries.
-	ISQLConnection *GetConnection() const { return m_pConnection; }
+	ISQLConnection *GetConnection() const
+	{
+		return m_pConnection;
+	}
 
 	// Convenience: run a query with a callback.
 	void Query(const char *query, std::function<void(ISQLQuery *)> callback);

@@ -10,7 +10,7 @@ struct PlayerInfo
 {
 	bool connected = false;
 	uint64_t steamid64 = 0;
-	std::string authid;      // "STEAM_0:X:Y"
+	std::string authid; // "STEAM_0:X:Y"
 	std::string name;
 	std::string ip;
 	bool fakePlayer = false;
@@ -24,11 +24,11 @@ struct PlayerInfo
 	// Comm state
 	bool isMuted = false;
 	bool isGagged = false;
-	bool isSessionMuted = false;  // Session-only (no DB record)
+	bool isSessionMuted = false; // Session-only (no DB record)
 	bool isSessionGagged = false;
-	int muteRemaining = 0;   // Seconds remaining, 0 = permanent
+	int muteRemaining = 0; // Seconds remaining, 0 = permanent
 	int gagRemaining = 0;
-	double muteExpireTime = 0.0;  // Game time when mute expires (0 = permanent/session)
+	double muteExpireTime = 0.0; // Game time when mute expires (0 = permanent/session)
 	double gagExpireTime = 0.0;
 	std::string muteReason;
 	std::string gagReason;
@@ -82,8 +82,7 @@ struct DisconnectedPlayer
 class CS2APlayerManager
 {
 public:
-	void OnClientConnected(int slot, const char *name, uint64_t xuid,
-		const char *networkID, const char *address, bool fakePlayer);
+	void OnClientConnected(int slot, const char *name, uint64_t xuid, const char *networkID, const char *address, bool fakePlayer);
 	void OnClientDisconnect(int slot);
 
 	PlayerInfo *GetPlayer(int slot);
@@ -95,7 +94,11 @@ public:
 
 	// Disconnected player tracking
 	void AddDisconnectedPlayer(const PlayerInfo &player);
-	const std::vector<DisconnectedPlayer> &GetDisconnectedPlayers() const { return m_disconnected; }
+
+	const std::vector<DisconnectedPlayer> &GetDisconnectedPlayers() const
+	{
+		return m_disconnected;
+	}
 
 private:
 	PlayerInfo m_players[MAXPLAYERS + 1];
@@ -113,14 +116,12 @@ std::string GetAdminAuthId(int adminSlot);
 // Shared utility: get admin's IP for DB logging (returns "" for console)
 std::string GetAdminIP(int adminSlot);
 
-// Targeting System
-
 // Target result: a list of matched player slots.
 struct TargetResult
 {
 	std::vector<int> slots;
-	std::string error;       // Nonempty if targeting failed
-	bool isMultiTarget = false;  // True if @all, @t, @ct etc.
+	std::string error;          // Nonempty if targeting failed
+	bool isMultiTarget = false; // True if @all, @t, @ct etc.
 };
 
 // Find player(s) by pattern. Supports:

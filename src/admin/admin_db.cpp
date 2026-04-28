@@ -1,7 +1,7 @@
 #include "admin_manager.h"
-#include "../common.h"
-#include "../config/config.h"
-#include "../db/database.h"
+#include "src/common.h"
+#include "src/config/config.h"
+#include "src/db/database.h"
 
 #include <sql_mm.h>
 
@@ -59,7 +59,7 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 
 			if (!group.name.empty())
 			{
-				// Merge with existing group (flat-file groups may already exist)
+				// Merge with existing group
 				auto existing = m_groups.find(group.name);
 				if (existing != m_groups.end())
 				{
@@ -349,8 +349,7 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 
 			if (!entry.identity.empty())
 			{
-				// If there's already a DB entry for this identity (e.g., multiple
-				// group assignments), merge flags additively
+				// If there's already a DB entry for this identity (e.g., multiple group assignments), merge flags additively
 				auto existing = m_dbAdmins.find(entry.identity);
 				if (existing != m_dbAdmins.end())
 				{

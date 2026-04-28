@@ -1,6 +1,6 @@
 #include "gamedata.h"
 #include "kv_parser.h"
-#include "../common.h"
+#include "src/common.h"
 
 #include <fstream>
 #include <algorithm>
@@ -26,19 +26,17 @@ struct GameDataParseCtx
 	std::string currentOffset; // name of the offset subsection being parsed
 };
 
-static void GameDataHandler(const std::string &section, const std::string &key,
-	const std::string &value, void *userdata)
+static void GameDataHandler(const std::string &section, const std::string &key, const std::string &value, void *userdata)
 {
 	auto *ctx = static_cast<GameDataParseCtx *>(userdata);
 
 	// Inside an offset subsection: key is platform, value is the offset
 	std::string sectionLower = section;
 	std::transform(sectionLower.begin(), sectionLower.end(), sectionLower.begin(),
-		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+				   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 	std::string keyLower = key;
-	std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
-		[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 	if (keyLower == GetPlatformKey())
 	{
@@ -51,16 +49,22 @@ bool CS2AGameData::Load(const char *path)
 {
 	std::ifstream file(path);
 	if (!file.is_open())
+	{
 		return false;
+	}
 
 	// Expect: "GameData" { "Offsets" { ... } }
 	kv::Token root = kv::NextToken(file);
 	if (root.kind != kv::TokenType::String)
+	{
 		return false;
+	}
 
 	kv::Token brace = kv::NextToken(file);
 	if (brace.kind != kv::TokenType::OpenBrace)
+	{
 		return false;
+	}
 
 	GameDataParseCtx ctx;
 	ctx.gd = this;
@@ -72,7 +76,9 @@ int CS2AGameData::GetOffset(const char *name) const
 {
 	auto it = m_offsets.find(name);
 	if (it != m_offsets.end())
+	{
 		return it->second;
+	}
 	return -1;
 }
 

@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <functional>
 #include <cstdint>
-#include "../common.h"
+#include "src/common.h"
 
 // Admin flag bits, mirrors SourceMod's admin flag letters a-z
 enum AdminFlag : uint32_t

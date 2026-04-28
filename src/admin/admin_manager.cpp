@@ -1,8 +1,8 @@
 #include "admin_manager.h"
-#include "../common.h"
-#include "../config/config.h"
-#include "../db/database.h"
-#include "../player/player_manager.h"
+#include "src/common.h"
+#include "src/config/config.h"
+#include "src/db/database.h"
+#include "src/player/player_manager.h"
 
 #include <cstring>
 #include <cstdio>

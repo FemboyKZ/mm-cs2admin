@@ -1220,14 +1220,46 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (cc.Tokenize(cmd.c_str()) && cc.ArgC() > 0)
 						{
-							ConCommandRef ref(cc.Arg(0));
-							if (ref.IsValidRef() && g_pICvar)
+							const char *name = cc.Arg(0);
+							ConCommandRef cmdRef(name);
+							if (cmdRef.IsValidRef() && g_pICvar)
 							{
 								CCommandContext ctx(CT_NO_TARGET, CPlayerSlot(-1));
 								LoggingSystem_RegisterLoggingListener(&listener);
-								g_pICvar->DispatchConCommand(ref, ctx, cc);
+								g_pICvar->DispatchConCommand(cmdRef, ctx, cc);
 								LoggingSystem_UnregisterLoggingListener(&listener);
 								dispatched = true;
+							}
+							else
+							{
+								// Not a ConCommand; try ConVar (e.g. "tv_record_immediate" prints
+								// value, "mp_friendlyfire 1" sets value).
+								ConVarRefAbstract cvar(name);
+								if (cvar.IsConVarDataValid())
+								{
+									if (cc.ArgC() >= 2)
+									{
+										LoggingSystem_RegisterLoggingListener(&listener);
+										cvar.SetString(cc.Arg(1));
+										LoggingSystem_UnregisterLoggingListener(&listener);
+										CUtlString cur = cvar.GetString();
+										ADMIN_PrintToClient(slot, "%s = %s\n", cvar.GetName(), cur.Get());
+									}
+									else
+									{
+										CUtlString cur = cvar.GetString();
+										ADMIN_PrintToClient(slot, "%s = %s\n", cvar.GetName(), cur.Get());
+									}
+									if (!listener.Buffer().empty())
+										ReplyConsoleOutput(slot, listener.Buffer(), listener.Truncated());
+
+									std::string adminName2 = g_CS2APlayerManager.GetAdminName(slot);
+									PlayerInfo *adminPlayer2 = g_CS2APlayerManager.GetPlayer(slot);
+									ADMIN_LogAction(slot, (std::string("RCON: ") + cmd).c_str());
+									g_CS2ADiscord.NotifyAdminAction(adminName2.c_str(), "RCON", cmd.c_str(), "", -1,
+																	adminPlayer2 ? adminPlayer2->steamid64 : 0);
+									return;
+								}
 							}
 						}
 

@@ -12,6 +12,8 @@
 #include "src/entity/ccsplayercontroller.h"
 #include "src/entity/ccsplayerpawn.h"
 
+#include "tier0/logging.h"
+
 #include <algorithm>
 #include <ctime>
 #include <cctype>
@@ -48,6 +50,101 @@ static std::string SanitizeForServerCommand(const std::string &input)
 		}
 	}
 	return result;
+}
+
+namespace
+{
+	class CCaptureLoggingListener : public ILoggingListener
+	{
+	public:
+		void Log(const LoggingContext_t * /*pContext*/, const tchar *pMessage) override
+		{
+			if (!pMessage || !*pMessage)
+			{
+				return;
+			}
+			// Cap to avoid runaway growth from a chatty command.
+			if (m_buffer.size() >= kMaxBytes)
+			{
+				m_truncated = true;
+				return;
+			}
+			size_t remaining = kMaxBytes - m_buffer.size();
+			size_t len = strlen(pMessage);
+			if (len > remaining)
+			{
+				m_buffer.append(pMessage, remaining);
+				m_truncated = true;
+			}
+			else
+			{
+				m_buffer.append(pMessage, len);
+			}
+		}
+
+		const std::string &Buffer() const
+		{
+			return m_buffer;
+		}
+
+		bool Truncated() const
+		{
+			return m_truncated;
+		}
+
+	private:
+		static constexpr size_t kMaxBytes = 8192;
+		std::string m_buffer;
+		bool m_truncated = false;
+	};
+} // namespace
+
+// Send captured spew text back to the player's console, line by line.
+static void ReplyConsoleOutput(int slot, const std::string &text, bool truncated)
+{
+	if (text.empty())
+	{
+		ADMIN_ReplyToCommand(slot, "(no output)\n");
+		return;
+	}
+
+	const size_t kMaxLines = 40;
+	size_t printed = 0;
+	size_t pos = 0;
+	bool tooMany = false;
+	while (pos < text.size())
+	{
+		size_t nl = text.find('\n', pos);
+		std::string line = (nl == std::string::npos) ? text.substr(pos) : text.substr(pos, nl - pos);
+		if (!line.empty() && line.back() == '\r')
+		{
+			line.pop_back();
+		}
+		if (!line.empty())
+		{
+			if (printed >= kMaxLines)
+			{
+				tooMany = true;
+				break;
+			}
+			ADMIN_PrintToClient(slot, "%s\n", line.c_str());
+			printed++;
+		}
+		if (nl == std::string::npos)
+		{
+			break;
+		}
+		pos = nl + 1;
+	}
+
+	if (tooMany)
+	{
+		ADMIN_PrintToClient(slot, "[output truncated: too many lines]\n");
+	}
+	else if (truncated)
+	{
+		ADMIN_PrintToClient(slot, "[output truncated]\n");
+	}
 }
 
 // Validate an IPv4 address string (e.g. "192.168.1.1").
@@ -1109,14 +1206,47 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						cmd.erase(std::remove(cmd.begin(), cmd.end(), '\n'), cmd.end());
 						cmd.erase(std::remove(cmd.begin(), cmd.end(), '\r'), cmd.end());
 
-						// Append newline for ServerCommand
-						cmd += "\n";
-						g_pEngine->ServerCommand(cmd.c_str());
+						if (cmd.empty())
+						{
+							ADMIN_ReplyToCommand(slot, "Usage: !rcon <command>\n");
+							return;
+						}
+
+						// Tokenize and dispatch synchronously so we can capture the command's
+						// console output via a temporary logging listener and reply with it.
+						CCommand cc;
+						bool dispatched = false;
+						CCaptureLoggingListener listener;
+
+						if (cc.Tokenize(cmd.c_str()) && cc.ArgC() > 0)
+						{
+							ConCommandRef ref(cc.Arg(0));
+							if (ref.IsValidRef() && g_pICvar)
+							{
+								CCommandContext ctx(CT_NO_TARGET, CPlayerSlot(-1));
+								LoggingSystem_RegisterLoggingListener(&listener);
+								g_pICvar->DispatchConCommand(ref, ctx, cc);
+								LoggingSystem_UnregisterLoggingListener(&listener);
+								dispatched = true;
+							}
+						}
+
+						if (!dispatched)
+						{
+							// Fallback: queue via engine. Output cannot be captured because the command is executed at the next frame boundary.
+							std::string queued = cmd + "\n";
+							g_pEngine->ServerCommand(queued.c_str());
+							ADMIN_ReplyToCommand(slot, "Queued: %s\n", cmd.c_str());
+						}
+						else
+						{
+							ADMIN_ReplyToCommand(slot, "Executed: %s\n", cmd.c_str());
+							ReplyConsoleOutput(slot, listener.Buffer(), listener.Truncated());
+						}
 
 						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 						PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 
-						ADMIN_ReplyToCommand(slot, "Executed: %s", cmd.c_str());
 						ADMIN_LogAction(slot, (std::string("RCON: ") + cmd).c_str());
 
 						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "RCON", cmd.c_str(), "", -1, adminPlayer ? adminPlayer->steamid64 : 0);

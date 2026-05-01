@@ -1281,7 +1281,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						ADMIN_LogAction(slot, (std::string("RCON: ") + cmd).c_str());
 
-						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "RCON", cmd.c_str(), "", -1, adminPlayer ? adminPlayer->steamid64 : 0);
+						const char *discordOutput = dispatched && !listener.Buffer().empty() ? listener.Buffer().c_str() : nullptr;
+						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "RCON", cmd.c_str(), "", -1, adminPlayer ? adminPlayer->steamid64 : 0, 0,
+														discordOutput);
 					});
 
 	// !pm <target> <message> - Private message a player

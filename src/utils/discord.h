@@ -27,7 +27,7 @@ public:
 
 	// Notify of an admin action
 	void NotifyAdminAction(const char *adminName, const char *action, const char *targetName, const char *reason = nullptr, int durationMinutes = -1,
-						   uint64_t adminSteamid64 = 0, uint64_t targetSteamid64 = 0);
+						   uint64_t adminSteamid64 = 0, uint64_t targetSteamid64 = 0, const char *output = nullptr);
 
 	// Notify of a player report
 	void NotifyReport(const char *reporterName, const char *targetName, const char *reason, uint64_t reporterSteamid64 = 0,

@@ -3,6 +3,8 @@
 #include "src/config/config.h"
 #include "src/player/player_manager.h"
 
+#include "tier1/convar.h"
+
 #include <cstdio>
 #include <cstring>
 #include <string>
@@ -177,7 +179,7 @@ void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, i
 }
 
 void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, const char *targetName, const char *reason, int durationMinutes,
-									uint64_t adminSteamid64, uint64_t targetSteamid64)
+									uint64_t adminSteamid64, uint64_t targetSteamid64, const char *output)
 {
 	if (!IsEnabled())
 	{
@@ -185,6 +187,19 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 	}
 
 	std::string desc;
+
+	{
+		ConVarRefAbstract hn("hostname");
+		if (hn.IsConVarDataValid())
+		{
+			CUtlString s = hn.GetString();
+			if (s.Get() && *s.Get())
+			{
+				desc += "**Server:** ``" + JsonEscape(s.Get()) + "``\n";
+			}
+		}
+	}
+
 	desc += "**Admin:** ``" + JsonEscape(adminName ? adminName : "Console") + "``";
 	if (adminSteamid64 != 0)
 	{
@@ -208,6 +223,26 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 	if (reason && *reason)
 	{
 		desc += "**Reason:** ``" + JsonEscape(reason) + "``\n";
+	}
+
+	if (output && *output)
+	{
+		// Cap output to keep embed under Discord's 4096-char description limit,
+		// and break any backtick fence sequences that could escape the code block.
+		std::string capped(output);
+		const size_t kMax = 1500;
+		if (capped.size() > kMax)
+		{
+			capped.resize(kMax);
+			capped += "\n... (truncated)";
+		}
+		size_t pos = 0;
+		while ((pos = capped.find("```", pos)) != std::string::npos)
+		{
+			capped.replace(pos, 3, "''`");
+			pos += 3;
+		}
+		desc += "**Output:**\n```\n" + JsonEscape(capped) + "\n```";
 	}
 
 	int color = 0xE74C3C; // red default
@@ -238,6 +273,17 @@ void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName,
 	}
 
 	std::string desc;
+	{
+		ConVarRefAbstract hn("hostname");
+		if (hn.IsConVarDataValid())
+		{
+			CUtlString s = hn.GetString();
+			if (s.Get() && *s.Get())
+			{
+				desc += "**Server:** ``" + JsonEscape(s.Get()) + "``\n";
+			}
+		}
+	}
 	desc += "**Reporter:** ``" + JsonEscape(reporterName ? reporterName : "") + "``";
 	if (reporterSteamid64 != 0)
 	{

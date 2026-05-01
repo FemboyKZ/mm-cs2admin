@@ -53,7 +53,6 @@ SH_DECL_HOOK4_void(IServerGameClients, ClientPutInServer, SH_NOATTRIB, 0, CPlaye
 SH_DECL_HOOK1_void(IServerGameClients, ClientSettingsChanged, SH_NOATTRIB, 0, CPlayerSlot);
 SH_DECL_HOOK6_void(IServerGameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, const char *, uint64, const char *, const char *, bool);
 SH_DECL_HOOK6(IServerGameClients, ClientConnect, SH_NOATTRIB, 0, bool, CPlayerSlot, const char *, uint64, const char *, bool, CBufferString *);
-SH_DECL_HOOK2_void(IServerGameClients, ClientCommand, SH_NOATTRIB, 0, CPlayerSlot, const CCommand &);
 SH_DECL_HOOK3_void(ICvar, DispatchConCommand, SH_NOATTRIB, 0, ConCommandRef, const CCommandContext &, const CCommand &);
 
 CS2APlugin g_CS2APlugin;
@@ -135,7 +134,6 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	SH_ADD_HOOK(IServerGameClients, ClientSettingsChanged, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientSettingsChanged), false);
 	SH_ADD_HOOK(IServerGameClients, OnClientConnected, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_OnClientConnected), false);
 	SH_ADD_HOOK(IServerGameClients, ClientConnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientConnect), false);
-	SH_ADD_HOOK(IServerGameClients, ClientCommand, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientCommand), false);
 	SH_ADD_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
 
 	g_pCVar = g_pICvar;
@@ -162,7 +160,6 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	SH_REMOVE_HOOK(IServerGameClients, ClientSettingsChanged, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientSettingsChanged), false);
 	SH_REMOVE_HOOK(IServerGameClients, OnClientConnected, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_OnClientConnected), false);
 	SH_REMOVE_HOOK(IServerGameClients, ClientConnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientConnect), false);
-	SH_REMOVE_HOOK(IServerGameClients, ClientCommand, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientCommand), false);
 	SH_REMOVE_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
 
 	g_CS2ADiscord.Shutdown();

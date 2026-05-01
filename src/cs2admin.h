@@ -26,7 +26,6 @@ public: // Hooks
 	void Hook_ClientActive(CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid);
 	void Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName, uint64 xuid, const char *pszNetworkID);
 	void Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
-	void Hook_ClientCommand(CPlayerSlot nSlot, const CCommand &_cmd);
 	void Hook_ClientSettingsChanged(CPlayerSlot slot);
 	void Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
 

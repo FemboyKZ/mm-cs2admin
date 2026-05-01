@@ -1,5 +1,7 @@
 # CS2 Admin
 
+![Downloads](https://img.shields.io/github/downloads/FemboyKZ/mm-cs2admin/total?style=flat-square) ![Last commit](https://img.shields.io/github/last-commit/FemboyKZ/mm-cs2admin?style=flat-square) ![Open issues](https://img.shields.io/github/issues/FemboyKZ/mm-cs2admin?style=flat-square) ![Closed issues](https://img.shields.io/github/issues-closed/FemboyKZ/mm-cs2admin?style=flat-square) ![Size](https://img.shields.io/github/repo-size/FemboyKZ/mm-cs2admin?style=flat-square) ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/FemboyKZ/mm-cs2admin/build.yml?style=flat-square)
+
 Metamod Admin plugin for CS2 with SM style configuration and SB++ support.
 
 Shared maplist with [cs2-rockthevote](https://github.com/FemboyKZ/cs2-rockthevote).

@@ -1240,7 +1240,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 						else
 						{
-							ADMIN_ReplyToCommand(slot, "Executed: %s\n", cmd.c_str());
+							ADMIN_ReplyToCommand(slot, "Executed: %s, check console for output.\n", cmd.c_str());
 							ReplyConsoleOutput(slot, listener.Buffer(), listener.Truncated());
 						}
 

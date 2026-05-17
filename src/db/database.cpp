@@ -170,6 +170,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 
 void CS2ADatabase::Shutdown()
 {
+	m_bShuttingDown = true;
 	if (m_pConnection)
 	{
 		m_pConnection->Destroy();
@@ -232,7 +233,7 @@ void CS2ADatabase::Reconnect(std::function<void(bool)> callback)
 
 void CS2ADatabase::Query(const char *query, std::function<void(ISQLQuery *)> callback)
 {
-	if (!m_pConnection || !m_bConnected)
+	if (m_bShuttingDown || !m_pConnection || !m_bConnected)
 	{
 		META_CONPRINTF("[ADMIN] Cannot query: not connected.\n");
 		if (callback)

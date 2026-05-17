@@ -30,6 +30,10 @@ public:
 	// Call once after RegisterBuiltinCommands().
 	void RegisterConsoleCommands();
 
+	// Unregister and delete all dynamically created ConCommand objects.
+	// Must be called from CS2APlugin::Unload().
+	void Shutdown();
+
 	// Process a chat message. Called from the say/say_team hook.
 	// Returns true if the message was a command (and was handled),
 	// false if it's a normal chat message.

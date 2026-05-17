@@ -162,6 +162,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 bool CS2APlugin::Unload(char *error, size_t maxlen)
 {
+	// Remove all SourceHook hooks first so no new requests come in.
 	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameFrame), true);
 	SH_REMOVE_HOOK(IServerGameClients, ClientActive, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientActive), true);
 	SH_REMOVE_HOOK(IServerGameClients, ClientDisconnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientDisconnect), true);
@@ -172,6 +173,10 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	SH_REMOVE_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
 	SH_REMOVE_HOOK(IServerGameDLL, GameServerSteamAPIActivated, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameServerSteamAPIActivated), true);
 
+	// Unregister and delete all dynamically created mm_* ConCommands.
+	g_CS2ACommandSystem.Shutdown();
+
+	// Flush and join the Discord worker thread before touching other state.
 	g_CS2ADiscord.Shutdown();
 
 	if (g_CS2AOfflineQueue.HasItems())
@@ -179,6 +184,8 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 		g_CS2AOfflineQueue.SaveToFile();
 	}
 
+	// Mark DB as shutting down (blocks new Query() calls) then destroy the
+	// connection, which cancels any pending sql_mm callbacks in its queue.
 	g_CS2ADatabase.Shutdown();
 
 	META_CONPRINTF("[ADMIN] Plugin unloaded.\n");

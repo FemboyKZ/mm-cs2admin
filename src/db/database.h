@@ -46,6 +46,13 @@ public:
 		return m_bInitialized;
 	}
 
+	// True from the moment Shutdown() is called.
+	// Guards against in-flight callbacks landing after unload begins.
+	bool IsShuttingDown() const
+	{
+		return m_bShuttingDown;
+	}
+
 	// Get the active database type.
 	DatabaseType GetType() const
 	{
@@ -95,6 +102,7 @@ private:
 	DatabaseType m_dbType = DatabaseType::MySQL;
 	bool m_bConnected = false;
 	bool m_bInitialized = false;
+	bool m_bShuttingDown = false;
 };
 
 extern CS2ADatabase g_CS2ADatabase;

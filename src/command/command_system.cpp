@@ -1718,3 +1718,14 @@ void CS2ACommandSystem::RegisterConsoleCommands()
 		entry.cmd = new ConCommand(entry.name.c_str(), ConsoleCommandCallback, entry.desc.c_str(), FCVAR_CLIENT_CAN_EXECUTE);
 	}
 }
+
+void CS2ACommandSystem::Shutdown()
+{
+	for (auto &entry : m_consoleCommands)
+	{
+		delete entry.cmd;
+		entry.cmd = nullptr;
+	}
+	m_consoleCommands.clear();
+	m_commands.clear();
+}

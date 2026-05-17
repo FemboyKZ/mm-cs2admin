@@ -17,7 +17,9 @@ static std::string WorkshopRootAbs()
 	std::error_code ec;
 	fs::path abs = fs::absolute(fs::path("steamapps") / "workshop", ec);
 	if (ec)
+	{
 		return std::string("steamapps/workshop");
+	}
 	return abs.string();
 }
 
@@ -25,26 +27,36 @@ static std::string WorkshopRootAbs()
 static bool WorkshopFolderHasVPK(const std::string &workshopId)
 {
 	if (workshopId.empty())
+	{
 		return false;
+	}
 
 	fs::path folder = fs::path(WorkshopRootAbs()) / "content" / "730" / workshopId;
 
 	std::error_code ec;
 	if (!fs::is_directory(folder, ec))
+	{
 		return false;
+	}
 
 	fs::directory_iterator it(folder, ec);
 	if (ec)
+	{
 		return false;
+	}
 
 	for (const auto &entry : it)
 	{
 		std::error_code ec2;
 		if (!entry.is_regular_file(ec2))
+		{
 			continue;
+		}
 		const auto &p = entry.path();
 		if (p.has_extension() && p.extension() == ".vpk")
+		{
 			return true;
+		}
 	}
 	return false;
 }
@@ -53,16 +65,22 @@ static bool PruneIdFromSection(KeyValues *pACF, const char *sectionName, const c
 {
 	KeyValues *pSection = pACF->FindKey(sectionName);
 	if (!pSection)
+	{
 		return false;
+	}
 	if (!pSection->FindKey(workshopId))
+	{
 		return false;
+	}
 	return pSection->FindAndDeleteSubKey(workshopId);
 }
 
 static bool PruneACFEntryForId(const std::string &workshopId)
 {
 	if (!g_pFullFileSystem)
+	{
 		return false;
+	}
 
 	const std::string workshopRoot = WorkshopRootAbs();
 	const std::string acfPath = workshopRoot + "/appworkshop_730.acf";
@@ -78,7 +96,9 @@ static bool PruneACFEntryForId(const std::string &workshopId)
 	bool removedInstalled = PruneIdFromSection(pACF, "WorkshopItemsInstalled", workshopId.c_str());
 	bool removedDetails = PruneIdFromSection(pACF, "WorkshopItemDetails", workshopId.c_str());
 	if (!removedInstalled && !removedDetails)
+	{
 		return false;
+	}
 
 	pACF->SaveToFile(g_pFullFileSystem, acfPath.c_str(), "GAME");
 	if (g_AdminSteamAPI.SteamUGC())
@@ -91,12 +111,15 @@ static bool PruneACFEntryForId(const std::string &workshopId)
 bool ADMIN_EnsureWorkshopMapReady(const std::string &workshopId)
 {
 	if (workshopId.empty())
+	{
 		return false;
+	}
 
 	if (WorkshopFolderHasVPK(workshopId))
+	{
 		return false; // already good
+	}
 
-	META_CONPRINTF("[ADMIN] Workshop addon %s has no .vpk on disk; pruning stale ACF entry so Steam will re-download.\n",
-				   workshopId.c_str());
+	META_CONPRINTF("[ADMIN] Workshop addon %s has no .vpk on disk; pruning stale ACF entry so Steam will re-download.\n", workshopId.c_str());
 	return PruneACFEntryForId(workshopId);
 }

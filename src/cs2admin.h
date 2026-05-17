@@ -28,6 +28,7 @@ public: // Hooks
 	void Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
 	void Hook_ClientSettingsChanged(CPlayerSlot slot);
 	void Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
+	void Hook_GameServerSteamAPIActivated();
 
 public:
 	const char *GetAuthor()

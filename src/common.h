@@ -43,6 +43,9 @@ class INetworkMessages;
 class IGameEventSystem;
 extern IGameEventSystem *g_pGameEventSystem;
 
+class IFileSystem;
+extern IFileSystem *g_pFullFileSystem;
+
 // Schema & entity system
 class CGameEntitySystem;
 extern CGameEntitySystem *g_pEntitySystem;

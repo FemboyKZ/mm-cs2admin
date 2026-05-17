@@ -23,6 +23,8 @@
 #include <entity2/entitysystem.h>
 #include <networksystem/inetworkmessages.h>
 #include <engine/igameeventsystem.h>
+#include <filesystem.h>
+#include "steam/steam_gameserver.h"
 
 // Entity system global (declared extern in common.h)
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
@@ -54,6 +56,7 @@ SH_DECL_HOOK1_void(IServerGameClients, ClientSettingsChanged, SH_NOATTRIB, 0, CP
 SH_DECL_HOOK6_void(IServerGameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, const char *, uint64, const char *, const char *, bool);
 SH_DECL_HOOK6(IServerGameClients, ClientConnect, SH_NOATTRIB, 0, bool, CPlayerSlot, const char *, uint64, const char *, bool, CBufferString *);
 SH_DECL_HOOK3_void(ICvar, DispatchConCommand, SH_NOATTRIB, 0, ConCommandRef, const CCommandContext &, const CCommand &);
+SH_DECL_HOOK0_void(IServerGameDLL, GameServerSteamAPIActivated, SH_NOATTRIB, 0);
 
 CS2APlugin g_CS2APlugin;
 CS2AForwards g_CS2AForwards;
@@ -64,6 +67,10 @@ IVEngineServer *g_pEngine = nullptr;
 IGameEventManager2 *g_pGameEvents = nullptr;
 ICvar *g_pICvar = nullptr;
 IGameEventSystem *g_pGameEventSystem = nullptr;
+// g_pFullFileSystem is defined by interfaces.lib
+
+// Steam game-server API context used for workshop validation (ISteamUGC).
+CSteamGameServerAPIContext g_AdminSteamAPI;
 
 CGlobalVars *GetGameGlobals()
 {
@@ -90,6 +97,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	GET_V_IFACE_ANY(GetEngineFactory, g_pGameResourceServiceServer, IGameResourceService, GAMERESOURCESERVICESERVER_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, g_pNetworkMessages, INetworkMessages, NETWORKMESSAGES_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
+	GET_V_IFACE_CURRENT(GetFileSystemFactory, g_pFullFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 
 	g_SMAPI->AddListener(this, this);
 
@@ -135,6 +143,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	SH_ADD_HOOK(IServerGameClients, OnClientConnected, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_OnClientConnected), false);
 	SH_ADD_HOOK(IServerGameClients, ClientConnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientConnect), false);
 	SH_ADD_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
+	SH_ADD_HOOK(IServerGameDLL, GameServerSteamAPIActivated, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameServerSteamAPIActivated), true);
 
 	g_pCVar = g_pICvar;
 	META_CONVAR_REGISTER(FCVAR_RELEASE | FCVAR_GAMEDLL);
@@ -161,6 +170,7 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	SH_REMOVE_HOOK(IServerGameClients, OnClientConnected, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_OnClientConnected), false);
 	SH_REMOVE_HOOK(IServerGameClients, ClientConnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientConnect), false);
 	SH_REMOVE_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
+	SH_REMOVE_HOOK(IServerGameDLL, GameServerSteamAPIActivated, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameServerSteamAPIActivated), true);
 
 	g_CS2ADiscord.Shutdown();
 
@@ -675,6 +685,16 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 void CS2APlugin::Hook_ClientSettingsChanged(CPlayerSlot slot)
 {
 	// Could track name changes here if needed
+}
+
+void CS2APlugin::Hook_GameServerSteamAPIActivated()
+{
+	if (g_AdminSteamAPI.SteamUGC())
+	{
+		RETURN_META(MRES_IGNORED);
+	}
+	g_AdminSteamAPI.Init();
+	RETURN_META(MRES_IGNORED);
 }
 
 void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)

@@ -161,3 +161,16 @@ CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
 	}
 	META_CONPRINTF("[ADMIN] sc_fw_unmute: Player %s not found on server.\n", authid);
 }
+
+void ShutdownConsoleCommands()
+{
+	if (!g_pICvar)
+		return;
+
+	g_pICvar->UnregisterConCommandCallbacks(mm_reload_command);
+	g_pICvar->UnregisterConCommandCallbacks(mm_rehash_command);
+	g_pICvar->UnregisterConCommandCallbacks(cs2admin_version_command);
+	g_pICvar->UnregisterConCommandCallbacks(sc_fw_block_command);
+	g_pICvar->UnregisterConCommandCallbacks(sc_fw_ungag_command);
+	g_pICvar->UnregisterConCommandCallbacks(sc_fw_unmute_command);
+}

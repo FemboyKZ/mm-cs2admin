@@ -3,13 +3,51 @@
 
 #include <functional>
 #include <vector>
+#include <algorithm>
 #include <string>
 #include <cstdint>
 
 // Other Metamod plugins can acquire this interface via:
 //   ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 //       CS2ADMIN_FORWARDS_INTERFACE, nullptr, nullptr);
-#define CS2ADMIN_FORWARDS_INTERFACE "ICS2AdminForwards002"
+// Version bumped to 003: Register* now returns ForwardHandle; Unregister* added.
+#define CS2ADMIN_FORWARDS_INTERFACE "ICS2AdminForwards003"
+
+// Opaque handle returned by Register* calls. Pass to the matching Unregister*
+// method to remove a callback. 0 is the invalid/sentinel value.
+using ForwardHandle = uint32_t;
+static constexpr ForwardHandle kInvalidForwardHandle = 0;
+
+// Internal helper: per-forward-type list with stable numeric IDs.
+template<typename Fn>
+struct ForwardList
+{
+	struct Entry
+	{
+		ForwardHandle id;
+		Fn fn;
+	};
+
+	ForwardHandle Add(Fn fn)
+	{
+		uint32_t id = m_nextId++;
+		m_entries.push_back({id, std::move(fn)});
+		return id;
+	}
+
+	void Remove(ForwardHandle id)
+	{
+		m_entries.erase(std::remove_if(m_entries.begin(), m_entries.end(), [id](const Entry &e) { return e.id == id; }), m_entries.end());
+	}
+
+	void Clear()
+	{
+		m_entries.clear();
+	}
+
+	std::vector<Entry> m_entries;
+	uint32_t m_nextId = 1;
+};
 
 // Forward callback types.
 // Returning true from blockable callbacks prevents the action.
@@ -47,115 +85,237 @@ using OnClientPreAdminCheckFn = std::function<void(int slot)>;
 class ICS2AdminForwards
 {
 public:
-	virtual void RegisterOnBanPlayer(OnBanPlayerFn callback) = 0;
-	virtual void RegisterOnUnbanPlayer(OnUnbanPlayerFn callback) = 0;
-	virtual void RegisterOnMutePlayer(OnMutePlayerFn callback) = 0;
-	virtual void RegisterOnGagPlayer(OnGagPlayerFn callback) = 0;
-	virtual void RegisterOnUnmutePlayer(OnUnmutePlayerFn callback) = 0;
-	virtual void RegisterOnUngagPlayer(OnUngagPlayerFn callback) = 0;
-	virtual void RegisterOnReportPlayer(OnReportPlayerFn callback) = 0;
-	virtual void RegisterOnClientPreAdminCheck(OnClientPreAdminCheckFn callback) = 0;
+	// Register a callback. Returns a handle that can be passed to the matching
+	// Unregister* method. Call Unregister* from your plugin's Unload() to
+	// prevent cs2admin from invoking callbacks into an unloaded DLL.
+	virtual ForwardHandle RegisterOnBanPlayer(OnBanPlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnUnbanPlayer(OnUnbanPlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnMutePlayer(OnMutePlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnGagPlayer(OnGagPlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnUnmutePlayer(OnUnmutePlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnUngagPlayer(OnUngagPlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnReportPlayer(OnReportPlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnClientPreAdminCheck(OnClientPreAdminCheckFn callback) = 0;
+	virtual ForwardHandle RegisterOnKickPlayer(OnKickPlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnSlayPlayer(OnSlayPlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnSilencePlayer(OnSilencePlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnUnsilencePlayer(OnUnsilencePlayerFn callback) = 0;
+	virtual ForwardHandle RegisterOnMapChange(OnMapChangeFn callback) = 0;
+	virtual ForwardHandle RegisterOnClientConnected(OnClientConnectedFn callback) = 0;
+	virtual ForwardHandle RegisterOnClientDisconnect(OnClientDisconnectFn callback) = 0;
+	virtual ForwardHandle RegisterOnClientAuthorized(OnClientAuthorizedFn callback) = 0;
 
-	virtual void RegisterOnKickPlayer(OnKickPlayerFn callback) = 0;
-	virtual void RegisterOnSlayPlayer(OnSlayPlayerFn callback) = 0;
-	virtual void RegisterOnSilencePlayer(OnSilencePlayerFn callback) = 0;
-	virtual void RegisterOnUnsilencePlayer(OnUnsilencePlayerFn callback) = 0;
-	virtual void RegisterOnMapChange(OnMapChangeFn callback) = 0;
-	virtual void RegisterOnClientConnected(OnClientConnectedFn callback) = 0;
-	virtual void RegisterOnClientDisconnect(OnClientDisconnectFn callback) = 0;
-	virtual void RegisterOnClientAuthorized(OnClientAuthorizedFn callback) = 0;
+	virtual void UnregisterOnBanPlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnUnbanPlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnMutePlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnGagPlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnUnmutePlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnUngagPlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnReportPlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnClientPreAdminCheck(ForwardHandle handle) = 0;
+
+	virtual void UnregisterOnKickPlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnSlayPlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnSilencePlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnUnsilencePlayer(ForwardHandle handle) = 0;
+	virtual void UnregisterOnMapChange(ForwardHandle handle) = 0;
+	virtual void UnregisterOnClientConnected(ForwardHandle handle) = 0;
+	virtual void UnregisterOnClientDisconnect(ForwardHandle handle) = 0;
+	virtual void UnregisterOnClientAuthorized(ForwardHandle handle) = 0;
 };
 
 class CS2AForwards : public ICS2AdminForwards
 {
 public:
-	void RegisterOnBanPlayer(OnBanPlayerFn callback) override
+	// Called from CS2APlugin::Unload() to drop all registered callbacks so that
+	// no lambda from another (possibly already-unloaded) plugin can be invoked.
+	void Shutdown()
 	{
-		m_onBanPlayer.push_back(callback);
+		m_onBanPlayer.Clear();
+		m_onUnbanPlayer.Clear();
+		m_onMutePlayer.Clear();
+		m_onGagPlayer.Clear();
+		m_onUnmutePlayer.Clear();
+		m_onUngagPlayer.Clear();
+		m_onUnsilencePlayer.Clear();
+		m_onReportPlayer.Clear();
+		m_onClientPreAdminCheck.Clear();
+		m_onKickPlayer.Clear();
+		m_onSlayPlayer.Clear();
+		m_onSilencePlayer.Clear();
+		m_onMapChange.Clear();
+		m_onClientConnected.Clear();
+		m_onClientDisconnect.Clear();
+		m_onClientAuthorized.Clear();
 	}
 
-	void RegisterOnUnbanPlayer(OnUnbanPlayerFn callback) override
+	ForwardHandle RegisterOnBanPlayer(OnBanPlayerFn callback) override
 	{
-		m_onUnbanPlayer.push_back(callback);
+		return m_onBanPlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnMutePlayer(OnMutePlayerFn callback) override
+	ForwardHandle RegisterOnUnbanPlayer(OnUnbanPlayerFn callback) override
 	{
-		m_onMutePlayer.push_back(callback);
+		return m_onUnbanPlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnGagPlayer(OnGagPlayerFn callback) override
+	ForwardHandle RegisterOnMutePlayer(OnMutePlayerFn callback) override
 	{
-		m_onGagPlayer.push_back(callback);
+		return m_onMutePlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnUnmutePlayer(OnUnmutePlayerFn callback) override
+	ForwardHandle RegisterOnGagPlayer(OnGagPlayerFn callback) override
 	{
-		m_onUnmutePlayer.push_back(callback);
+		return m_onGagPlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnUngagPlayer(OnUngagPlayerFn callback) override
+	ForwardHandle RegisterOnUnmutePlayer(OnUnmutePlayerFn callback) override
 	{
-		m_onUngagPlayer.push_back(callback);
+		return m_onUnmutePlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnReportPlayer(OnReportPlayerFn callback) override
+	ForwardHandle RegisterOnUngagPlayer(OnUngagPlayerFn callback) override
 	{
-		m_onReportPlayer.push_back(callback);
+		return m_onUngagPlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnClientPreAdminCheck(OnClientPreAdminCheckFn callback) override
+	ForwardHandle RegisterOnReportPlayer(OnReportPlayerFn callback) override
 	{
-		m_onClientPreAdminCheck.push_back(callback);
+		return m_onReportPlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnKickPlayer(OnKickPlayerFn callback) override
+	ForwardHandle RegisterOnClientPreAdminCheck(OnClientPreAdminCheckFn callback) override
 	{
-		m_onKickPlayer.push_back(callback);
+		return m_onClientPreAdminCheck.Add(std::move(callback));
 	}
 
-	void RegisterOnSlayPlayer(OnSlayPlayerFn callback) override
+	ForwardHandle RegisterOnKickPlayer(OnKickPlayerFn callback) override
 	{
-		m_onSlayPlayer.push_back(callback);
+		return m_onKickPlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnSilencePlayer(OnSilencePlayerFn callback) override
+	ForwardHandle RegisterOnSlayPlayer(OnSlayPlayerFn callback) override
 	{
-		m_onSilencePlayer.push_back(callback);
+		return m_onSlayPlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnUnsilencePlayer(OnUnsilencePlayerFn callback) override
+	ForwardHandle RegisterOnSilencePlayer(OnSilencePlayerFn callback) override
 	{
-		m_onUnsilencePlayer.push_back(callback);
+		return m_onSilencePlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnMapChange(OnMapChangeFn callback) override
+	ForwardHandle RegisterOnUnsilencePlayer(OnUnsilencePlayerFn callback) override
 	{
-		m_onMapChange.push_back(callback);
+		return m_onUnsilencePlayer.Add(std::move(callback));
 	}
 
-	void RegisterOnClientConnected(OnClientConnectedFn callback) override
+	ForwardHandle RegisterOnMapChange(OnMapChangeFn callback) override
 	{
-		m_onClientConnected.push_back(callback);
+		return m_onMapChange.Add(std::move(callback));
 	}
 
-	void RegisterOnClientDisconnect(OnClientDisconnectFn callback) override
+	ForwardHandle RegisterOnClientConnected(OnClientConnectedFn callback) override
 	{
-		m_onClientDisconnect.push_back(callback);
+		return m_onClientConnected.Add(std::move(callback));
 	}
 
-	void RegisterOnClientAuthorized(OnClientAuthorizedFn callback) override
+	ForwardHandle RegisterOnClientDisconnect(OnClientDisconnectFn callback) override
 	{
-		m_onClientAuthorized.push_back(callback);
+		return m_onClientDisconnect.Add(std::move(callback));
 	}
 
-	// Fire forwards. blockable ones return true if any callback blocked
+	ForwardHandle RegisterOnClientAuthorized(OnClientAuthorizedFn callback) override
+	{
+		return m_onClientAuthorized.Add(std::move(callback));
+	}
+
+	void UnregisterOnBanPlayer(ForwardHandle h) override
+	{
+		m_onBanPlayer.Remove(h);
+	}
+
+	void UnregisterOnUnbanPlayer(ForwardHandle h) override
+	{
+		m_onUnbanPlayer.Remove(h);
+	}
+
+	void UnregisterOnMutePlayer(ForwardHandle h) override
+	{
+		m_onMutePlayer.Remove(h);
+	}
+
+	void UnregisterOnGagPlayer(ForwardHandle h) override
+	{
+		m_onGagPlayer.Remove(h);
+	}
+
+	void UnregisterOnUnmutePlayer(ForwardHandle h) override
+	{
+		m_onUnmutePlayer.Remove(h);
+	}
+
+	void UnregisterOnUngagPlayer(ForwardHandle h) override
+	{
+		m_onUngagPlayer.Remove(h);
+	}
+
+	void UnregisterOnReportPlayer(ForwardHandle h) override
+	{
+		m_onReportPlayer.Remove(h);
+	}
+
+	void UnregisterOnClientPreAdminCheck(ForwardHandle h) override
+	{
+		m_onClientPreAdminCheck.Remove(h);
+	}
+
+	void UnregisterOnKickPlayer(ForwardHandle h) override
+	{
+		m_onKickPlayer.Remove(h);
+	}
+
+	void UnregisterOnSlayPlayer(ForwardHandle h) override
+	{
+		m_onSlayPlayer.Remove(h);
+	}
+
+	void UnregisterOnSilencePlayer(ForwardHandle h) override
+	{
+		m_onSilencePlayer.Remove(h);
+	}
+
+	void UnregisterOnUnsilencePlayer(ForwardHandle h) override
+	{
+		m_onUnsilencePlayer.Remove(h);
+	}
+
+	void UnregisterOnMapChange(ForwardHandle h) override
+	{
+		m_onMapChange.Remove(h);
+	}
+
+	void UnregisterOnClientConnected(ForwardHandle h) override
+	{
+		m_onClientConnected.Remove(h);
+	}
+
+	void UnregisterOnClientDisconnect(ForwardHandle h) override
+	{
+		m_onClientDisconnect.Remove(h);
+	}
+
+	void UnregisterOnClientAuthorized(ForwardHandle h) override
+	{
+		m_onClientAuthorized.Remove(h);
+	}
+
+	// Fire forwards. Blockable ones return true if any callback blocked.
 
 	bool FireOnBanPlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason)
 	{
-		for (auto &cb : m_onBanPlayer)
+		for (auto &e : m_onBanPlayer.m_entries)
 		{
-			if (cb(targetSlot, adminSlot, timeMinutes, reason))
+			if (e.fn(targetSlot, adminSlot, timeMinutes, reason))
 			{
 				return true;
 			}
@@ -165,9 +325,9 @@ public:
 
 	bool FireOnMutePlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason)
 	{
-		for (auto &cb : m_onMutePlayer)
+		for (auto &e : m_onMutePlayer.m_entries)
 		{
-			if (cb(targetSlot, adminSlot, timeMinutes, reason))
+			if (e.fn(targetSlot, adminSlot, timeMinutes, reason))
 			{
 				return true;
 			}
@@ -177,9 +337,9 @@ public:
 
 	bool FireOnGagPlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason)
 	{
-		for (auto &cb : m_onGagPlayer)
+		for (auto &e : m_onGagPlayer.m_entries)
 		{
-			if (cb(targetSlot, adminSlot, timeMinutes, reason))
+			if (e.fn(targetSlot, adminSlot, timeMinutes, reason))
 			{
 				return true;
 			}
@@ -189,9 +349,9 @@ public:
 
 	bool FireOnKickPlayer(int targetSlot, int adminSlot, const char *reason)
 	{
-		for (auto &cb : m_onKickPlayer)
+		for (auto &e : m_onKickPlayer.m_entries)
 		{
-			if (cb(targetSlot, adminSlot, reason))
+			if (e.fn(targetSlot, adminSlot, reason))
 			{
 				return true;
 			}
@@ -201,9 +361,9 @@ public:
 
 	bool FireOnSlayPlayer(int targetSlot, int adminSlot)
 	{
-		for (auto &cb : m_onSlayPlayer)
+		for (auto &e : m_onSlayPlayer.m_entries)
 		{
-			if (cb(targetSlot, adminSlot))
+			if (e.fn(targetSlot, adminSlot))
 			{
 				return true;
 			}
@@ -213,9 +373,9 @@ public:
 
 	bool FireOnSilencePlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason)
 	{
-		for (auto &cb : m_onSilencePlayer)
+		for (auto &e : m_onSilencePlayer.m_entries)
 		{
-			if (cb(targetSlot, adminSlot, timeMinutes, reason))
+			if (e.fn(targetSlot, adminSlot, timeMinutes, reason))
 			{
 				return true;
 			}
@@ -225,9 +385,9 @@ public:
 
 	bool FireOnMapChange(const char *mapName, int adminSlot)
 	{
-		for (auto &cb : m_onMapChange)
+		for (auto &e : m_onMapChange.m_entries)
 		{
-			if (cb(mapName, adminSlot))
+			if (e.fn(mapName, adminSlot))
 			{
 				return true;
 			}
@@ -237,93 +397,93 @@ public:
 
 	void FireOnUnbanPlayer(const char *authid, int adminSlot)
 	{
-		for (auto &cb : m_onUnbanPlayer)
+		for (auto &e : m_onUnbanPlayer.m_entries)
 		{
-			cb(authid, adminSlot);
+			e.fn(authid, adminSlot);
 		}
 	}
 
 	void FireOnUnmutePlayer(int targetSlot, int adminSlot)
 	{
-		for (auto &cb : m_onUnmutePlayer)
+		for (auto &e : m_onUnmutePlayer.m_entries)
 		{
-			cb(targetSlot, adminSlot);
+			e.fn(targetSlot, adminSlot);
 		}
 	}
 
 	void FireOnUngagPlayer(int targetSlot, int adminSlot)
 	{
-		for (auto &cb : m_onUngagPlayer)
+		for (auto &e : m_onUngagPlayer.m_entries)
 		{
-			cb(targetSlot, adminSlot);
+			e.fn(targetSlot, adminSlot);
 		}
 	}
 
 	void FireOnUnsilencePlayer(int targetSlot, int adminSlot)
 	{
-		for (auto &cb : m_onUnsilencePlayer)
+		for (auto &e : m_onUnsilencePlayer.m_entries)
 		{
-			cb(targetSlot, adminSlot);
+			e.fn(targetSlot, adminSlot);
 		}
 	}
 
 	void FireOnReportPlayer(int reporterSlot, int targetSlot, const char *reason)
 	{
-		for (auto &cb : m_onReportPlayer)
+		for (auto &e : m_onReportPlayer.m_entries)
 		{
-			cb(reporterSlot, targetSlot, reason);
+			e.fn(reporterSlot, targetSlot, reason);
 		}
 	}
 
 	void FireOnClientPreAdminCheck(int slot)
 	{
-		for (auto &cb : m_onClientPreAdminCheck)
+		for (auto &e : m_onClientPreAdminCheck.m_entries)
 		{
-			cb(slot);
+			e.fn(slot);
 		}
 	}
 
 	void FireOnClientConnected(int slot, const char *name, uint64_t steamid64, const char *ip)
 	{
-		for (auto &cb : m_onClientConnected)
+		for (auto &e : m_onClientConnected.m_entries)
 		{
-			cb(slot, name, steamid64, ip);
+			e.fn(slot, name, steamid64, ip);
 		}
 	}
 
 	void FireOnClientDisconnect(int slot)
 	{
-		for (auto &cb : m_onClientDisconnect)
+		for (auto &e : m_onClientDisconnect.m_entries)
 		{
-			cb(slot);
+			e.fn(slot);
 		}
 	}
 
 	void FireOnClientAuthorized(int slot, const char *authid, uint64_t steamid64)
 	{
-		for (auto &cb : m_onClientAuthorized)
+		for (auto &e : m_onClientAuthorized.m_entries)
 		{
-			cb(slot, authid, steamid64);
+			e.fn(slot, authid, steamid64);
 		}
 	}
 
 private:
-	std::vector<OnBanPlayerFn> m_onBanPlayer;
-	std::vector<OnUnbanPlayerFn> m_onUnbanPlayer;
-	std::vector<OnMutePlayerFn> m_onMutePlayer;
-	std::vector<OnGagPlayerFn> m_onGagPlayer;
-	std::vector<OnUnmutePlayerFn> m_onUnmutePlayer;
-	std::vector<OnUngagPlayerFn> m_onUngagPlayer;
-	std::vector<OnReportPlayerFn> m_onReportPlayer;
-	std::vector<OnClientPreAdminCheckFn> m_onClientPreAdminCheck;
-	std::vector<OnKickPlayerFn> m_onKickPlayer;
-	std::vector<OnSlayPlayerFn> m_onSlayPlayer;
-	std::vector<OnSilencePlayerFn> m_onSilencePlayer;
-	std::vector<OnUnsilencePlayerFn> m_onUnsilencePlayer;
-	std::vector<OnMapChangeFn> m_onMapChange;
-	std::vector<OnClientConnectedFn> m_onClientConnected;
-	std::vector<OnClientDisconnectFn> m_onClientDisconnect;
-	std::vector<OnClientAuthorizedFn> m_onClientAuthorized;
+	ForwardList<OnBanPlayerFn> m_onBanPlayer;
+	ForwardList<OnUnbanPlayerFn> m_onUnbanPlayer;
+	ForwardList<OnMutePlayerFn> m_onMutePlayer;
+	ForwardList<OnGagPlayerFn> m_onGagPlayer;
+	ForwardList<OnUnmutePlayerFn> m_onUnmutePlayer;
+	ForwardList<OnUngagPlayerFn> m_onUngagPlayer;
+	ForwardList<OnReportPlayerFn> m_onReportPlayer;
+	ForwardList<OnClientPreAdminCheckFn> m_onClientPreAdminCheck;
+	ForwardList<OnKickPlayerFn> m_onKickPlayer;
+	ForwardList<OnSlayPlayerFn> m_onSlayPlayer;
+	ForwardList<OnSilencePlayerFn> m_onSilencePlayer;
+	ForwardList<OnUnsilencePlayerFn> m_onUnsilencePlayer;
+	ForwardList<OnMapChangeFn> m_onMapChange;
+	ForwardList<OnClientConnectedFn> m_onClientConnected;
+	ForwardList<OnClientDisconnectFn> m_onClientDisconnect;
+	ForwardList<OnClientAuthorizedFn> m_onClientAuthorized;
 };
 
 extern CS2AForwards g_CS2AForwards;

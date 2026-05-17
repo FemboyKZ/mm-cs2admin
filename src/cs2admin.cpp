@@ -2,6 +2,10 @@
 #include <cstdarg>
 #include <ctime>
 #include "cs2admin.h"
+
+// Defined in command/console_commands.cpp — called during Unload to explicitly
+// clear static CON_COMMAND_F callbacks from the ICvar dispatch table.
+void ShutdownConsoleCommands();
 #include "config/config.h"
 #include "config/gamedata.h"
 #include "db/database.h"
@@ -176,6 +180,12 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// Unregister and delete all dynamically created mm_* ConCommands.
 	g_CS2ACommandSystem.Shutdown();
 
+	// Explicitly unregister the static CON_COMMAND_F commands (mm_reload, etc.)
+	ShutdownConsoleCommands();
+
+	// Drop all registered forward callbacks so lambdas captured from other
+	g_CS2AForwards.Shutdown();
+
 	// Flush and join the Discord worker thread before touching other state.
 	g_CS2ADiscord.Shutdown();
 
@@ -187,6 +197,9 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// Mark DB as shutting down (blocks new Query() calls) then destroy the
 	// connection, which cancels any pending sql_mm callbacks in its queue.
 	g_CS2ADatabase.Shutdown();
+
+	// Clear the cached Steam API context
+	g_AdminSteamAPI.Clear();
 
 	META_CONPRINTF("[ADMIN] Plugin unloaded.\n");
 	return true;

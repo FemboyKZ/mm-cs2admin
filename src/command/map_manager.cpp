@@ -189,7 +189,11 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 
 	const MapEntry *entry = FindMap(input, error);
 	if (!entry)
-		return false;
+	{
+		error.clear();
+		g_pEngine->ChangeLevel(input, nullptr);
+		return true;
+	}
 
 	if (entry->isWorkshop)
 	{

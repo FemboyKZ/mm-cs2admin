@@ -190,6 +190,9 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 	const MapEntry *entry = FindMap(input, error);
 	if (!entry)
 	{
+		if (!g_pEngine->IsMapValid(input))
+			return false;
+
 		error.clear();
 		g_pEngine->ChangeLevel(input, nullptr);
 		return true;

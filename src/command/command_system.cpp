@@ -1251,7 +1251,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 										ADMIN_PrintToClient(slot, "%s = %s\n", cvar.GetName(), cur.Get());
 									}
 									if (!listener.Buffer().empty())
+									{
 										ReplyConsoleOutput(slot, listener.Buffer(), listener.Truncated());
+									}
 
 									std::string adminName2 = g_CS2APlayerManager.GetAdminName(slot);
 									PlayerInfo *adminPlayer2 = g_CS2APlayerManager.GetPlayer(slot);

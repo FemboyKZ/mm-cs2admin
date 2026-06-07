@@ -11,28 +11,28 @@
 // Admin flag bits, mirrors SourceMod's admin flag letters a-z
 enum AdminFlag : uint32_t
 {
-	ADMFLAG_NONE          = 0,
-	ADMFLAG_RESERVATION   = (1 << 0),   // a - Reserved slot
-	ADMFLAG_GENERIC       = (1 << 1),   // b - Generic admin
-	ADMFLAG_KICK          = (1 << 2),   // c - Kick
-	ADMFLAG_BAN           = (1 << 3),   // d - Ban
-	ADMFLAG_UNBAN         = (1 << 4),   // e - Unban
-	ADMFLAG_SLAY          = (1 << 5),   // f - Slay
-	ADMFLAG_CHANGEMAP     = (1 << 6),   // g - Map change
-	ADMFLAG_CONVARS       = (1 << 7),   // h - ConVar access
-	ADMFLAG_CONFIG        = (1 << 8),   // i - Config
-	ADMFLAG_CHAT          = (1 << 9),   // j - Chat commands
-	ADMFLAG_VOTE          = (1 << 10),  // k - Vote
-	ADMFLAG_PASSWORD      = (1 << 11),  // l - Password
-	ADMFLAG_RCON          = (1 << 12),  // m - RCON
-	ADMFLAG_CHEATS        = (1 << 13),  // n - Cheats
-	ADMFLAG_CUSTOM1       = (1 << 14),  // o - Custom 1
-	ADMFLAG_CUSTOM2       = (1 << 15),  // p - Custom 2
-	ADMFLAG_CUSTOM3       = (1 << 16),  // q - Custom 3
-	ADMFLAG_CUSTOM4       = (1 << 17),  // r - Custom 4
-	ADMFLAG_CUSTOM5       = (1 << 18),  // s - Custom 5
-	ADMFLAG_CUSTOM6       = (1 << 19),  // t - Custom 6
-	ADMFLAG_ROOT          = (1 << 25),  // z - Root (all access)
+	ADMFLAG_NONE = 0,
+	ADMFLAG_RESERVATION = (1 << 0), // a - Reserved slot
+	ADMFLAG_GENERIC = (1 << 1),     // b - Generic admin
+	ADMFLAG_KICK = (1 << 2),        // c - Kick
+	ADMFLAG_BAN = (1 << 3),         // d - Ban
+	ADMFLAG_UNBAN = (1 << 4),       // e - Unban
+	ADMFLAG_SLAY = (1 << 5),        // f - Slay
+	ADMFLAG_CHANGEMAP = (1 << 6),   // g - Map change
+	ADMFLAG_CONVARS = (1 << 7),     // h - ConVar access
+	ADMFLAG_CONFIG = (1 << 8),      // i - Config
+	ADMFLAG_CHAT = (1 << 9),        // j - Chat commands
+	ADMFLAG_VOTE = (1 << 10),       // k - Vote
+	ADMFLAG_PASSWORD = (1 << 11),   // l - Password
+	ADMFLAG_RCON = (1 << 12),       // m - RCON
+	ADMFLAG_CHEATS = (1 << 13),     // n - Cheats
+	ADMFLAG_CUSTOM1 = (1 << 14),    // o - Custom 1
+	ADMFLAG_CUSTOM2 = (1 << 15),    // p - Custom 2
+	ADMFLAG_CUSTOM3 = (1 << 16),    // q - Custom 3
+	ADMFLAG_CUSTOM4 = (1 << 17),    // r - Custom 4
+	ADMFLAG_CUSTOM5 = (1 << 18),    // s - Custom 5
+	ADMFLAG_CUSTOM6 = (1 << 19),    // t - Custom 6
+	ADMFLAG_ROOT = (1 << 25),       // z - Root (all access)
 };
 
 // Override types, mirrors SourceMod's OverrideType
@@ -52,12 +52,12 @@ enum OverrideRule
 // Info about a single admin entry (from DB or flat file)
 struct AdminEntry
 {
-	std::string identity;      // SteamID "STEAM_0:X:Y"
+	std::string identity; // SteamID "STEAM_0:X:Y"
 	uint64_t steamid64 = 0;
-	int adminId = 0;           // SBPP database admin ID (aid)
+	int adminId = 0; // SBPP database admin ID (aid)
 	std::string name;
-	std::string group;         // Server group name (from DB or flat file)
-	uint32_t flags = 0;        // Bitfield of AdminFlag
+	std::string group;  // Server group name (from DB or flat file)
+	uint32_t flags = 0; // Bitfield of AdminFlag
 	int immunity = 0;
 	std::string password;
 	bool fromDatabase = false; // true = loaded from SBPP DB, false = from flat file
@@ -66,7 +66,7 @@ struct AdminEntry
 // Info about a server group
 struct AdminGroup
 {
-	int id = 0;                // DB primary key (sb_srvgroups.id)
+	int id = 0; // DB primary key (sb_srvgroups.id)
 	std::string name;
 	uint32_t flags = 0;
 	int immunity = 0;
@@ -135,8 +135,7 @@ public:
 	// commandName should be the command without prefix (e.g. "ban", "mute").
 	// commandGroup is an optional command group name (e.g. "admin").
 	// defaultFlag is the default required flag if no override applies.
-	bool CanPlayerUseCommand(int slot, const char *commandName,
-		const char *commandGroup, uint32_t defaultFlag);
+	bool CanPlayerUseCommand(int slot, const char *commandName, const char *commandGroup, uint32_t defaultFlag);
 
 	// Get the admin entry for a connected player (merged), or nullptr.
 	const AdminEntry *GetPlayerAdmin(int slot);

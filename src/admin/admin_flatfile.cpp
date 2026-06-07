@@ -11,16 +11,24 @@
 static std::string ParseQuotedToken(const std::string &line, size_t &pos)
 {
 	while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t'))
+	{
 		pos++;
+	}
 	if (pos >= line.size() || line[pos] != '"')
+	{
 		return "";
+	}
 	pos++; // skip opening quote
 	size_t start = pos;
 	while (pos < line.size() && line[pos] != '"')
+	{
 		pos++;
+	}
 	std::string val = line.substr(start, pos - start);
 	if (pos < line.size())
+	{
 		pos++; // skip closing quote
+	}
 	return val;
 }
 
@@ -41,8 +49,7 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 	m_flatFileAdmins.clear();
 
 	char path[512];
-	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admins.cfg",
-		g_SMAPI->GetBaseDir());
+	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admins.cfg", g_SMAPI->GetBaseDir());
 
 	std::ifstream file(path);
 	if (!file.is_open())
@@ -61,11 +68,15 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 	{
 		size_t start = line.find_first_not_of(" \t\r\n");
 		if (start == std::string::npos)
+		{
 			continue;
+		}
 		line = line.substr(start);
 
 		if (line.empty() || line[0] == '/' || line[0] == '#')
+		{
 			continue;
+		}
 
 		if (line[0] == '{')
 		{
@@ -118,22 +129,33 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 			std::string value = ParseQuotedToken(line, pos);
 
 			if (key.empty())
+			{
 				continue;
+			}
 
 			std::string keyLower = key;
-			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
-				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 			if (keyLower == "identity" || keyLower == "auth" || keyLower == "steam")
+			{
 				currentEntry.identity = value;
+			}
 			else if (keyLower == "flags")
+			{
 				currentEntry.flags = FlagsFromString(value.c_str());
+			}
 			else if (keyLower == "immunity")
+			{
 				currentEntry.immunity = std::atoi(value.c_str());
+			}
 			else if (keyLower == "group")
+			{
 				currentEntry.group = value;
+			}
 			else if (keyLower == "password")
+			{
 				currentEntry.password = value;
+			}
 		}
 	}
 
@@ -148,12 +170,13 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 void CS2AAdminManager::LoadSimpleAdmins()
 {
 	char path[512];
-	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admins_simple.ini",
-		g_SMAPI->GetBaseDir());
+	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admins_simple.ini", g_SMAPI->GetBaseDir());
 
 	std::ifstream file(path);
 	if (!file.is_open())
+	{
 		return;
+	}
 
 	std::string line;
 	int count = 0;
@@ -162,48 +185,66 @@ void CS2AAdminManager::LoadSimpleAdmins()
 	{
 		size_t start = line.find_first_not_of(" \t\r\n");
 		if (start == std::string::npos)
+		{
 			continue;
+		}
 		line = line.substr(start);
 
 		if (line.empty() || line[0] == '/' || line[0] == ';' || line[0] == '#')
+		{
 			continue;
+		}
 
 		std::vector<std::string> tokens;
 		size_t pos = 0;
 		while (pos < line.size() && tokens.size() < 4)
 		{
 			while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t'))
+			{
 				pos++;
+			}
 			if (pos >= line.size())
+			{
 				break;
+			}
 
 			if (line[pos] == '"')
 			{
 				pos++; // skip opening quote
 				size_t qstart = pos;
 				while (pos < line.size() && line[pos] != '"')
+				{
 					pos++;
+				}
 				tokens.push_back(line.substr(qstart, pos - qstart));
 				if (pos < line.size())
+				{
 					pos++; // skip closing quote
+				}
 			}
 			else
 			{
 				size_t tstart = pos;
 				while (pos < line.size() && line[pos] != ' ' && line[pos] != '\t')
+				{
 					pos++;
+				}
 				tokens.push_back(line.substr(tstart, pos - tstart));
 			}
 		}
 
 		if (tokens.empty())
+		{
 			continue;
+		}
 
 		// Token 0: identity (SteamID)
 		std::string identity = tokens[0];
 		std::string normalized = NormalizeSteamID(identity.c_str());
 		if (normalized.empty())
+		{
 			continue;
+		}
 
 		AdminEntry entry;
 		entry.identity = normalized;
@@ -284,9 +325,13 @@ void CS2AAdminManager::LoadSimpleAdmins()
 		{
 			existing->second.flags |= entry.flags;
 			if (entry.immunity > existing->second.immunity)
+			{
 				existing->second.immunity = entry.immunity;
+			}
 			if (existing->second.group.empty() && !entry.group.empty())
+			{
 				existing->second.group = entry.group;
+			}
 		}
 		else
 		{
@@ -297,7 +342,9 @@ void CS2AAdminManager::LoadSimpleAdmins()
 	}
 
 	if (count > 0)
+	{
 		META_CONPRINTF("[ADMIN] Loaded %d admin(s) from admins_simple.ini.\n", count);
+	}
 }
 
 // Load SM-compatible admin_groups.cfg (KeyValues format)
@@ -319,12 +366,13 @@ void CS2AAdminManager::LoadSimpleAdmins()
 void CS2AAdminManager::LoadFlatFileGroups()
 {
 	char path[512];
-	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admin_groups.cfg",
-		g_SMAPI->GetBaseDir());
+	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admin_groups.cfg", g_SMAPI->GetBaseDir());
 
 	std::ifstream file(path);
 	if (!file.is_open())
+	{
 		return;
+	}
 
 	std::string line;
 	int depth = 0;
@@ -337,11 +385,15 @@ void CS2AAdminManager::LoadFlatFileGroups()
 	{
 		size_t start = line.find_first_not_of(" \t\r\n");
 		if (start == std::string::npos)
+		{
 			continue;
+		}
 		line = line.substr(start);
 
 		if (line.empty() || line[0] == '/' || line[0] == '#')
+		{
 			continue;
+		}
 
 		if (line[0] == '{')
 		{
@@ -371,12 +423,16 @@ void CS2AAdminManager::LoadFlatFileGroups()
 						// Merge: flat-file flags additive, immunity takes max
 						it->second.flags |= currentGroup.flags;
 						if (currentGroup.immunity > it->second.immunity)
+						{
 							it->second.immunity = currentGroup.immunity;
+						}
 						// Merge overrides (flat-file overrides don't clobber DB ones)
 						for (auto &ov : currentGroup.overrides)
 						{
 							if (it->second.overrides.find(ov.first) == it->second.overrides.end())
+							{
 								it->second.overrides[ov.first] = ov.second;
+							}
 						}
 					}
 				}
@@ -402,11 +458,12 @@ void CS2AAdminManager::LoadFlatFileGroups()
 		{
 			std::string key = ParseQuotedToken(line, pos);
 			if (key.empty())
+			{
 				continue;
+			}
 
 			std::string keyLower = key;
-			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
-				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 			if (keyLower == "overrides")
 			{
@@ -418,9 +475,13 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			std::string value = ParseQuotedToken(line, pos);
 
 			if (keyLower == "flags")
+			{
 				currentGroup.flags = FlagsFromString(value.c_str());
+			}
 			else if (keyLower == "immunity")
+			{
 				currentGroup.immunity = std::atoi(value.c_str());
+			}
 		}
 		else if (depth == 3 && inGroup && inOverrides)
 		{
@@ -429,11 +490,13 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			std::string access = ParseQuotedToken(line, pos);
 
 			if (cmdName.empty() || access.empty())
+			{
 				continue;
+			}
 
 			std::string accessLower = access;
 			std::transform(accessLower.begin(), accessLower.end(), accessLower.begin(),
-				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+						   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 			OverrideRule rule = (accessLower == "allow") ? Command_Allow : Command_Deny;
 
@@ -452,7 +515,9 @@ void CS2AAdminManager::LoadFlatFileGroups()
 	}
 
 	if (!m_groups.empty())
+	{
 		META_CONPRINTF("[ADMIN] Loaded %zu group(s) from admin_groups.cfg.\n", m_groups.size());
+	}
 }
 
 // Load SM-compatible admin_overrides.cfg (KeyValues format)
@@ -471,12 +536,13 @@ void CS2AAdminManager::LoadFlatFileGroups()
 void CS2AAdminManager::LoadFlatFileOverrides()
 {
 	char path[512];
-	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admin_overrides.cfg",
-		g_SMAPI->GetBaseDir());
+	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admin_overrides.cfg", g_SMAPI->GetBaseDir());
 
 	std::ifstream file(path);
 	if (!file.is_open())
+	{
 		return;
+	}
 
 	std::string line;
 	int depth = 0;
@@ -491,11 +557,15 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 	{
 		size_t start = line.find_first_not_of(" \t\r\n");
 		if (start == std::string::npos)
+		{
 			continue;
+		}
 		line = line.substr(start);
 
 		if (line.empty() || line[0] == '/' || line[0] == '#')
+		{
 			continue;
+		}
 
 		if (line[0] == '{')
 		{
@@ -512,13 +582,17 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				{
 					std::string typeLower = currentType;
 					std::transform(typeLower.begin(), typeLower.end(), typeLower.begin(),
-						[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+								   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 					std::string key;
 					if (typeLower == "group")
+					{
 						key = "grp:" + currentName;
+					}
 					else
+					{
 						key = "cmd:" + StripCommandPrefix(currentName);
+					}
 
 					// Only add if not already set by DB
 					if (m_globalOverrides.find(key) == m_globalOverrides.end())
@@ -541,7 +615,9 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 		{
 			std::string name = ParseQuotedToken(line, pos);
 			if (name.empty())
+			{
 				continue;
+			}
 
 			// Check if there's a value on the same line (simple form)
 			std::string value = ParseQuotedToken(line, pos);
@@ -551,9 +627,13 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				// Determine type by @ prefix
 				std::string key;
 				if (name[0] == '@')
+				{
 					key = "grp:" + name.substr(1);
+				}
 				else
+				{
 					key = "cmd:" + StripCommandPrefix(name);
+				}
 
 				if (m_globalOverrides.find(key) == m_globalOverrides.end())
 				{
@@ -576,19 +656,26 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 			std::string value = ParseQuotedToken(line, pos);
 
 			if (key.empty())
+			{
 				continue;
+			}
 
 			std::string keyLower = key;
-			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(),
-				[](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
 
 			if (keyLower == "type")
+			{
 				currentType = value;
+			}
 			else if (keyLower == "flag" || keyLower == "flags")
+			{
 				currentFlag = value;
+			}
 		}
 	}
 
 	if (count > 0)
+	{
 		META_CONPRINTF("[ADMIN] Loaded %d global override(s) from admin_overrides.cfg.\n", count);
+	}
 }

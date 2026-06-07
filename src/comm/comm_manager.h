@@ -11,8 +11,8 @@
 enum CommPunishType
 {
 	COMM_NONE = 0,
-	COMM_MUTE = 1,   // Voice mute
-	COMM_GAG = 2,    // Chat gag
+	COMM_MUTE = 1, // Voice mute
+	COMM_GAG = 2,  // Chat gag
 };
 
 class ISQLQuery;
@@ -64,8 +64,7 @@ public:
 	bool IsMuted(int slot);
 
 private:
-	void InsertComm(const char *authid, const char *name, int timeMinutes,
-		const char *reason, int adminSlot, int type);
+	void InsertComm(const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot, int type);
 	void RemoveComm(const char *authid, int adminSlot, int type);
 };
 

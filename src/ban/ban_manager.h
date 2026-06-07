@@ -12,8 +12,7 @@ class CS2ABanManager
 public:
 	// Check if a connecting player is banned. Called from OnClientConnected.
 	// Callback receives (isBanned, banReason).
-	void VerifyBan(int slot, uint64_t steamid64, const char *ip,
-		std::function<void(bool banned, const std::string &reason)> callback);
+	void VerifyBan(int slot, uint64_t steamid64, const char *ip, std::function<void(bool banned, const std::string &reason)> callback);
 
 	// Ban a player by SteamID.
 	// time = ban duration in minutes (0 = permanent).
@@ -37,7 +36,7 @@ public:
 
 	// Check player's ban/comm history for connect-time admin notifications.
 	void CheckHistory(int slot, uint64_t steamid64, const char *ip,
-		std::function<void(int banCount, int commCount, int muteCount, int gagCount)> callback);
+					  std::function<void(int banCount, int commCount, int muteCount, int gagCount)> callback);
 
 	// IP sleuth: check if connecting player's IP matches banned IPs.
 	void CheckSleuth(int slot, uint64_t steamid64, const char *ip);
@@ -50,8 +49,7 @@ public:
 
 private:
 	// Insert a ban row into the database.
-	void InsertBan(const char *ip, const char *authid, const char *name,
-		int timeMinutes, const char *reason, int adminSlot);
+	void InsertBan(const char *ip, const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot);
 };
 
 extern CS2ABanManager g_CS2ABanManager;

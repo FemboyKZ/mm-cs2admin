@@ -15,13 +15,16 @@
 CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 {
 	char path[512];
-	snprintf(path, sizeof(path), "%s/cfg/cs2admin/core.cfg",
-		g_SMAPI->GetBaseDir());
+	snprintf(path, sizeof(path), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
 
 	if (ADMIN_LoadConfig(path, g_CS2AConfig))
+	{
 		META_CONPRINTF("[ADMIN] Config reloaded from %s\n", path);
+	}
 	else
+	{
 		META_CONPRINTF("[ADMIN] Failed to reload config from %s\n", path);
+	}
 
 	// Reload admins (flat file + database)
 	g_CS2AAdminManager.ReloadAdmins();
@@ -33,22 +36,23 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 		if (p && p->connected && !p->fakePlayer && p->authenticated)
 		{
 			g_CS2ABanManager.VerifyBan(i, p->steamid64, p->ip.c_str(),
-				[i, steamid64 = p->steamid64](bool banned, const std::string &reason) {
-				if (banned)
-				{
-					PlayerInfo *pp = g_CS2APlayerManager.GetPlayer(i);
-					if (pp && pp->connected && pp->steamid64 == steamid64)
-					{
-						META_CONPRINTF("[ADMIN] Reload: kicking banned player \"%s\" (%s).\n",
-							pp->name.c_str(), pp->authid.c_str());
-						g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
-					}
-				}
-				else
-				{
-					g_CS2ACommManager.VerifyComms(i, steamid64);
-				}
-			});
+									   [i, steamid64 = p->steamid64](bool banned, const std::string &reason)
+									   {
+										   if (banned)
+										   {
+											   PlayerInfo *pp = g_CS2APlayerManager.GetPlayer(i);
+											   if (pp && pp->connected && pp->steamid64 == steamid64)
+											   {
+												   META_CONPRINTF("[ADMIN] Reload: kicking banned player \"%s\" (%s).\n", pp->name.c_str(),
+																  pp->authid.c_str());
+												   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
+											   }
+										   }
+										   else
+										   {
+											   g_CS2ACommManager.VerifyComms(i, steamid64);
+										   }
+									   });
 		}
 	}
 }
@@ -103,9 +107,13 @@ CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag a player (RCON)", FCVAR_NONE)
 	}
 
 	if (type == COMM_MUTE)
+	{
 		g_CS2ACommManager.MutePlayer(targetSlot, time, reason, -1);
+	}
 	else if (type == COMM_GAG)
+	{
 		g_CS2ACommManager.GagPlayer(targetSlot, time, reason, -1);
+	}
 
 	META_CONPRINTF("[ADMIN] sc_fw_block: Applied type=%d to %s for %d min.\n", type, authid, time);
 }
@@ -121,7 +129,9 @@ CON_COMMAND_F(sc_fw_ungag, "Web panel: ungag a player (RCON)", FCVAR_NONE)
 	const char *authid = args[1];
 	CGlobalVars *globals = GetGameGlobals();
 	if (!globals)
+	{
 		return;
+	}
 
 	for (int i = 0; i < globals->maxClients; i++)
 	{
@@ -147,7 +157,9 @@ CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
 	const char *authid = args[1];
 	CGlobalVars *globals = GetGameGlobals();
 	if (!globals)
+	{
 		return;
+	}
 
 	for (int i = 0; i < globals->maxClients; i++)
 	{
@@ -165,7 +177,9 @@ CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
 void ShutdownConsoleCommands()
 {
 	if (!g_pICvar)
+	{
 		return;
+	}
 
 	g_pICvar->UnregisterConCommandCallbacks(mm_reload_command);
 	g_pICvar->UnregisterConCommandCallbacks(mm_rehash_command);

@@ -29,6 +29,60 @@ static std::string ToLower(const std::string &s)
 	return result;
 }
 
+// Stock/official maps shipped with the game. These are not in the maplist but
+// can still be changed to (via ChangeLevel), so allow the same partial-name
+// matching the maplist gets.
+static const char *const kOfficialMaps[] = {
+	"de_dust2", "de_mirage", "de_inferno", "de_nuke", "de_overpass",
+	"de_vertigo", "de_ancient", "de_anubis", "de_train", "de_cache",
+	"de_dust", "de_cbble", "de_canals", "de_shortdust", "de_shortnuke",
+	"de_basalt", "de_edin", "de_palais", "de_whistle", "de_grail",
+	"de_jura", "de_thera", "de_mills", "de_brewery",
+	"cs_office", "cs_italy", "cs_assault", "cs_militia", "cs_agency",
+	"ar_baggage", "ar_shoots", "ar_pool_day", "ar_monastery", "gd_cbble",
+};
+
+// Match input against the official map list the same way FindMap matches the
+// maplist: exact name first, then a unique substring match. Returns the full
+// map name, or "" if there is no match. On an ambiguous match, fills `error`
+// with the candidate list and returns "".
+static std::string MatchOfficialMap(const std::string &input, std::string &error)
+{
+	std::string search = ToLower(input);
+
+	for (const char *name : kOfficialMaps)
+	{
+		if (ToLower(name) == search)
+			return name;
+	}
+
+	std::vector<const char *> matches;
+	for (const char *name : kOfficialMaps)
+	{
+		if (ToLower(name).find(search) != std::string::npos)
+			matches.push_back(name);
+	}
+
+	if (matches.size() == 1)
+		return matches[0];
+
+	if (matches.size() > 1)
+	{
+		error = "Multiple maps match '";
+		error += input;
+		error += "':";
+		for (size_t i = 0; i < matches.size() && i < 5; i++)
+		{
+			error += " ";
+			error += matches[i];
+		}
+		if (matches.size() > 5)
+			error += " ...";
+	}
+
+	return "";
+}
+
 bool CS2AMapManager::LoadMapList()
 {
 	m_maps.clear();
@@ -190,11 +244,15 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 	const MapEntry *entry = FindMap(input, error);
 	if (!entry)
 	{
-		if (!g_pEngine->IsMapValid(input))
+		std::string resolved = MatchOfficialMap(inputStr, error);
+		if (resolved.empty())
+			return false; // error is the ambiguous list, or FindMap's "No map found"
+
+		if (!g_pEngine->IsMapValid(resolved.c_str()))
 			return false;
 
 		error.clear();
-		g_pEngine->ChangeLevel(input, nullptr);
+		g_pEngine->ChangeLevel(resolved.c_str(), nullptr);
 		return true;
 	}
 

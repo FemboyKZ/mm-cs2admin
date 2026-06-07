@@ -25,12 +25,27 @@ public:
 	bool ChangeMap(const char *input, std::string &error);
 
 	// Get number of loaded maps.
-	int GetMapCount() const { return (int)m_maps.size(); }
+	int GetMapCount() const
+	{
+		return (int)m_maps.size();
+	}
 
-	const std::vector<MapEntry> &GetMaps() const { return m_maps; }
+	const std::vector<MapEntry> &GetMaps() const
+	{
+		return m_maps;
+	}
 
 private:
+	// Scan <gamedir>/maps for local map files populating m_localMaps.
+	// Used as a fallback when the maplist misses.
+	void ScanLocalMaps();
+
+	// Partial-match input against m_localMaps, same rules as FindMap.
+	// Returns the full map name, "" if no match.
+	std::string MatchLocalMap(const std::string &input, std::string &error) const;
+
 	std::vector<MapEntry> m_maps;
+	std::vector<std::string> m_localMaps;
 };
 
 extern CS2AMapManager g_CS2AMapManager;

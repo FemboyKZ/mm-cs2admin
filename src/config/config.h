@@ -12,7 +12,7 @@ struct CS2AConfig
 	std::string databasePrefix = "sb";
 
 	// Database type: "mysql" or "sqlite"
-	std::string dbType = "mysql";
+	std::string dbType = "sqlite";
 
 	// MySQL settings
 	std::string dbHost = "localhost";

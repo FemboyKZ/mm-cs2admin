@@ -69,6 +69,15 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			}
 			cfg->retryTime = v;
 		}
+		else if (k == "maxreconnectattempts")
+		{
+			int v = std::atoi(value.c_str());
+			if (v < 0)
+			{
+				v = 0;
+			}
+			cfg->maxReconnectAttempts = v;
+		}
 		else if (k == "processqueuetime")
 		{
 			cfg->processQueueTime = std::atoi(value.c_str());

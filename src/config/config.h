@@ -28,6 +28,8 @@ struct CS2AConfig
 	bool addban = true;
 	bool unban = true;
 	float retryTime = 45.0f;
+	// Max consecutive reconnect attempts before giving up (0 = unlimited).
+	int maxReconnectAttempts = 5;
 	int processQueueTime = 5;
 	int autoAddServer = 0;
 	bool backupConfigs = true;

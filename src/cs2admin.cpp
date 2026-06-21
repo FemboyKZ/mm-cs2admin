@@ -772,22 +772,42 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 	}
 
 	// DB reconnection timer
-	if (m_bConfigLoaded && g_CS2ADatabase.IsInitialized() && !g_CS2ADatabase.IsConnected() && curtime >= m_flNextReconnect)
+	if (m_bConfigLoaded && g_CS2ADatabase.IsInitialized() && !g_CS2ADatabase.IsConnected() && !m_bReconnectGaveUp && curtime >= m_flNextReconnect)
 	{
 		m_flNextReconnect = curtime + g_CS2AConfig.retryTime;
-		META_CONPRINTF("[ADMIN] Attempting database reconnection...\n");
+		m_iReconnectAttempts++;
+
+		const int maxAttempts = g_CS2AConfig.maxReconnectAttempts;
+		if (maxAttempts > 0)
+		{
+			META_CONPRINTF("[ADMIN] Attempting database reconnection (attempt %d/%d)...\n", m_iReconnectAttempts, maxAttempts);
+		}
+		else
+		{
+			META_CONPRINTF("[ADMIN] Attempting database reconnection (attempt %d)...\n", m_iReconnectAttempts);
+		}
+
 		g_CS2ADatabase.Reconnect(
-			[](bool success)
+			[this](bool success)
 			{
 				if (success)
 				{
 					META_CONPRINTF("[ADMIN] Database reconnected!\n");
+					m_iReconnectAttempts = 0;
+					m_bReconnectGaveUp = false;
 					if (g_CS2AOfflineQueue.HasItems())
 					{
 						g_CS2AOfflineQueue.ProcessQueue();
 					}
 				}
 			});
+
+		// Give up after the configured number of attempts (0 = unlimited) to stop log spam.
+		if (maxAttempts > 0 && m_iReconnectAttempts >= maxAttempts)
+		{
+			m_bReconnectGaveUp = true;
+			META_CONPRINTF("[ADMIN] Database reconnection failed after %d attempts. Giving up and running offline. " maxAttempts);
+		}
 	}
 }
 

@@ -80,6 +80,8 @@ private:
 	float m_flNextExpiryCheck = 0.0f;
 	float m_flNextQueueProcess = 0.0f;
 	float m_flNextReconnect = 0.0f;
+	int m_iReconnectAttempts = 0;
+	bool m_bReconnectGaveUp = false;
 };
 
 extern CS2APlugin g_CS2APlugin;

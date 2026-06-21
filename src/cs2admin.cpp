@@ -806,7 +806,7 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 		if (maxAttempts > 0 && m_iReconnectAttempts >= maxAttempts)
 		{
 			m_bReconnectGaveUp = true;
-			META_CONPRINTF("[ADMIN] Database reconnection failed after %d attempts. Giving up and running offline. " maxAttempts);
+			META_CONPRINTF("[ADMIN] Database reconnection failed after %d attempts. Giving up and running offline.\n", maxAttempts);
 		}
 	}
 }

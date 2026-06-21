@@ -354,6 +354,7 @@ const char *PLUGIN_REVISION_COUNT = \"{revision_count}\";
         cxx.linkflags += ['/NODEFAULTLIB:libcmt']
       else:
         cxx.cflags += ['/MT']
+        cxx.linkflags += ['/NODEFAULTLIB:libcmtd']
       cxx.defines += [
         '_CRT_SECURE_NO_DEPRECATE',
         '_CRT_SECURE_NO_WARNINGS',
@@ -361,15 +362,18 @@ const char *PLUGIN_REVISION_COUNT = \"{revision_count}\";
       ]
       cxx.cflags += [
         '/W3',
-        '/Zi',
+        #'/Zi'
         '/std:c++17',
         '/wd4146',
+        '/wd4244',
         '/wd4267',
       ]
       cxx.cxxflags += ['/TP']
+      cxx.cxxflags += ['/EHsc']
       
       cxx.linkflags += [
         '/SUBSYSTEM:WINDOWS',
+        '/ignore:4099',
         'kernel32.lib',
         'user32.lib',
         'gdi32.lib',

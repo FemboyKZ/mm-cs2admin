@@ -3,8 +3,6 @@
 #include <ctime>
 #include "cs2admin.h"
 
-// Defined in command/console_commands.cpp — called during Unload to explicitly
-// clear static CON_COMMAND_F callbacks from the ICvar dispatch table.
 void ShutdownConsoleCommands();
 #include "config/config.h"
 #include "config/gamedata.h"
@@ -14,6 +12,7 @@ void ShutdownConsoleCommands();
 #include "comm/comm_manager.h"
 #include "command/command_system.h"
 #include "command/map_manager.h"
+#include "menu/menu_bridge.h"
 #include "admin/admin_manager.h"
 #include "public/forwards.h"
 #include "queue/offline_queue.h"
@@ -177,6 +176,10 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	SH_REMOVE_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
 	SH_REMOVE_HOOK(IServerGameDLL, GameServerSteamAPIActivated, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameServerSteamAPIActivated),
 				   true);
+
+	// Cancel any open external menus and drop the ICS2Menus pointer before our code unloads,
+	//  so mm-cs2menus never invokes a lambda inside this DLL.
+	g_AdminMenus.Shutdown();
 
 	// Unregister and delete all dynamically created mm_* ConCommands.
 	g_CS2ACommandSystem.Shutdown();
@@ -376,6 +379,9 @@ void *CS2APlugin::OnMetamodQuery(const char *iface, int *ret)
 
 void CS2APlugin::AllPluginsLoaded()
 {
+	// Resolve the optional mm-cs2menus interface now that all plugins are up.
+	g_AdminMenus.Init();
+
 	// Always load flat-file admins regardless of DB state
 	auto loadFlatFileOnly = [this]()
 	{
@@ -445,6 +451,18 @@ void CS2APlugin::AllPluginsLoaded()
 				g_CS2AAdminManager.MergeAndApplyAll();
 			}
 		});
+}
+
+void CS2APlugin::OnPluginLoad(PluginId /*id*/)
+{
+	// mm-cs2menus may have just loaded; re-resolve so menus light up without a restart.
+	g_AdminMenus.Refresh();
+}
+
+void CS2APlugin::OnPluginUnload(PluginId /*id*/)
+{
+	// Drop our cached pointer if mm-cs2menus is the one going away.
+	g_AdminMenus.Refresh();
 }
 
 void CS2APlugin::LookupServerID()

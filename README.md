@@ -37,6 +37,7 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 * [sql_mm](https://github.com/zer0k-z/sql_mm)
 * (Optional) MySQL Database
 * (Optional) [SB++ Web Panel](https://github.com/sbpp/sourcebans-pp) (Tested only on 1.8+)
+* (Optional) [mm-cs2menus](https://github.com/FemboyKZ/mm-cs2menus) - when loaded, targeting commands typed with no arguments (e.g. `!ban`, `!kick`, `!mute`, `!map`) open an in-game picker instead of printing usage.
 
 ### How to
 

@@ -66,6 +66,21 @@ struct CS2AConfig
 	float chatFloodCooldown = 0.75f; // Minimum seconds between messages
 	int chatFloodMaxMessages = 5;    // Messages in window before action
 	int chatFloodMuteDuration = 0;   // Minutes to auto-mute (0 = block only)
+
+	// Menu config (only used when the mm-cs2menus plugin is loaded; no-arg
+	// targeting commands open a picker instead of printing usage).
+	std::string menuType = "default"; // "default" (let cs2menus decide) | "chat" | "html"
+	// Comma-separated duration presets (minutes, 0 = permanent) for the ban/mute/gag/silence picker.
+	std::string menuDurations = "30,60,180,1440,10080,0";
+	// Comma-separated reason presets for the ban/mute/gag/silence/kick picker.
+	std::string menuReasons = "Cheating,Toxicity,Spam,Advertising,Ban Evasion,Other";
+	// Per-menu HTML nav-key overrides (only used with mm-cs2menus, html menus).
+	// "default" delegates to the menu plugin's configured key, "none" disables the action,
+	// otherwise a key name (w/a/s/d, e/use, shift/speed, ctrl/duck, space/jump, r/reload, mouse1, mouse2, tab, f/inspect).
+	std::string menuNavUp = "default";
+	std::string menuNavDown = "default";
+	std::string menuNavSelect = "default";
+	std::string menuNavBack = "default";
 };
 
 // Load and parse core.cfg from the given path.

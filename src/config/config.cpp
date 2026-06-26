@@ -228,6 +228,37 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->chatFloodMuteDuration = std::atoi(value.c_str());
 		}
 	}
+	else if (sec == "menuconfig")
+	{
+		if (k == "type")
+		{
+			cfg->menuType = ToLower(value);
+		}
+		else if (k == "durations")
+		{
+			cfg->menuDurations = value;
+		}
+		else if (k == "reasons")
+		{
+			cfg->menuReasons = value;
+		}
+		else if (k == "navup")
+		{
+			cfg->menuNavUp = ToLower(value);
+		}
+		else if (k == "navdown")
+		{
+			cfg->menuNavDown = ToLower(value);
+		}
+		else if (k == "navselect")
+		{
+			cfg->menuNavSelect = ToLower(value);
+		}
+		else if (k == "navback")
+		{
+			cfg->menuNavBack = ToLower(value);
+		}
+	}
 }
 
 bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)

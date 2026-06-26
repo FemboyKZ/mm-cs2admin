@@ -1,5 +1,6 @@
 #include "command_system.h"
 #include "map_manager.h"
+#include "src/menu/menu_bridge.h"
 #include "src/player/player_manager.h"
 #include "src/ban/ban_manager.h"
 #include "src/comm/comm_manager.h"
@@ -338,6 +339,345 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 	return true;
 }
 
+// Menu flows (only reachable when mm-cs2menus is loaded).
+//
+// Each flow ends by re-dispatching the matching chat command with synthesized text args,
+// so all permission / immunity / logging / Discord logic is reused.
+// Targets are encoded as "$<steamid64>" (or "#<slot>" for bots) which ADMIN_FindTarget resolves back to a live slot.
+
+namespace
+{
+	// Split a comma-separated config list, trimming whitespace around each entry.
+	std::vector<std::string> SplitCsv(const std::string &raw)
+	{
+		std::vector<std::string> out;
+		size_t pos = 0;
+		while (pos <= raw.size())
+		{
+			size_t comma = raw.find(',', pos);
+			std::string tok = (comma == std::string::npos) ? raw.substr(pos) : raw.substr(pos, comma - pos);
+
+			size_t b = tok.find_first_not_of(" \t");
+			size_t e = tok.find_last_not_of(" \t");
+			if (b != std::string::npos)
+			{
+				out.push_back(tok.substr(b, e - b + 1));
+			}
+
+			if (comma == std::string::npos)
+			{
+				break;
+			}
+			pos = comma + 1;
+		}
+		return out;
+	}
+
+	// Build picker items for the currently connected players.
+	// info = "$<steamid64>" for real players, "#<slot>" for bots.
+	std::vector<AdminMenuItem> BuildPlayerItems(int callerSlot, bool includeBots, bool excludeSelf)
+	{
+		std::vector<AdminMenuItem> items;
+		CGlobalVars *globals = GetGameGlobals();
+		int maxClients = globals ? globals->maxClients : MAXPLAYERS;
+
+		for (int i = 0; i < maxClients; i++)
+		{
+			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+			if (!p || !p->connected)
+			{
+				continue;
+			}
+			if (p->fakePlayer && !includeBots)
+			{
+				continue;
+			}
+			if (excludeSelf && i == callerSlot)
+			{
+				continue;
+			}
+
+			AdminMenuItem item;
+			item.text = p->name;
+			if (p->fakePlayer || p->steamid64 == 0)
+			{
+				item.info = "#" + std::to_string(i);
+			}
+			else
+			{
+				item.info = "$" + std::to_string(p->steamid64);
+			}
+			items.push_back(std::move(item));
+		}
+		return items;
+	}
+
+	// Duration menu items, labelled via ADMIN_FormatDuration, info = the minutes value.
+	std::vector<AdminMenuItem> BuildDurationItems()
+	{
+		std::vector<AdminMenuItem> items;
+		for (const std::string &tok : SplitCsv(g_CS2AConfig.menuDurations))
+		{
+			int mins = ADMIN_ParseDuration(tok.c_str());
+			if (mins < 0)
+			{
+				continue;
+			}
+			AdminMenuItem item;
+			item.text = ADMIN_FormatDuration(mins);
+			item.info = std::to_string(mins);
+			items.push_back(std::move(item));
+		}
+		return items;
+	}
+
+	std::vector<AdminMenuItem> BuildReasonItems()
+	{
+		std::vector<AdminMenuItem> items;
+		for (const std::string &reason : SplitCsv(g_CS2AConfig.menuReasons))
+		{
+			items.push_back({reason, reason, false});
+		}
+		return items;
+	}
+
+	// player -> duration -> reason -> !<cmd> <target> <minutes> <reason>
+	void StartTimedActionFlow(int slot, std::string cmd, std::string verb)
+	{
+		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, false);
+		if (players.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No valid targets online.\n");
+			return;
+		}
+
+		std::string pickTitle = verb + ": select player";
+		g_AdminMenus.ShowMenu(slot, pickTitle.c_str(), players,
+							  [cmd, verb](int s, int, const std::string &target)
+							  {
+								  std::vector<AdminMenuItem> durations = BuildDurationItems();
+								  std::string durTitle = verb + ": select duration";
+								  g_AdminMenus.ShowMenu(s, durTitle.c_str(), durations,
+														[cmd, verb, target](int s2, int, const std::string &minutes)
+														{
+															std::vector<AdminMenuItem> reasons = BuildReasonItems();
+															std::string reasonTitle = verb + ": select reason";
+															g_AdminMenus.ShowMenu(s2, reasonTitle.c_str(), reasons,
+																				  [cmd, target, minutes](int s3, int, const std::string &reason)
+																				  {
+																					  std::vector<std::string> args = {target, minutes, reason};
+																					  g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args,
+																																 s3);
+																				  });
+														});
+							  });
+	}
+
+	// player -> reason -> !kick <target> <reason>
+	void StartKickFlow(int slot)
+	{
+		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, true);
+		if (players.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No valid targets online.\n");
+			return;
+		}
+
+		g_AdminMenus.ShowMenu(slot, "Kick: select player", players,
+							  [](int s, int, const std::string &target)
+							  {
+								  std::vector<AdminMenuItem> reasons = BuildReasonItems();
+								  g_AdminMenus.ShowMenu(s, "Kick: select reason", reasons,
+														[target](int s2, int, const std::string &reason)
+														{
+															std::vector<std::string> args = {target, reason};
+															g_CS2ACommandSystem.DispatchConsoleCommand("kick", args, s2);
+														});
+							  });
+	}
+
+	// player -> !<cmd> <target>
+	void StartTargetOnlyFlow(int slot, std::string cmd, std::string verb, bool includeBots, bool excludeSelf)
+	{
+		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, includeBots, excludeSelf);
+		if (players.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No valid targets online.\n");
+			return;
+		}
+
+		std::string title = verb + ": select player";
+		g_AdminMenus.ShowMenu(slot, title.c_str(), players,
+							  [cmd](int s, int, const std::string &target)
+							  {
+								  std::vector<std::string> args = {target};
+								  g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s);
+							  });
+	}
+
+	// map list -> !map <mapname|workshopid>
+	void StartMapFlow(int slot)
+	{
+		const auto &maps = g_CS2AMapManager.GetMaps();
+		if (maps.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No maps loaded. Check cfg/maplist.txt\n");
+			return;
+		}
+
+		std::vector<AdminMenuItem> items;
+		items.reserve(maps.size());
+		for (const auto &m : maps)
+		{
+			AdminMenuItem item;
+			item.text = m.displayName.empty() ? m.mapName : m.displayName;
+			item.info = (m.isWorkshop && !m.workshopId.empty()) ? m.workshopId : m.mapName;
+			items.push_back(std::move(item));
+		}
+
+		g_AdminMenus.ShowMenu(slot, "Change Map", items,
+							  [](int s, int, const std::string &mapArg)
+							  {
+								  std::vector<std::string> args = {mapArg};
+								  g_CS2ACommandSystem.DispatchConsoleCommand("map", args, s);
+							  });
+	}
+
+	// Giveable items grouped by category for the !give picker.
+	// Classnames and display names follow CS2Fixes' weapon table.
+	// Cosmetic knife variants are collapsed to a single "Knife" since GiveNamedItem("weapon_knife") covers them.
+	struct WeaponEntry
+	{
+		const char *classname;
+		const char *display;
+		const char *category;
+	};
+
+	const WeaponEntry kWeapons[] = {
+		{"weapon_deagle", "Desert Eagle", "Pistols"},
+		{"weapon_elite", "Dual Berettas", "Pistols"},
+		{"weapon_fiveseven", "Five-SeveN", "Pistols"},
+		{"weapon_glock", "Glock-18", "Pistols"},
+		{"weapon_tec9", "Tec-9", "Pistols"},
+		{"weapon_hkp2000", "P2000", "Pistols"},
+		{"weapon_p250", "P250", "Pistols"},
+		{"weapon_cz75a", "CZ75-Auto", "Pistols"},
+		{"weapon_usp_silencer", "USP-S", "Pistols"},
+		{"weapon_revolver", "R8 Revolver", "Pistols"},
+
+		{"weapon_ak47", "AK-47", "Rifles"},
+		{"weapon_m4a1", "M4A4", "Rifles"},
+		{"weapon_m4a1_silencer", "M4A1-S", "Rifles"},
+		{"weapon_aug", "AUG", "Rifles"},
+		{"weapon_sg556", "SG 553", "Rifles"},
+		{"weapon_famas", "Famas", "Rifles"},
+		{"weapon_galilar", "Galil AR", "Rifles"},
+
+		{"weapon_awp", "AWP", "Snipers"},
+		{"weapon_ssg08", "SSG 08", "Snipers"},
+		{"weapon_scar20", "SCAR-20", "Snipers"},
+		{"weapon_g3sg1", "G3SG1", "Snipers"},
+
+		{"weapon_mac10", "MAC-10", "SMGs"},
+		{"weapon_mp9", "MP9", "SMGs"},
+		{"weapon_mp7", "MP7", "SMGs"},
+		{"weapon_mp5sd", "MP5-SD", "SMGs"},
+		{"weapon_ump45", "UMP-45", "SMGs"},
+		{"weapon_p90", "P90", "SMGs"},
+		{"weapon_bizon", "PP-Bizon", "SMGs"},
+
+		{"weapon_nova", "Nova", "Heavy"},
+		{"weapon_xm1014", "XM1014", "Heavy"},
+		{"weapon_mag7", "MAG-7", "Heavy"},
+		{"weapon_sawedoff", "Sawed-Off", "Heavy"},
+		{"weapon_m249", "M249", "Heavy"},
+		{"weapon_negev", "Negev", "Heavy"},
+
+		{"weapon_hegrenade", "HE Grenade", "Grenades"},
+		{"weapon_flashbang", "Flashbang", "Grenades"},
+		{"weapon_smokegrenade", "Smoke Grenade", "Grenades"},
+		{"weapon_molotov", "Molotov", "Grenades"},
+		{"weapon_incgrenade", "Incendiary", "Grenades"},
+		{"weapon_decoy", "Decoy", "Grenades"},
+
+		{"item_kevlar", "Kevlar Vest", "Equipment"},
+		{"item_assaultsuit", "Kevlar + Helmet", "Equipment"},
+		{"item_defuser", "Defuser", "Equipment"},
+		{"weapon_taser", "Zeus x27", "Equipment"},
+		{"weapon_knife", "Knife", "Equipment"},
+	};
+
+	// Distinct categories in table order.
+	std::vector<AdminMenuItem> BuildWeaponCategoryItems()
+	{
+		std::vector<AdminMenuItem> items;
+		for (const WeaponEntry &w : kWeapons)
+		{
+			bool seen = false;
+			for (const AdminMenuItem &existing : items)
+			{
+				if (existing.info == w.category)
+				{
+					seen = true;
+					break;
+				}
+			}
+			if (!seen)
+			{
+				items.push_back({w.category, w.category, false});
+			}
+		}
+		return items;
+	}
+
+	std::vector<AdminMenuItem> BuildWeaponItems(const std::string &category)
+	{
+		std::vector<AdminMenuItem> items;
+		for (const WeaponEntry &w : kWeapons)
+		{
+			if (category == w.category)
+			{
+				items.push_back({w.display, w.classname, false});
+			}
+		}
+		return items;
+	}
+
+	// player -> category -> weapon -> !give <target> <classname>
+	void StartGiveFlow(int slot)
+	{
+		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, true, false);
+		if (players.empty())
+		{
+			ADMIN_ReplyToCommand(slot, "No valid targets online.\n");
+			return;
+		}
+
+		g_AdminMenus.ShowMenu(slot, "Give: select player", players,
+							  [](int s, int, const std::string &target)
+							  {
+								  std::vector<AdminMenuItem> categories = BuildWeaponCategoryItems();
+								  g_AdminMenus.ShowMenu(s, "Give: select category", categories,
+														[target](int s2, int, const std::string &category)
+														{
+															std::vector<AdminMenuItem> weapons = BuildWeaponItems(category);
+															g_AdminMenus.ShowMenu(s2, "Give: select weapon", weapons,
+																				  [target](int s3, int, const std::string &classname)
+																				  {
+																					  std::vector<std::string> args = {target, classname};
+																					  g_CS2ACommandSystem.DispatchConsoleCommand("give", args, s3);
+																				  });
+														});
+							  });
+	}
+
+	// True when slot is a real player and the menu plugin can render a picker.
+	bool MenuPickerAvailable(int slot)
+	{
+		return slot >= 0 && slot <= MAXPLAYERS && g_AdminMenus.Available();
+	}
+} // namespace
+
 void CS2ACommandSystem::RegisterBuiltinCommands()
 {
 	// !ban <target> <time> [reason]
@@ -347,6 +687,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "ban", "banning", ADMFLAG_BAN))
 						{
 							ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
+						if (args.empty() && MenuPickerAvailable(slot))
+						{
+							StartTimedActionFlow(slot, "ban", "Ban");
 							return;
 						}
 
@@ -450,6 +796,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						if (args.empty() && MenuPickerAvailable(slot))
+						{
+							StartTimedActionFlow(slot, "mute", "Mute");
+							return;
+						}
+
 						if (args.size() < 2)
 						{
 							ADMIN_ReplyToCommand(slot, "Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
@@ -500,6 +852,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartTargetOnlyFlow(slot, "unmute", "Unmute", false, false);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !unmute <target>\n");
 							return;
 						}
@@ -520,6 +877,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "gag", "comms", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
+						if (args.empty() && MenuPickerAvailable(slot))
+						{
+							StartTimedActionFlow(slot, "gag", "Gag");
 							return;
 						}
 
@@ -563,6 +926,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartTargetOnlyFlow(slot, "ungag", "Ungag", false, false);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !ungag <target>\n");
 							return;
 						}
@@ -583,6 +951,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "silence", "comms", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
+						if (args.empty() && MenuPickerAvailable(slot))
+						{
+							StartTimedActionFlow(slot, "silence", "Silence");
 							return;
 						}
 
@@ -626,6 +1000,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartTargetOnlyFlow(slot, "unsilence", "Unsilence", false, false);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !unsilence <target>\n");
 							return;
 						}
@@ -709,6 +1088,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartTargetOnlyFlow(slot, "listbans", "List Bans", false, false);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !listbans <target>\n");
 							return;
 						}
@@ -740,6 +1124,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartTargetOnlyFlow(slot, "listcomms", "List Comms", false, false);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !listcomms <target>\n");
 							return;
 						}
@@ -877,6 +1266,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartKickFlow(slot);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !kick <target> [reason]\n");
 							return;
 						}
@@ -936,6 +1330,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartTargetOnlyFlow(slot, "slay", "Slay", true, false);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !slay <target>\n");
 							return;
 						}
@@ -1361,6 +1760,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartMapFlow(slot);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !map <mapname|workshopid>\n");
 							return;
 						}
@@ -1394,6 +1798,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "maps", "admin", ADMFLAG_CHANGEMAP))
 						{
 							ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
+						// No page given: open the interactive map picker if menus are available,
+						// otherwise fall back to the paged text listing below.
+						if (args.empty() && MenuPickerAvailable(slot))
+						{
+							StartMapFlow(slot);
 							return;
 						}
 
@@ -1487,6 +1899,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "give", "admin", ADMFLAG_CHEATS))
 						{
 							ADMIN_ReplyToCommand(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
+						if (args.empty() && MenuPickerAvailable(slot))
+						{
+							StartGiveFlow(slot);
 							return;
 						}
 
@@ -1585,6 +2003,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (args.empty())
 						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartTargetOnlyFlow(slot, "strip", "Strip", true, false);
+								return;
+							}
 							ADMIN_ReplyToCommand(slot, "Usage: !strip <target>\n");
 							return;
 						}

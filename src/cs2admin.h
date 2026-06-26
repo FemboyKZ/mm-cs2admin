@@ -17,6 +17,9 @@ public: // IMetamodListener
 					 bool background);
 	void OnLevelShutdown();
 	void *OnMetamodQuery(const char *iface, int *ret);
+	// Re-resolve optional sibling-plugin interfaces (mm-cs2menus) when plugins load/unload at runtime.
+	void OnPluginLoad(PluginId id);
+	void OnPluginUnload(PluginId id);
 
 public: // Hooks
 	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);

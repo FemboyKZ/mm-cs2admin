@@ -287,21 +287,21 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 		return false;
 	}
 
-	if (!m_playerHasAdmin[slot])
-	{
-		return false;
-	}
+	// A required flag of 0 means the command is open to everyone.
+	auto flagPasses = [](uint32_t flags, uint32_t req) -> bool { return req == 0 ? true : CS2AAdminManager::HasFlag(flags, req); };
 
+	// Non-admins have no flags, but global overrides and open commands (defaultFlag 0) can still apply.
 	const AdminEntry &admin = m_playerAdmins[slot];
+	uint32_t playerFlags = m_playerHasAdmin[slot] ? admin.flags : 0u;
 
 	// Root flag always passes
-	if (admin.flags & ADMFLAG_ROOT)
+	if (playerFlags & ADMFLAG_ROOT)
 	{
 		return true;
 	}
 
 	// Step 1: Check per group overrides (sb_srvgroups_overrides)
-	if (!admin.group.empty())
+	if (m_playerHasAdmin[slot] && !admin.group.empty())
 	{
 		auto grpIt = m_groups.find(admin.group);
 		if (grpIt != m_groups.end())
@@ -339,7 +339,7 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 		auto ovIt = m_globalOverrides.find(cmdKey);
 		if (ovIt != m_globalOverrides.end())
 		{
-			return HasFlag(admin.flags, ovIt->second);
+			return flagPasses(playerFlags, ovIt->second);
 		}
 	}
 
@@ -349,12 +349,12 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 		auto ovIt = m_globalOverrides.find(grpKey);
 		if (ovIt != m_globalOverrides.end())
 		{
-			return HasFlag(admin.flags, ovIt->second);
+			return flagPasses(playerFlags, ovIt->second);
 		}
 	}
 
-	// Step 3: Fall back to default flag check
-	return HasFlag(admin.flags, defaultFlag);
+	// Step 3: Fall back to default flag check. defaultFlag 0 = open to all.
+	return flagPasses(playerFlags, defaultFlag);
 }
 
 const AdminEntry *CS2AAdminManager::GetPlayerAdmin(int slot)

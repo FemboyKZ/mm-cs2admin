@@ -1,7 +1,7 @@
 #include "menu_bridge.h"
 #include "src/config/config.h"
 
-#include "vendor/mm-cs2menus/src/public/ics2menus.h"
+#include "vendor/interfaces/ics2menus.h"
 
 AdminMenuBridge g_AdminMenus;
 

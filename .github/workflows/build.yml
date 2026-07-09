@@ -31,10 +31,7 @@ jobs:
         shell: bash
         run: |
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
-          # Recurse only our own build SDKs.
           git submodule update --init --recursive metamod-source hl2sdk-cs2
-          # Header-only vendors: init non-recursively so we skip their nested
-          # SDK/googletest trees (long paths) and plugin submodule cycles.
           git submodule update --init
 
       - name: Install dependencies

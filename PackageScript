@@ -147,6 +147,15 @@ for task in MMSPlugin.binaries:
     if os.path.isfile(gamedata_src):
         builder.AddCopy(gamedata_src, os.path.join(gamedata_path, "cs2admin.txt"))
 
+    # Package translation files into addons/cs2admin/translations/
+    translations_path = os.path.join(
+        "addons", MMSPlugin.metadata["name"], "translations"
+    )
+    builder.AddFolder(translations_path)
+    translations_src = os.path.join(builder.sourcePath, "translations")
+    for tfile in glob.glob(os.path.join(translations_src, "*.txt")):
+        builder.AddCopy(tfile, os.path.join(translations_path, os.path.basename(tfile)))
+
     if task.debug:
         pdb_list.append(task.debug)
 

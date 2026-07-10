@@ -1,0 +1,46 @@
+#ifndef _INCLUDE_ADMIN_TRANSLATIONS_H_
+#define _INCLUDE_ADMIN_TRANSLATIONS_H_
+
+#include <string>
+#include <unordered_map>
+
+// SourceMod-style phrase tables for CS2Admin's chat and command text, resolved per client language.
+class CS2ATranslations
+{
+public:
+	// Load config.txt (cl_language -> short key map) and every *.phrases.txt under <baseDir>/addons/cs2admin/translations.
+	void Load(const char *baseDir);
+
+	// Language key used when a client's language is unknown or a phrase lacks it.
+	void SetDefaultLanguage(const std::string &lang);
+
+	// Map a raw cl_language value ("english") to a phrase-file key ("en").
+	// Unmapped values are returned as-is (lowercased), so Translate can fall back.
+	std::string MapClientLanguage(const char *clLanguage) const;
+
+	// Translate a phrase for a language.
+	// Falls back to the default language, then to the phrase key itself,
+	// so unknown phrases pass through unchanged (format specifiers intact, colors absent).
+	std::string Translate(const std::string &lang, const std::string &phrase) const;
+
+private:
+	std::unordered_map<std::string, std::unordered_map<std::string, std::string>> m_phrases; // phrase -> lang -> text
+	std::unordered_map<std::string, std::string> m_languageMap;                              // cl_language -> short key
+	std::string m_defaultLang = "en";
+};
+
+extern CS2ATranslations g_CS2ATranslations;
+
+// Defined in cs2admin.cpp.
+// Returns the mapped phrase-file language key for the client in `slot`, or the default language when unavailable.
+std::string ADMIN_SlotLanguage(int slot);
+
+// Defined in cs2admin.cpp.
+// Re-acquires ClientCvarValue and reloads phrase tables. Call after (re)loading the plugin config.
+void ADMIN_LoadTranslations();
+
+// Translate `phrase` into the language of the client in `slot`.
+// Convenience wrapper over g_CS2ATranslations for building menu titles and labels.
+std::string ADMIN_Translate(int slot, const char *phrase);
+
+#endif // _INCLUDE_ADMIN_TRANSLATIONS_H_

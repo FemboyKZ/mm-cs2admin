@@ -3,6 +3,7 @@
 #include "src/config/config.h"
 #include "src/db/database.h"
 #include "src/admin/admin_manager.h"
+#include "src/lang/translations.h"
 #include "src/player/player_manager.h"
 
 #include <networksystem/inetworkmessages.h>
@@ -340,6 +341,181 @@ void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
 	}
 
 	// Also send to player's chat
+	char chatBuf[512];
+	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
+
+	CSingleRecipientFilter filter(slot);
+	SendChatToFilter(&filter, chatBuf);
+}
+
+// Strip Source chat color codes (0x01-0x10)
+static void StripChatColors(const char *src, char *dst, size_t dstlen)
+{
+	char *out = dst;
+	for (; *src && out < dst + dstlen - 1; src++)
+	{
+		unsigned char c = (unsigned char)*src;
+		if (c < 0x01 || c > 0x10)
+		{
+			*out++ = *src;
+		}
+	}
+	*out = '\0';
+}
+
+void ADMIN_PrintToClientT(int slot, const char *phrase, ...)
+{
+	std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(slot), phrase);
+
+	char buffer[512];
+	va_list args;
+	va_start(args, phrase);
+	vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+	va_end(args);
+
+	if (slot < 0)
+	{
+		META_CONPRINTF("%s", buffer);
+		return;
+	}
+	if (slot > MAXPLAYERS || !g_pEngine)
+	{
+		return;
+	}
+	g_pEngine->ClientPrintf(CPlayerSlot(slot), buffer);
+}
+
+void ADMIN_PrintToChatT(int slot, const char *phrase, ...)
+{
+	std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(slot), phrase);
+
+	char buffer[512];
+	va_list args;
+	va_start(args, phrase);
+	vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+	va_end(args);
+
+	if (slot < 0)
+	{
+		META_CONPRINTF("[ADMIN] %s", buffer);
+		return;
+	}
+	if (slot > MAXPLAYERS)
+	{
+		return;
+	}
+
+	char chatBuf[512];
+	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
+
+	CSingleRecipientFilter filter(slot);
+	SendChatToFilter(&filter, chatBuf);
+}
+
+void ADMIN_ChatToAllT(const char *phrase, ...)
+{
+	CGlobalVars *globals = GetGameGlobals();
+	int maxClients = globals ? globals->maxClients : 0;
+
+	for (int i = 0; i < maxClients; i++)
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+		if (!p || !p->connected || p->fakePlayer)
+		{
+			continue;
+		}
+
+		std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(i), phrase);
+
+		char buffer[512];
+		va_list args;
+		va_start(args, phrase);
+		vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+		va_end(args);
+
+		char chatBuf[512];
+		snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
+
+		CSingleRecipientFilter filter(i);
+		SendChatToFilter(&filter, chatBuf);
+	}
+
+	// Console mirror, rendered once in the server default language.
+	std::string conTmpl = g_CS2ATranslations.Translate("", phrase);
+	char conFmt[512];
+	va_list conArgs;
+	va_start(conArgs, phrase);
+	vsnprintf(conFmt, sizeof(conFmt), conTmpl.c_str(), conArgs);
+	va_end(conArgs);
+
+	char conBuf[512];
+	StripChatColors(conFmt, conBuf, sizeof(conBuf));
+	META_CONPRINTF("[ADMIN] %s", conBuf);
+}
+
+void ADMIN_ChatToAdminsT(const char *phrase, ...)
+{
+	CGlobalVars *globals = GetGameGlobals();
+	if (!globals)
+	{
+		return;
+	}
+
+	for (int i = 0; i < globals->maxClients; i++)
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+		if (!p || !p->connected || p->fakePlayer)
+		{
+			continue;
+		}
+		if (g_CS2AAdminManager.GetPlayerAdmin(i) == nullptr)
+		{
+			continue;
+		}
+
+		std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(i), phrase);
+
+		char buffer[512];
+		va_list args;
+		va_start(args, phrase);
+		vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+		va_end(args);
+
+		char chatBuf[512];
+		snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
+
+		CSingleRecipientFilter filter(i);
+		SendChatToFilter(&filter, chatBuf);
+	}
+}
+
+void ADMIN_ReplyToCommandT(int slot, const char *phrase, ...)
+{
+	std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(slot), phrase);
+
+	char buffer[512];
+	va_list args;
+	va_start(args, phrase);
+	vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+	va_end(args);
+
+	if (slot < 0)
+	{
+		META_CONPRINTF("[ADMIN] %s", buffer);
+		return;
+	}
+	if (slot > MAXPLAYERS)
+	{
+		return;
+	}
+
+	if (g_pEngine)
+	{
+		char consoleBuffer[512];
+		snprintf(consoleBuffer, sizeof(consoleBuffer), "[ADMIN] %s", buffer);
+		g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
+	}
+
 	char chatBuf[512];
 	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
 

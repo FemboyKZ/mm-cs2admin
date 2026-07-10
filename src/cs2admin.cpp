@@ -12,6 +12,7 @@ void ShutdownConsoleCommands();
 #include "comm/comm_manager.h"
 #include "command/command_system.h"
 #include "command/map_manager.h"
+#include "lang/translations.h"
 #include "menu/menu_bridge.h"
 #include "admin/admin_manager.h"
 #include "public/forwards.h"
@@ -28,6 +29,8 @@ void ShutdownConsoleCommands();
 #include <engine/igameeventsystem.h>
 #include <filesystem.h>
 #include "steam/steam_gameserver.h"
+
+#include "iclientcvarvalue.h"
 
 // Entity system global (declared extern in common.h)
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
@@ -72,8 +75,26 @@ ICvar *g_pICvar = nullptr;
 IGameEventSystem *g_pGameEventSystem = nullptr;
 // g_pFullFileSystem is defined by interfaces.lib
 
+// Optional. Provides each client's cl_language for phrase translation.
+// May load after us, so it is re-acquired whenever translations reload.
+static IClientCvarValue *g_pClientCvarValue = nullptr;
+
 // Steam game-server API context used for workshop validation (ISteamUGC).
 CSteamGameServerAPIContext g_AdminSteamAPI;
+
+std::string ADMIN_SlotLanguage(int slot)
+{
+	const char *raw = g_pClientCvarValue ? g_pClientCvarValue->GetClientLanguage(CPlayerSlot(slot)) : nullptr;
+	return g_CS2ATranslations.MapClientLanguage(raw);
+}
+
+// Re-acquire ClientCvarValue and reload phrase tables.
+void ADMIN_LoadTranslations()
+{
+	g_pClientCvarValue = static_cast<IClientCvarValue *>(g_SMAPI->MetaFactory(CLIENTCVARVALUE_INTERFACE, nullptr, nullptr));
+	g_CS2ATranslations.Load(g_SMAPI->GetBaseDir());
+	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.defaultLanguage);
+}
 
 CGlobalVars *GetGameGlobals()
 {
@@ -137,6 +158,8 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 		META_CONPRINTF("[ADMIN] Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.dbUser.c_str(), g_CS2AConfig.dbHost.c_str(),
 					   g_CS2AConfig.dbPort, g_CS2AConfig.dbName.c_str(), g_CS2AConfig.databasePrefix.c_str());
 	}
+
+	ADMIN_LoadTranslations();
 
 	SH_ADD_HOOK(IServerGameDLL, GameFrame, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameFrame), true);
 	SH_ADD_HOOK(IServerGameClients, ClientActive, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientActive), true);
@@ -575,7 +598,7 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 									   PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slotIdx);
 									   if (p && p->connected && p->steamid64 == steamid64)
 									   {
-										   ADMIN_PrintToClient(slotIdx, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
+										   ADMIN_PrintToClientT(slotIdx, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
 										   META_CONPRINTF("[ADMIN] Kicking banned player \"%s\" (%s). Reason: %s\n", p->name.c_str(),
 														  p->authid.c_str(), reason.c_str());
 										   g_pEngine->DisconnectClient(CPlayerSlot(slotIdx), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
@@ -602,8 +625,8 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 											  PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slotIdx);
 											  if (p && p->connected && p->steamid64 == steamid64)
 											  {
-												  ADMIN_ChatToAdmins("[ADMIN] Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n",
-																	 p->name.c_str(), p->authid.c_str(), banCount, muteCount, gagCount);
+												  ADMIN_ChatToAdminsT("Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n",
+																	  p->name.c_str(), p->authid.c_str(), banCount, muteCount, gagCount);
 											  }
 										  }
 									  });
@@ -680,13 +703,13 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 						{
 							// Auto gag the player
 							g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteDuration, "Chat flood", -1);
-							ADMIN_PrintToChat(slotIdx, "You have been gagged for %d minute(s) for chat flooding.\n",
-											  g_CS2AConfig.chatFloodMuteDuration);
-							ADMIN_ChatToAdmins("[ADMIN] %s was auto-gagged for chat flooding.\n", player->name.c_str());
+							ADMIN_PrintToChatT(slotIdx, "You have been gagged for %d minute(s) for chat flooding.\n",
+											   g_CS2AConfig.chatFloodMuteDuration);
+							ADMIN_ChatToAdminsT("%s was auto-gagged for chat flooding.\n", player->name.c_str());
 						}
 						else
 						{
-							ADMIN_PrintToChat(slotIdx, "Slow down! You are sending messages too fast.\n");
+							ADMIN_PrintToChatT(slotIdx, "Slow down! You are sending messages too fast.\n");
 						}
 
 						player->chatMessageCount = 0;
@@ -890,7 +913,7 @@ void CS2APlugin::OnLateLoad()
 										   PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
 										   if (p && p->connected && p->steamid64 == steamid64)
 										   {
-											   ADMIN_PrintToClient(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
+											   ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
 											   META_CONPRINTF("[ADMIN] Late load: kicking banned player (%s). Reason: %s\n", p->authid.c_str(),
 															  reason.c_str());
 											   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);

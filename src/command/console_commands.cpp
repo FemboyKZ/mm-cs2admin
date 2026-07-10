@@ -5,6 +5,7 @@
 #include "src/ban/ban_manager.h"
 #include "src/comm/comm_manager.h"
 #include "src/admin/admin_manager.h"
+#include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
 #include "src/cs2admin.h"
 
@@ -25,6 +26,8 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	{
 		META_CONPRINTF("[ADMIN] Failed to reload config from %s\n", path);
 	}
+
+	ADMIN_LoadTranslations();
 
 	// Reload admins (flat file + database)
 	g_CS2AAdminManager.ReloadAdmins();

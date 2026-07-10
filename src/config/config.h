@@ -10,6 +10,7 @@ struct CS2AConfig
 	std::string commandPrefix = "!";
 	std::string silentCommandPrefix = "/";
 	std::string databasePrefix = "sb";
+	std::string defaultLanguage = "en";
 
 	// Database type: "mysql" or "sqlite"
 	std::string dbType = "sqlite";

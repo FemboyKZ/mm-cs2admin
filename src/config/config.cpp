@@ -36,6 +36,10 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->chatPrefix = ADMIN_ResolveColorTags(value);
 		}
+		else if (k == "defaultlanguage")
+		{
+			cfg->defaultLanguage = value;
+		}
 		else if (k == "commandprefix")
 		{
 			cfg->commandPrefix = value;

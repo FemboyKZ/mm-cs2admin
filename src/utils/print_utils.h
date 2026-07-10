@@ -23,4 +23,11 @@ void ADMIN_ChatToAdmins(const char *fmt, ...);
 // For console callers (slot < 0), prints to server console only.
 void ADMIN_ReplyToCommand(int slot, const char *fmt, ...);
 
+// Translated variants.
+void ADMIN_PrintToClientT(int slot, const char *phrase, ...);
+void ADMIN_PrintToChatT(int slot, const char *phrase, ...);
+void ADMIN_ChatToAllT(const char *phrase, ...);
+void ADMIN_ChatToAdminsT(const char *phrase, ...);
+void ADMIN_ReplyToCommandT(int slot, const char *phrase, ...);
+
 #endif //_INCLUDE_ADMIN_PRINT_UTILS_H_

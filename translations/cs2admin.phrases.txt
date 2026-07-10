@@ -1,0 +1,536 @@
+// CS2Admin chat and command phrases. Section name is the phrase key used in code.
+// To add a language, copy the "en" line and change the key, keeping the SAME format specifiers in the SAME order.
+"Phrases"
+{
+	"[ADMIN] You are banned from this server. Reason: %s\n"
+	{
+		"en"	"[ADMIN] You are banned from this server. Reason: %s\n"
+	}
+	"Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n"
+	{
+		"en"	"Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n"
+	}
+	"You have been gagged for %d minute(s) for chat flooding.\n"
+	{
+		"en"	"You have been gagged for %d minute(s) for chat flooding.\n"
+	}
+	"%s was auto-gagged for chat flooding.\n"
+	{
+		"en"	"%s was auto-gagged for chat flooding.\n"
+	}
+	"Slow down! You are sending messages too fast.\n"
+	{
+		"en"	"Slow down! You are sending messages too fast.\n"
+	}
+	"You have been permanently banned. Reason: %s\n"
+	{
+		"en"	"You have been permanently banned. Reason: %s\n"
+	}
+	"You have been banned for %d minutes. Reason: %s\n"
+	{
+		"en"	"You have been banned for %d minutes. Reason: %s\n"
+	}
+	"%s banned %s (%d min). Reason: %s\n"
+	{
+		"en"	"%s banned %s (%d min). Reason: %s\n"
+	}
+	"WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n"
+	{
+		"en"	"WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n"
+	}
+	"Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n"
+	{
+		"en"	"Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n"
+	}
+	"Database not connected.\n"
+	{
+		"en"	"Database not connected.\n"
+	}
+	"Query failed.\n"
+	{
+		"en"	"Query failed.\n"
+	}
+	"No bans found for %s.\n"
+	{
+		"en"	"No bans found for %s.\n"
+	}
+	"Ban history for %s (last 10):\n"
+	{
+		"en"	"Ban history for %s (last 10):\n"
+	}
+	"  %-12s %-16s %-12s %-4s %s\n"
+	{
+		"en"	"  %-12s %-16s %-12s %-4s %s\n"
+	}
+	"  %-12d %-16s %-12s %-4s %s\n"
+	{
+		"en"	"  %-12d %-16s %-12s %-4s %s\n"
+	}
+	"No comm blocks found for %s.\n"
+	{
+		"en"	"No comm blocks found for %s.\n"
+	}
+	"Comm history for %s (last 10):\n"
+	{
+		"en"	"Comm history for %s (last 10):\n"
+	}
+	"  %-12s %-16s %-6s %-12s %-4s %s\n"
+	{
+		"en"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
+	}
+	"  %-12d %-16s %-6s %-12s %-4s %s\n"
+	{
+		"en"	"  %-12d %-16s %-6s %-12s %-4s %s\n"
+	}
+	"You are permanently muted. Reason: %s\n"
+	{
+		"en"	"You are permanently muted. Reason: %s\n"
+	}
+	"You are muted (%d seconds remaining). Reason: %s\n"
+	{
+		"en"	"You are muted (%d seconds remaining). Reason: %s\n"
+	}
+	"You are permanently gagged. Reason: %s\n"
+	{
+		"en"	"You are permanently gagged. Reason: %s\n"
+	}
+	"You are gagged (%d seconds remaining). Reason: %s\n"
+	{
+		"en"	"You are gagged (%d seconds remaining). Reason: %s\n"
+	}
+	"You have been permanently muted. Reason: %s\n"
+	{
+		"en"	"You have been permanently muted. Reason: %s\n"
+	}
+	"You have been muted for %d minutes. Reason: %s\n"
+	{
+		"en"	"You have been muted for %d minutes. Reason: %s\n"
+	}
+	"%s muted %s (%d min). Reason: %s\n"
+	{
+		"en"	"%s muted %s (%d min). Reason: %s\n"
+	}
+	"You have been permanently gagged. Reason: %s\n"
+	{
+		"en"	"You have been permanently gagged. Reason: %s\n"
+	}
+	"You have been gagged for %d minutes. Reason: %s\n"
+	{
+		"en"	"You have been gagged for %d minutes. Reason: %s\n"
+	}
+	"%s gagged %s (%d min). Reason: %s\n"
+	{
+		"en"	"%s gagged %s (%d min). Reason: %s\n"
+	}
+	"You have been unmuted.\n"
+	{
+		"en"	"You have been unmuted.\n"
+	}
+	"%s unmuted %s.\n"
+	{
+		"en"	"%s unmuted %s.\n"
+	}
+	"You have been ungagged.\n"
+	{
+		"en"	"You have been ungagged.\n"
+	}
+	"%s ungagged %s.\n"
+	{
+		"en"	"%s ungagged %s.\n"
+	}
+	"You have been muted for this session.\n"
+	{
+		"en"	"You have been muted for this session.\n"
+	}
+	"%s session-muted %s.\n"
+	{
+		"en"	"%s session-muted %s.\n"
+	}
+	"You have been gagged for this session.\n"
+	{
+		"en"	"You have been gagged for this session.\n"
+	}
+	"%s session-gagged %s.\n"
+	{
+		"en"	"%s session-gagged %s.\n"
+	}
+	"Your mute has expired.\n"
+	{
+		"en"	"Your mute has expired.\n"
+	}
+	"Your gag has expired.\n"
+	{
+		"en"	"Your gag has expired.\n"
+	}
+	"Invalid target.\n"
+	{
+		"en"	"Invalid target.\n"
+	}
+	"Comm status for \"%s\" (%s):\n"
+	{
+		"en"	"Comm status for \"%s\" (%s):\n"
+	}
+	"  Muted: Session only\n"
+	{
+		"en"	"  Muted: Session only\n"
+	}
+	"  Muted: %d seconds remaining. Reason: %s\n"
+	{
+		"en"	"  Muted: %d seconds remaining. Reason: %s\n"
+	}
+	"  Muted: Permanent. Reason: %s\n"
+	{
+		"en"	"  Muted: Permanent. Reason: %s\n"
+	}
+	"  Muted: No\n"
+	{
+		"en"	"  Muted: No\n"
+	}
+	"  Gagged: Session only\n"
+	{
+		"en"	"  Gagged: Session only\n"
+	}
+	"  Gagged: %d seconds remaining. Reason: %s\n"
+	{
+		"en"	"  Gagged: %d seconds remaining. Reason: %s\n"
+	}
+	"  Gagged: Permanent. Reason: %s\n"
+	{
+		"en"	"  Gagged: Permanent. Reason: %s\n"
+	}
+	"  Gagged: No\n"
+	{
+		"en"	"  Gagged: No\n"
+	}
+	"(no output)\n"
+	{
+		"en"	"(no output)\n"
+	}
+	"[output truncated: too many lines]\n"
+	{
+		"en"	"[output truncated: too many lines]\n"
+	}
+	"[output truncated]\n"
+	{
+		"en"	"[output truncated]\n"
+	}
+	"Cannot target this player (higher immunity).\n"
+	{
+		"en"	"Cannot target this player (higher immunity).\n"
+	}
+	"No valid targets online.\n"
+	{
+		"en"	"No valid targets online.\n"
+	}
+	"No maps loaded. Check cfg/maplist.txt\n"
+	{
+		"en"	"No maps loaded. Check cfg/maplist.txt\n"
+	}
+	"You do not have permission to use this command.\n"
+	{
+		"en"	"You do not have permission to use this command.\n"
+	}
+	"Usage: !ban <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !ban <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	}
+	"Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
+	{
+		"en"	"Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
+	}
+	"Usage: !unban <steamid>\n"
+	{
+		"en"	"Usage: !unban <steamid>\n"
+	}
+	"Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	}
+	"Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	}
+	"Usage: !unmute <target>\n"
+	{
+		"en"	"Usage: !unmute <target>\n"
+	}
+	"Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	}
+	"Usage: !ungag <target>\n"
+	{
+		"en"	"Usage: !ungag <target>\n"
+	}
+	"Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	}
+	"Usage: !unsilence <target>\n"
+	{
+		"en"	"Usage: !unsilence <target>\n"
+	}
+	"Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	}
+	"Invalid IP address format.\n"
+	{
+		"en"	"Invalid IP address format.\n"
+	}
+	"Usage: !listbans <target>\n"
+	{
+		"en"	"Usage: !listbans <target>\n"
+	}
+	"Usage: !listcomms <target>\n"
+	{
+		"en"	"Usage: !listcomms <target>\n"
+	}
+	"This command cannot be used from console.\n"
+	{
+		"en"	"This command cannot be used from console.\n"
+	}
+	"Usage: !report <target> <reason>\n"
+	{
+		"en"	"Usage: !report <target> <reason>\n"
+	}
+	"You must wait %d seconds before reporting again.\n"
+	{
+		"en"	"You must wait %d seconds before reporting again.\n"
+	}
+	"You cannot report yourself.\n"
+	{
+		"en"	"You cannot report yourself.\n"
+	}
+	"Report reason must be at least %d characters.\n"
+	{
+		"en"	"Report reason must be at least %d characters.\n"
+	}
+	"%s reported %s: %s\n"
+	{
+		"en"	"%s reported %s: %s\n"
+	}
+	"Report submitted against %s.\n"
+	{
+		"en"	"Report submitted against %s.\n"
+	}
+	"Usage: !kick <target> [reason]\n"
+	{
+		"en"	"Usage: !kick <target> [reason]\n"
+	}
+	"You cannot kick yourself.\n"
+	{
+		"en"	"You cannot kick yourself.\n"
+	}
+	"%s kicked %s. Reason: %s\n"
+	{
+		"en"	"%s kicked %s. Reason: %s\n"
+	}
+	"Usage: !slay <target>\n"
+	{
+		"en"	"Usage: !slay <target>\n"
+	}
+	"%s slayed %d players.\n"
+	{
+		"en"	"%s slayed %d players.\n"
+	}
+	"%s slayed %s.\n"
+	{
+		"en"	"%s slayed %s.\n"
+	}
+	"Online Admins:\n"
+	{
+		"en"	"Online Admins:\n"
+	}
+	"  %s [%s] flags: %s imm: %d\n"
+	{
+		"en"	"  %s [%s] flags: %s imm: %d\n"
+	}
+	"  No admins currently online.\n"
+	{
+		"en"	"  No admins currently online.\n"
+	}
+	"%d admin(s) online\n"
+	{
+		"en"	"%d admin(s) online\n"
+	}
+	"No recently disconnected players.\n"
+	{
+		"en"	"No recently disconnected players.\n"
+	}
+	"Recently Disconnected Players:\n"
+	{
+		"en"	"Recently Disconnected Players:\n"
+	}
+	"  %s (%s) [%s] - %s\n"
+	{
+		"en"	"  %s (%s) [%s] - %s\n"
+	}
+	"%d player(s) recently disconnected\n"
+	{
+		"en"	"%d player(s) recently disconnected\n"
+	}
+	"Commands (page %d/%d):\n"
+	{
+		"en"	"Commands (page %d/%d):\n"
+	}
+	"  %s%s\n"
+	{
+		"en"	"  %s%s\n"
+	}
+	"Use !adminhelp %d for next page.\n"
+	{
+		"en"	"Use !adminhelp %d for next page.\n"
+	}
+	"Usage: !find <text>\n"
+	{
+		"en"	"Usage: !find <text>\n"
+	}
+	"No commands found matching '%s'.\n"
+	{
+		"en"	"No commands found matching '%s'.\n"
+	}
+	"Commands matching '%s':\n"
+	{
+		"en"	"Commands matching '%s':\n"
+	}
+	"Usage: !rcon <command>\n"
+	{
+		"en"	"Usage: !rcon <command>\n"
+	}
+	"Queued: %s\n"
+	{
+		"en"	"Queued: %s\n"
+	}
+	"Executed: %s, check console for output.\n"
+	{
+		"en"	"Executed: %s, check console for output.\n"
+	}
+	"Usage: !pm <target> <message>\n"
+	{
+		"en"	"Usage: !pm <target> <message>\n"
+	}
+	"[PM from %s] %s\n"
+	{
+		"en"	"{orchid}[PM from %s]{default} %s\n"
+	}
+	"[PM to %s] %s\n"
+	{
+		"en"	"{orchid}[PM to %s]{default} %s\n"
+	}
+	"[PM %s -> %s] %s\n"
+	{
+		"en"	"{yellow}[PM %s -> %s]{default} %s\n"
+	}
+	"Usage: !map <mapname|workshopid>\n"
+	{
+		"en"	"Usage: !map <mapname|workshopid>\n"
+	}
+	"%s changed map to %s.\n"
+	{
+		"en"	"%s changed map to %s.\n"
+	}
+	"Maps (page %d/%d):\n"
+	{
+		"en"	"Maps (page %d/%d):\n"
+	}
+	"  %s [ws:%s]\n"
+	{
+		"en"	"  %s [ws:%s]\n"
+	}
+	"  %s\n"
+	{
+		"en"	"  %s\n"
+	}
+	"Use !maps %d for next page.\n"
+	{
+		"en"	"Use !maps %d for next page.\n"
+	}
+	"Usage: !entfire <entity> <input> [value]\n"
+	{
+		"en"	"Usage: !entfire <entity> <input> [value]\n"
+	}
+	"Fired: %s %s%s\n"
+	{
+		"en"	"Fired: %s %s%s\n"
+	}
+	"Usage: !give <target> <weapon>\n"
+	{
+		"en"	"Usage: !give <target> <weapon>\n"
+	}
+	"%s gave %s to %d players.\n"
+	{
+		"en"	"%s gave %s to %d players.\n"
+	}
+	"%s gave %s to %s.\n"
+	{
+		"en"	"%s gave %s to %s.\n"
+	}
+	"No valid alive targets found.\n"
+	{
+		"en"	"No valid alive targets found.\n"
+	}
+	"Usage: !strip <target>\n"
+	{
+		"en"	"Usage: !strip <target>\n"
+	}
+	"%s stripped weapons from %d players.\n"
+	{
+		"en"	"%s stripped weapons from %d players.\n"
+	}
+	"%s stripped weapons from %s.\n"
+	{
+		"en"	"%s stripped weapons from %s.\n"
+	}
+	"Multiple players matched. Use a more specific target.\n"
+	{
+		"en"	"Multiple players matched. Use a more specific target.\n"
+	}
+	"No player found.\n"
+	{
+		"en"	"No player found.\n"
+	}
+	"[ADMIN] %s"
+	{
+		"en"	"[ADMIN] %s"
+	}
+	" %s%s%s"
+	{
+		"en"	" %s%s%s"
+	}
+	"No target specified."
+	{
+		"en"	"No target specified."
+	}
+	"You are not in-game."
+	{
+		"en"	"You are not in-game."
+	}
+	"No matching players found."
+	{
+		"en"	"No matching players found."
+	}
+	"Invalid SteamID64."
+	{
+		"en"	"Invalid SteamID64."
+	}
+	"Player with that SteamID64 not found."
+	{
+		"en"	"Player with that SteamID64 not found."
+	}
+	"No player found with exact name."
+	{
+		"en"	"No player found with exact name."
+	}
+	"Player not found with that slot/userid."
+	{
+		"en"	"Player not found with that slot/userid."
+	}
+	"Multiple players match that name. Be more specific."
+	{
+		"en"	"Multiple players match that name. Be more specific."
+	}
+	"No player found matching that name."
+	{
+		"en"	"No player found matching that name."
+}}

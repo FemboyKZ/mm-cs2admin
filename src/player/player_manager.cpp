@@ -1,5 +1,6 @@
 #include "player_manager.h"
 #include "src/admin/admin_manager.h"
+#include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
 #include "src/entity/ccsplayercontroller.h"
 
@@ -474,18 +475,18 @@ int ADMIN_FindTarget(int callerSlot, const char *pattern)
 	TargetResult result = ADMIN_FindTargets(callerSlot, pattern);
 	if (!result.error.empty())
 	{
-		ADMIN_ReplyToCommand(callerSlot, "%s\n", result.error.c_str());
+		ADMIN_ReplyToCommand(callerSlot, "%s\n", ADMIN_Translate(callerSlot, result.error.c_str()).c_str());
 		return -1;
 	}
 	if (result.slots.size() != 1)
 	{
 		if (result.slots.size() > 1)
 		{
-			ADMIN_ReplyToCommand(callerSlot, "Multiple players matched. Use a more specific target.\n");
+			ADMIN_ReplyToCommandT(callerSlot, "Multiple players matched. Use a more specific target.\n");
 		}
 		else
 		{
-			ADMIN_ReplyToCommand(callerSlot, "No player found.\n");
+			ADMIN_ReplyToCommandT(callerSlot, "No player found.\n");
 		}
 		return -1;
 	}

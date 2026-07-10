@@ -13,6 +13,7 @@ for sdk_target in MMSPlugin.sdk_targets:
         "src/cs2admin.cpp",
         "src/config/config.cpp",
         "src/config/gamedata.cpp",
+        "src/lang/translations.cpp",
         "src/db/database.cpp",
         "src/player/player_manager.cpp",
         "src/ban/ban_manager.cpp",

@@ -6,6 +6,7 @@
 #include "src/public/forwards.h"
 #include "src/queue/offline_queue.h"
 #include "src/admin/admin_manager.h"
+#include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
 
 #include <sql_mm.h>
@@ -112,11 +113,11 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 
 	if (time == 0)
 	{
-		ADMIN_PrintToChat(targetSlot, "You have been permanently banned. Reason: %s\n", reason ? reason : "No reason");
+		ADMIN_PrintToChatT(targetSlot, "You have been permanently banned. Reason: %s\n", reason ? reason : "No reason");
 	}
 	else
 	{
-		ADMIN_PrintToChat(targetSlot, "You have been banned for %d minutes. Reason: %s\n", time, reason ? reason : "No reason");
+		ADMIN_PrintToChatT(targetSlot, "You have been banned for %d minutes. Reason: %s\n", time, reason ? reason : "No reason");
 	}
 
 	std::string adminName = "Console";
@@ -128,8 +129,7 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 			adminName = admin->name;
 		}
 	}
-	ADMIN_ChatToAll("%s%s banned %s (%d min). Reason: %s\n", g_CS2AConfig.chatPrefix.c_str(), adminName.c_str(), targetName.c_str(), time,
-					reason ? reason : "No reason");
+	ADMIN_ChatToAllT("%s banned %s (%d min). Reason: %s\n", adminName.c_str(), targetName.c_str(), time, reason ? reason : "No reason");
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Banned \"%s\" (%s) for %d min. Reason: %s", targetName.c_str(), targetAuth.c_str(), time,
@@ -443,86 +443,85 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 			 "AND (length = '0' OR ends > %lld)%s%s",
 			 prefix.c_str(), escapedIP.c_str(), now, typeFilter.c_str(), timeFilter.c_str());
 
-	g_CS2ADatabase.Query(query,
-						 [slot, steamid64](ISQLQuery *result)
-						 {
-							 if (!result)
-							 {
-								 return;
-							 }
+	g_CS2ADatabase.Query(
+		query,
+		[slot, steamid64](ISQLQuery *result)
+		{
+			if (!result)
+			{
+				return;
+			}
 
-							 ISQLResult *rs = result->GetResultSet();
-							 if (!rs || rs->GetRowCount() == 0)
-							 {
-								 return;
-							 }
+			ISQLResult *rs = result->GetResultSet();
+			if (!rs || rs->GetRowCount() == 0)
+			{
+				return;
+			}
 
-							 ISQLRow *row = rs->FetchRow();
-							 if (!row)
-							 {
-								 return;
-							 }
+			ISQLRow *row = rs->FetchRow();
+			if (!row)
+			{
+				return;
+			}
 
-							 int count = rs->GetInt(0);
-							 int originalLength = rs->GetInt(1);
+			int count = rs->GetInt(0);
+			int originalLength = rs->GetInt(1);
 
-							 if (count <= g_CS2AConfig.sleuthBansAllowed)
-							 {
-								 return;
-							 }
+			if (count <= g_CS2AConfig.sleuthBansAllowed)
+			{
+				return;
+			}
 
-							 PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
-							 if (!player || !player->connected || player->steamid64 != steamid64)
-							 {
-								 return;
-							 }
+			PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+			if (!player || !player->connected || player->steamid64 != steamid64)
+			{
+				return;
+			}
 
-							 int action = g_CS2AConfig.sleuthActions;
+			int action = g_CS2AConfig.sleuthActions;
 
-							 if (action == 4)
-							 {
-								 ADMIN_ChatToAdmins("%sWARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n", g_CS2AConfig.chatPrefix.c_str(),
-													player->name.c_str(), player->authid.c_str(), count);
-								 return;
-							 }
+			if (action == 4)
+			{
+				ADMIN_ChatToAdminsT("WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n", player->name.c_str(), player->authid.c_str(), count);
+				return;
+			}
 
-							 if (action == 5)
-							 {
-								 META_CONPRINTF("[ADMIN] Sleuth: kicking \"%s\" - %d IP bans found.\n", player->name.c_str(), count);
-								 g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
-								 return;
-							 }
+			if (action == 5)
+			{
+				META_CONPRINTF("[ADMIN] Sleuth: kicking \"%s\" - %d IP bans found.\n", player->name.c_str(), count);
+				g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
+				return;
+			}
 
-							 int banTime = 0;
-							 if (action == 1)
-							 {
-								 banTime = originalLength / 60; // original length
-							 }
-							 else if (action == 2)
-							 {
-								 banTime = g_CS2AConfig.sleuthDuration;
-							 }
-							 else if (action == 3)
-							 {
-								 banTime = (originalLength / 60) * 2; // double
-							 }
+			int banTime = 0;
+			if (action == 1)
+			{
+				banTime = originalLength / 60; // original length
+			}
+			else if (action == 2)
+			{
+				banTime = g_CS2AConfig.sleuthDuration;
+			}
+			else if (action == 3)
+			{
+				banTime = (originalLength / 60) * 2; // double
+			}
 
-							 char reason[256];
-							 snprintf(reason, sizeof(reason), "Sleuth auto-ban: %d matching IP ban(s)", count);
+			char reason[256];
+			snprintf(reason, sizeof(reason), "Sleuth auto-ban: %d matching IP ban(s)", count);
 
-							 ADMIN_ChatToAdmins("%sSleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n", g_CS2AConfig.chatPrefix.c_str(),
-												player->name.c_str(), player->authid.c_str(), count);
+			ADMIN_ChatToAdminsT("Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n", player->name.c_str(), player->authid.c_str(), count);
 
-							 g_CS2ABanManager.InsertBan(player->ip.c_str(), player->authid.c_str(), player->name.c_str(), banTime, reason, -1);
-							 g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
-						 });
+			g_CS2ABanManager.InsertBan(player->ip.c_str(), player->authid.c_str(), player->name.c_str(), banTime, reason, -1);
+			g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
+		});
 }
 
 void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		ADMIN_ReplyToCommand(callerSlot, "Database not connected.\n");
+		ADMIN_ReplyToCommandT(callerSlot, "Database not connected.\n");
 		return;
 	}
 
@@ -544,19 +543,19 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 						 {
 							 if (!result)
 							 {
-								 ADMIN_ReplyToCommand(callerSlot, "Query failed.\n");
+								 ADMIN_ReplyToCommandT(callerSlot, "Query failed.\n");
 								 return;
 							 }
 
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs || rs->GetRowCount() == 0)
 							 {
-								 ADMIN_ReplyToCommand(callerSlot, "No bans found for %s.\n", authid.c_str());
+								 ADMIN_ReplyToCommandT(callerSlot, "No bans found for %s.\n", authid.c_str());
 								 return;
 							 }
 
-							 ADMIN_ReplyToCommand(callerSlot, "Ban history for %s (last 10):\n", authid.c_str());
-							 ADMIN_ReplyToCommand(callerSlot, "  %-12s %-16s %-12s %-4s %s\n", "Date", "Banned By", "Length", "R", "Reason");
+							 ADMIN_ReplyToCommandT(callerSlot, "Ban history for %s (last 10):\n", authid.c_str());
+							 ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-12s %-4s %s\n", "Date", "Banned By", "Length", "R", "Reason");
 
 							 while (rs->MoreRows())
 							 {
@@ -575,8 +574,8 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 								 const char *lengthStr = (length == 0) ? "Permanent" : "Temp";
 								 const char *status = (removeType && *removeType) ? removeType : " ";
 
-								 ADMIN_ReplyToCommand(callerSlot, "  %-12d %-16s %-12s %-4s %s\n", created, admin ? admin : "Unknown", lengthStr,
-													  status, reason ? reason : "");
+								 ADMIN_ReplyToCommandT(callerSlot, "  %-12d %-16s %-12s %-4s %s\n", created, admin ? admin : "Unknown", lengthStr,
+													   status, reason ? reason : "");
 							 }
 						 });
 }
@@ -585,7 +584,7 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		ADMIN_ReplyToCommand(callerSlot, "Database not connected.\n");
+		ADMIN_ReplyToCommandT(callerSlot, "Database not connected.\n");
 		return;
 	}
 
@@ -607,19 +606,20 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 						 {
 							 if (!result)
 							 {
-								 ADMIN_ReplyToCommand(callerSlot, "Query failed.\n");
+								 ADMIN_ReplyToCommandT(callerSlot, "Query failed.\n");
 								 return;
 							 }
 
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs || rs->GetRowCount() == 0)
 							 {
-								 ADMIN_ReplyToCommand(callerSlot, "No comm blocks found for %s.\n", authid.c_str());
+								 ADMIN_ReplyToCommandT(callerSlot, "No comm blocks found for %s.\n", authid.c_str());
 								 return;
 							 }
 
-							 ADMIN_ReplyToCommand(callerSlot, "Comm history for %s (last 10):\n", authid.c_str());
-							 ADMIN_ReplyToCommand(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", "Date", "Admin", "Type", "Length", "R", "Reason");
+							 ADMIN_ReplyToCommandT(callerSlot, "Comm history for %s (last 10):\n", authid.c_str());
+							 ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", "Date", "Admin", "Type", "Length", "R",
+												   "Reason");
 
 							 while (rs->MoreRows())
 							 {
@@ -640,8 +640,8 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 								 const char *lengthStr = (length == 0) ? "Permanent" : "Temp";
 								 const char *status = (removeType && *removeType) ? removeType : " ";
 
-								 ADMIN_ReplyToCommand(callerSlot, "  %-12d %-16s %-6s %-12s %-4s %s\n", created, admin ? admin : "Unknown", typeStr,
-													  lengthStr, status, reason ? reason : "");
+								 ADMIN_ReplyToCommandT(callerSlot, "  %-12d %-16s %-6s %-12s %-4s %s\n", created, admin ? admin : "Unknown", typeStr,
+													   lengthStr, status, reason ? reason : "");
 							 }
 						 });
 }

@@ -22,6 +22,8 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	if (ADMIN_LoadConfig(path, g_CS2AConfig))
 	{
 		MMU_LOG_INFO("Config reloaded from %s\n", path);
+		mmu::log::SetToFile(g_CS2AConfig.logToFile);
+		mmu::log::SetRetentionDays(g_CS2AConfig.logRetentionDays);
 	}
 	else
 	{

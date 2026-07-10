@@ -1,4 +1,5 @@
 #include "command_system.h"
+#include "mmu/chat_command.h"
 #include "mmu/log.h"
 #include "map_manager.h"
 #include "src/menu/menu_bridge.h"
@@ -247,97 +248,25 @@ bool CS2ACommandSystem::ShouldBlockChat(int slot)
 
 bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool teamOnly)
 {
-	if (!message || !*message)
-	{
-		return false;
-	}
-
-	// Strip quotes if present (CS2 say command sends the message in quotes)
-	std::string msg(message);
-	if (msg.size() >= 2 && msg.front() == '"' && msg.back() == '"')
-	{
-		msg = msg.substr(1, msg.size() - 2);
-	}
-
+	std::string msg = mmu::StripSayQuotes(message);
 	if (msg.empty())
 	{
 		return false;
 	}
 
-	// Check for command prefix (each character in the prefix string is a valid trigger)
-	bool silent = false;
-	char prefix = msg[0];
-	bool isNormalPrefix = (!g_CS2AConfig.commandPrefix.empty() && g_CS2AConfig.commandPrefix.find(prefix) != std::string::npos);
-	bool isSilentPrefix = (!g_CS2AConfig.silentCommandPrefix.empty() && g_CS2AConfig.silentCommandPrefix.find(prefix) != std::string::npos);
-
-	if (isSilentPrefix)
-	{
-		silent = true;
-	}
-	else if (isNormalPrefix)
-	{
-		silent = false;
-	}
-	else
-	{
-		return false; // Not a command
-	}
-
-	// Parse command name and args
-	std::string rest = msg.substr(1);
-	if (rest.empty())
+	mmu::ChatCommand cmd;
+	if (!mmu::ParseChatCommand(msg, g_CS2AConfig.commandPrefix, g_CS2AConfig.silentCommandPrefix, cmd))
 	{
 		return false;
 	}
 
-	std::vector<std::string> parts;
-	std::string current;
-	bool inQuotes = false;
-
-	for (size_t i = 0; i < rest.size(); i++)
-	{
-		char c = rest[i];
-		if (c == '"')
-		{
-			inQuotes = !inQuotes;
-		}
-		else if (c == ' ' && !inQuotes)
-		{
-			if (!current.empty())
-			{
-				parts.push_back(current);
-				current.clear();
-			}
-		}
-		else
-		{
-			current += c;
-		}
-	}
-	if (!current.empty())
-	{
-		parts.push_back(current);
-	}
-
-	if (parts.empty())
-	{
-		return false;
-	}
-
-	// Lookup command
-	std::string cmdName = parts[0];
-	std::transform(cmdName.begin(), cmdName.end(), cmdName.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-
-	auto it = m_commands.find(cmdName);
+	auto it = m_commands.find(cmd.name);
 	if (it == m_commands.end())
 	{
 		return false;
 	}
 
-	// Build args (everything after command name)
-	std::vector<std::string> args(parts.begin() + 1, parts.end());
-
-	it->second(slot, args, silent);
+	it->second(slot, cmd.args, cmd.silent);
 	return true;
 }
 

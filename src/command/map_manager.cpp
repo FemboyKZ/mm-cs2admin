@@ -1,7 +1,9 @@
 #include "map_manager.h"
 #include "mmu/log.h"
 #include "src/common.h"
-#include "src/workshop/workshop_validator.h"
+#include "mmu/workshop.h"
+
+extern CSteamGameServerAPIContext g_AdminSteamAPI;
 
 #include <algorithm>
 #include <cctype>
@@ -287,7 +289,7 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 		const MapEntry *entry = FindMap(input, error);
 		if (entry && entry->isWorkshop)
 		{
-			ADMIN_EnsureWorkshopMapReady(entry->workshopId);
+			mmu::EnsureWorkshopMapReady(entry->workshopId, g_AdminSteamAPI);
 			char cmd[256];
 			snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", entry->workshopId.c_str());
 			g_pEngine->ServerCommand(cmd);
@@ -295,7 +297,7 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 		}
 
 		error.clear();
-		ADMIN_EnsureWorkshopMapReady(inputStr);
+		mmu::EnsureWorkshopMapReady(inputStr, g_AdminSteamAPI);
 		char cmd[256];
 		snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", input);
 		g_pEngine->ServerCommand(cmd);
@@ -323,7 +325,7 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 
 	if (entry->isWorkshop)
 	{
-		ADMIN_EnsureWorkshopMapReady(entry->workshopId);
+		mmu::EnsureWorkshopMapReady(entry->workshopId, g_AdminSteamAPI);
 		char cmd[256];
 		snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", entry->workshopId.c_str());
 		g_pEngine->ServerCommand(cmd);

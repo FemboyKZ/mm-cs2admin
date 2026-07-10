@@ -12,6 +12,10 @@ struct CS2AConfig
 	std::string databasePrefix = "sb";
 	std::string defaultLanguage = "en";
 
+	// Logging
+	bool logToFile = true;
+	int logRetentionDays = 30;
+
 	// Database type: "mysql" or "sqlite"
 	std::string dbType = "sqlite";
 

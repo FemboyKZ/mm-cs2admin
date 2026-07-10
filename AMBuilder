@@ -28,12 +28,13 @@ for sdk_target in MMSPlugin.sdk_targets:
         "src/queue/offline_queue.cpp",
         "src/utils/print_utils.cpp",
         "src/utils/discord.cpp",
-        "src/workshop/workshop_validator.cpp",
         "vendor/mm-utils/mmu/chat_colors.cpp",
+        "vendor/mm-utils/mmu/gamedata.cpp",
         "vendor/mm-utils/mmu/log.cpp",
         "vendor/mm-utils/mmu/print.cpp",
         "vendor/mm-utils/mmu/schema.cpp",
         "vendor/mm-utils/mmu/translations.cpp",
+        "vendor/mm-utils/mmu/workshop.cpp",
     ]
 
     binary.custom = [

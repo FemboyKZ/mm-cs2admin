@@ -163,8 +163,10 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	else
 	{
 		m_bConfigLoaded = true;
-		MMU_LOG_INFO("Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.dbUser.c_str(), g_CS2AConfig.dbHost.c_str(),
-					   g_CS2AConfig.dbPort, g_CS2AConfig.dbName.c_str(), g_CS2AConfig.databasePrefix.c_str());
+		MMU_LOG_INFO("Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.dbUser.c_str(), g_CS2AConfig.dbHost.c_str(), g_CS2AConfig.dbPort,
+					 g_CS2AConfig.dbName.c_str(), g_CS2AConfig.databasePrefix.c_str());
+		mmu::log::SetToFile(g_CS2AConfig.logToFile);
+		mmu::log::SetRetentionDays(g_CS2AConfig.logRetentionDays);
 	}
 
 	ADMIN_LoadTranslations();
@@ -610,8 +612,8 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 									   if (p && p->connected && p->steamid64 == steamid64)
 									   {
 										   ADMIN_PrintToClientT(slotIdx, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
-										   MMU_LOG_INFO("Kicking banned player \"%s\" (%s). Reason: %s\n", p->name.c_str(),
-														  p->authid.c_str(), reason.c_str());
+										   MMU_LOG_INFO("Kicking banned player \"%s\" (%s). Reason: %s\n", p->name.c_str(), p->authid.c_str(),
+														reason.c_str());
 										   g_pEngine->DisconnectClient(CPlayerSlot(slotIdx), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 									   }
 								   }
@@ -925,8 +927,7 @@ void CS2APlugin::OnLateLoad()
 										   if (p && p->connected && p->steamid64 == steamid64)
 										   {
 											   ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
-											   MMU_LOG_INFO("Late load: kicking banned player (%s). Reason: %s\n", p->authid.c_str(),
-															  reason.c_str());
+											   MMU_LOG_INFO("Late load: kicking banned player (%s). Reason: %s\n", p->authid.c_str(), reason.c_str());
 											   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 										   }
 									   }

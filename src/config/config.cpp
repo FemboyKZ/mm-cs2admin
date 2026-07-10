@@ -42,6 +42,14 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->defaultLanguage = value;
 		}
+		else if (k == "logtofile")
+		{
+			cfg->logToFile = (value != "0");
+		}
+		else if (k == "logretentiondays")
+		{
+			cfg->logRetentionDays = std::atoi(value.c_str());
+		}
 		else if (k == "commandprefix")
 		{
 			cfg->commandPrefix = value;
@@ -315,8 +323,8 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	if (!config.commandPrefix.empty() && config.commandPrefix == config.silentCommandPrefix)
 	{
 		MMU_LOG_WARN("commandPrefix and silentCommandPrefix are the same ('%s'). Silent commands will not work. Resetting "
-					   "silentCommandPrefix to '/'.\n",
-					   config.commandPrefix.c_str());
+					 "silentCommandPrefix to '/'.\n",
+					 config.commandPrefix.c_str());
 		config.silentCommandPrefix = "/";
 	}
 

@@ -1,4 +1,5 @@
 #include "menu_bridge.h"
+#include "mmu/log.h"
 #include "src/config/config.h"
 
 #include "vendor/interfaces/ics2menus.h"
@@ -109,11 +110,11 @@ void AdminMenuBridge::Refresh()
 		{
 			m_extHandle[i] = kInvalidMenuHandle;
 		}
-		META_CONPRINTF("[ADMIN] mm-cs2menus unloaded - admin menus disabled.\n");
+		MMU_LOG_WARN("mm-cs2menus unloaded - admin menus disabled.\n");
 	}
 	else if (!prev && now)
 	{
-		META_CONPRINTF("[ADMIN] mm-cs2menus found - menus enabled.\n");
+		MMU_LOG_INFO("mm-cs2menus found - menus enabled.\n");
 	}
 
 	m_pMenus = now;

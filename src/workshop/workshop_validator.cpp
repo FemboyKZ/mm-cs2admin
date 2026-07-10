@@ -1,4 +1,5 @@
 #include "workshop_validator.h"
+#include "mmu/log.h"
 
 #include "src/common.h"
 
@@ -120,6 +121,6 @@ bool ADMIN_EnsureWorkshopMapReady(const std::string &workshopId)
 		return false; // already good
 	}
 
-	META_CONPRINTF("[ADMIN] Workshop addon %s has no .vpk on disk; pruning stale ACF entry so Steam will re-download.\n", workshopId.c_str());
+	MMU_LOG_INFO("Workshop addon %s has no .vpk on disk; pruning stale ACF entry so Steam will re-download.\n", workshopId.c_str());
 	return PruneACFEntryForId(workshopId);
 }

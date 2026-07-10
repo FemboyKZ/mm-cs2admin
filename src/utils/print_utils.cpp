@@ -1,4 +1,5 @@
 #include "print_utils.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -61,7 +62,7 @@ void ADMIN_LogAction(int adminSlot, const char *message)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		META_CONPRINTF("[ADMIN] Log (no DB): %s\n", message ? message : "");
+		MMU_LOG_WARN("Log (no DB): %s\n", message ? message : "");
 		return;
 	}
 

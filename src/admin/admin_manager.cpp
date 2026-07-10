@@ -1,4 +1,5 @@
 #include "admin_manager.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -151,13 +152,13 @@ void CS2AAdminManager::ReloadAdmins()
 	// Then load from DB (async)
 	if (g_CS2AConfig.enableAdmins && g_CS2ADatabase.IsConnected())
 	{
-		LoadDatabaseAdmins([]() { META_CONPRINTF("[ADMIN] Admin reload complete.\n"); });
+		LoadDatabaseAdmins([]() { MMU_LOG_INFO("Admin reload complete.\n"); });
 	}
 	else
 	{
 		// No DB, just apply flat file admins to connected players
 		MergeAndApplyAll();
-		META_CONPRINTF("[ADMIN] Admin reload complete (flat file only).\n");
+		MMU_LOG_INFO("Admin reload complete (flat file only).\n");
 	}
 }
 
@@ -225,7 +226,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 			}
 			else
 			{
-				META_CONPRINTF("[ADMIN] Warning: admin \"%s\" references group \"%s\" which does not exist in admin_groups.cfg.\n",
+				MMU_LOG_INFO("Warning: admin \"%s\" references group \"%s\" which does not exist in admin_groups.cfg.\n",
 							   normalized.c_str(), flatIt->second.group.c_str());
 			}
 		}
@@ -254,7 +255,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 
 	if (found)
 	{
-		META_CONPRINTF("[ADMIN] Admin assigned: \"%s\" (%s) flags=%s immunity=%d\n", player->name.c_str(), normalized.c_str(),
+		MMU_LOG_INFO("Admin assigned: \"%s\" (%s) flags=%s immunity=%d\n", player->name.c_str(), normalized.c_str(),
 					   FlagsToString(merged.flags).c_str(), merged.immunity);
 	}
 }

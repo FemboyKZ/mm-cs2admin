@@ -1,4 +1,5 @@
 #include "player_manager.h"
+#include "mmu/log.h"
 #include "src/admin/admin_manager.h"
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
@@ -532,7 +533,7 @@ int ADMIN_ParseDuration(const char *input)
 
 	if (digits.size() > 9)
 	{
-		META_CONPRINTF("[ADMIN] Duration value too large ('%s'), treating as permanent.\n", input);
+		MMU_LOG_INFO("Duration value too large ('%s'), treating as permanent.\n", input);
 		return 0; // treat as permanent
 	}
 

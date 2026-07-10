@@ -135,19 +135,19 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	m_bLateLoaded = late;
 
-	META_CONPRINTF("[ADMIN] CS2Admin %s loading...%s\n", PLUGIN_FULL_VERSION, late ? " (late)" : "");
+	MMU_LOG_INFO("CS2Admin %s loading...%s\n", PLUGIN_FULL_VERSION, late ? " (late)" : "");
 
 	char gamedataPath[512];
 	snprintf(gamedataPath, sizeof(gamedataPath), "%s/addons/cs2admin/gamedata/cs2admin.txt", g_SMAPI->GetBaseDir());
 
 	if (!g_CS2AGameData.Load(gamedataPath))
 	{
-		META_CONPRINTF("[ADMIN] ERROR: Could not load gamedata from %s\n", gamedataPath);
-		META_CONPRINTF("[ADMIN] Entity access (team/alive targeting) will not work.\n");
+		MMU_LOG_ERROR("Could not load gamedata from %s\n", gamedataPath);
+		MMU_LOG_INFO("Entity access (team/alive targeting) will not work.\n");
 	}
 	else
 	{
-		META_CONPRINTF("[ADMIN] Gamedata loaded. GameEntitySystem offset: %d\n", g_CS2AGameData.GetOffset("GameEntitySystem"));
+		MMU_LOG_INFO("Gamedata loaded. GameEntitySystem offset: %d\n", g_CS2AGameData.GetOffset("GameEntitySystem"));
 	}
 
 	char configPath[512];
@@ -155,15 +155,15 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	if (!ADMIN_LoadConfig(configPath, g_CS2AConfig))
 	{
-		META_CONPRINTF("[ADMIN] ERROR: Could not load config from %s\n", configPath);
-		META_CONPRINTF("[ADMIN] Make sure the file exists at: <game_root>/cfg/cs2admin/core.cfg\n");
-		META_CONPRINTF("[ADMIN] Database features will be disabled. Only flat-file admins will be loaded.\n");
+		MMU_LOG_ERROR("Could not load config from %s\n", configPath);
+		MMU_LOG_INFO("Make sure the file exists at: <game_root>/cfg/cs2admin/core.cfg\n");
+		MMU_LOG_WARN("Database features will be disabled. Only flat-file admins will be loaded.\n");
 		m_bConfigLoaded = false;
 	}
 	else
 	{
 		m_bConfigLoaded = true;
-		META_CONPRINTF("[ADMIN] Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.dbUser.c_str(), g_CS2AConfig.dbHost.c_str(),
+		MMU_LOG_INFO("Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.dbUser.c_str(), g_CS2AConfig.dbHost.c_str(),
 					   g_CS2AConfig.dbPort, g_CS2AConfig.dbName.c_str(), g_CS2AConfig.databasePrefix.c_str());
 	}
 
@@ -190,7 +190,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	g_CS2ADiscord.Init();
 
-	META_CONPRINTF("[ADMIN] Plugin loaded successfully.\n");
+	MMU_LOG_INFO("Plugin loaded successfully.\n");
 	return true;
 }
 
@@ -236,7 +236,7 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// Clear the cached Steam API context
 	g_AdminSteamAPI.Clear();
 
-	META_CONPRINTF("[ADMIN] Plugin unloaded.\n");
+	MMU_LOG_INFO("Plugin unloaded.\n");
 
 	// Last, the engine must not keep a listener pointing into this DLL.
 	mmu::log::Shutdown();
@@ -430,7 +430,7 @@ void CS2APlugin::AllPluginsLoaded()
 	// If config wasn't loaded, skip DB entirely
 	if (!m_bConfigLoaded)
 	{
-		META_CONPRINTF("[ADMIN] No config loaded - skipping database. Only flat-file admins will be used.\n");
+		MMU_LOG_WARN("No config loaded - skipping database. Only flat-file admins will be used.\n");
 		loadFlatFileOnly();
 		return;
 	}
@@ -438,8 +438,8 @@ void CS2APlugin::AllPluginsLoaded()
 	// This is where sql_mm should be available
 	if (!g_CS2ADatabase.Init())
 	{
-		META_CONPRINTF("[ADMIN] Failed to initialize database interface. Is sql_mm loaded?\n");
-		META_CONPRINTF("[ADMIN] Ban checking disabled. Only flat-file admins will be used.\n");
+		MMU_LOG_WARN("Failed to initialize database interface. Is sql_mm loaded?\n");
+		MMU_LOG_WARN("Ban checking disabled. Only flat-file admins will be used.\n");
 		loadFlatFileOnly();
 		return;
 	}
@@ -449,7 +449,7 @@ void CS2APlugin::AllPluginsLoaded()
 		{
 			if (success)
 			{
-				META_CONPRINTF("[ADMIN] Database ready.\n");
+				MMU_LOG_INFO("Database ready.\n");
 
 				// Lookup server ID if set to auto (MySQL/SBPP only)
 				if (g_CS2AConfig.serverID == -1 && g_CS2ADatabase.IsMySQL())
@@ -479,7 +479,7 @@ void CS2APlugin::AllPluginsLoaded()
 			}
 			else
 			{
-				META_CONPRINTF("[ADMIN] Database connection failed! Bans will not be enforced.\n");
+				MMU_LOG_WARN("Database connection failed! Bans will not be enforced.\n");
 				// Load and apply flat-file admins only
 				g_CS2AAdminManager.LoadFlatFileAdmins();
 				g_CS2AAdminManager.MergeAndApplyAll();
@@ -506,7 +506,7 @@ void CS2APlugin::LookupServerID()
 
 	if (!hostip_ref.IsValidRef() || !hostport_ref.IsValidRef())
 	{
-		META_CONPRINTF("[ADMIN] Cannot auto-detect server ID: hostip/hostport cvars not available.\n");
+		MMU_LOG_WARN("Cannot auto-detect server ID: hostip/hostport cvars not available.\n");
 		return;
 	}
 
@@ -536,12 +536,12 @@ void CS2APlugin::LookupServerID()
 								 if (row)
 								 {
 									 g_CS2AConfig.serverID = rs->GetInt(0);
-									 META_CONPRINTF("[ADMIN] Auto-detected server ID: %d\n", g_CS2AConfig.serverID);
+									 MMU_LOG_INFO("Auto-detected server ID: %d\n", g_CS2AConfig.serverID);
 								 }
 							 }
 							 else
 							 {
-								 META_CONPRINTF("[ADMIN] Server not found in database (%s:%d). Using serverID=0.\n", ipStr.c_str(), hostport);
+								 MMU_LOG_WARN("Server not found in database (%s:%d). Using serverID=0.\n", ipStr.c_str(), hostport);
 								 g_CS2AConfig.serverID = 0;
 							 }
 						 });
@@ -550,7 +550,7 @@ void CS2APlugin::LookupServerID()
 bool CS2APlugin::Hook_ClientConnect(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, bool unk1,
 									CBufferString *pRejectReason)
 {
-	META_CONPRINTF("[ADMIN] ClientConnect: slot=%d name=\"%s\" xuid=%llu\n", slot.Get(), pszName, (unsigned long long)xuid);
+	MMU_LOG_INFO("ClientConnect: slot=%d name=\"%s\" xuid=%llu\n", slot.Get(), pszName, (unsigned long long)xuid);
 
 	// Note: We cannot do async DB ban checks here and block, so IP-based bans
 	// are checked in ClientPutInServer along with SteamID bans. ClientConnect must return synchronously.
@@ -571,7 +571,7 @@ void CS2APlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, u
 		return;
 	}
 
-	META_CONPRINTF("[ADMIN] Client connected: \"%s\" (%s) [%s] slot=%d\n", pszName, SteamID64ToAuthId(xuid).c_str(), pszAddress, slotIdx);
+	MMU_LOG_INFO("Client connected: \"%s\" (%s) [%s] slot=%d\n", pszName, SteamID64ToAuthId(xuid).c_str(), pszAddress, slotIdx);
 
 	g_CS2AForwards.FireOnClientConnected(slotIdx, pszName, xuid, pszAddress);
 }
@@ -593,7 +593,7 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 	// Player entity is created and Steam auth is confirmed - safe to check bans/admins
 	player->authenticated = true;
 
-	META_CONPRINTF("[ADMIN] Client authenticated: \"%s\" (%s) slot=%d\n", player->name.c_str(), player->authid.c_str(), slotIdx);
+	MMU_LOG_INFO("Client authenticated: \"%s\" (%s) slot=%d\n", player->name.c_str(), player->authid.c_str(), slotIdx);
 
 	g_CS2AForwards.FireOnClientAuthorized(slotIdx, player->authid.c_str(), player->steamid64);
 
@@ -610,7 +610,7 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 									   if (p && p->connected && p->steamid64 == steamid64)
 									   {
 										   ADMIN_PrintToClientT(slotIdx, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
-										   META_CONPRINTF("[ADMIN] Kicking banned player \"%s\" (%s). Reason: %s\n", p->name.c_str(),
+										   MMU_LOG_INFO("Kicking banned player \"%s\" (%s). Reason: %s\n", p->name.c_str(),
 														  p->authid.c_str(), reason.c_str());
 										   g_pEngine->DisconnectClient(CPlayerSlot(slotIdx), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 									   }
@@ -750,7 +750,7 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 	// Block gagged players from sending normal chat
 	if (g_CS2ACommandSystem.ShouldBlockChat(slotIdx))
 	{
-		META_CONPRINTF("[ADMIN] Blocked chat from gagged player in slot %d\n", slotIdx);
+		MMU_LOG_INFO("Blocked chat from gagged player in slot %d\n", slotIdx);
 		RETURN_META(MRES_SUPERCEDE);
 	}
 }
@@ -832,11 +832,11 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 		const int maxAttempts = g_CS2AConfig.maxReconnectAttempts;
 		if (maxAttempts > 0)
 		{
-			META_CONPRINTF("[ADMIN] Attempting database reconnection (attempt %d/%d)...\n", m_iReconnectAttempts, maxAttempts);
+			MMU_LOG_INFO("Attempting database reconnection (attempt %d/%d)...\n", m_iReconnectAttempts, maxAttempts);
 		}
 		else
 		{
-			META_CONPRINTF("[ADMIN] Attempting database reconnection (attempt %d)...\n", m_iReconnectAttempts);
+			MMU_LOG_INFO("Attempting database reconnection (attempt %d)...\n", m_iReconnectAttempts);
 		}
 
 		g_CS2ADatabase.Reconnect(
@@ -844,7 +844,7 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 			{
 				if (success)
 				{
-					META_CONPRINTF("[ADMIN] Database reconnected!\n");
+					MMU_LOG_INFO("Database reconnected!\n");
 					m_iReconnectAttempts = 0;
 					m_bReconnectGaveUp = false;
 					if (g_CS2AOfflineQueue.HasItems())
@@ -858,14 +858,14 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 		if (maxAttempts > 0 && m_iReconnectAttempts >= maxAttempts)
 		{
 			m_bReconnectGaveUp = true;
-			META_CONPRINTF("[ADMIN] Database reconnection failed after %d attempts. Giving up and running offline.\n", maxAttempts);
+			MMU_LOG_WARN("Database reconnection failed after %d attempts. Giving up and running offline.\n", maxAttempts);
 		}
 	}
 }
 
 void CS2APlugin::OnLateLoad()
 {
-	META_CONPRINTF("[ADMIN] Late load detected - processing existing players...\n");
+	MMU_LOG_INFO("Late load detected - processing existing players...\n");
 
 	// Grab entity system pointer on late load (map already active)
 	if (!g_pEntitySystem)
@@ -912,7 +912,7 @@ void CS2APlugin::OnLateLoad()
 			player->authid = SteamID64ToAuthId(player->steamid64);
 		}
 
-		META_CONPRINTF("[ADMIN] Late load: processing player (%s) in slot %d\n", player->authid.c_str(), i);
+		MMU_LOG_INFO("Late load: processing player (%s) in slot %d\n", player->authid.c_str(), i);
 
 		std::string ip = player->ip;
 		uint64_t steamid64 = player->steamid64;
@@ -925,7 +925,7 @@ void CS2APlugin::OnLateLoad()
 										   if (p && p->connected && p->steamid64 == steamid64)
 										   {
 											   ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
-											   META_CONPRINTF("[ADMIN] Late load: kicking banned player (%s). Reason: %s\n", p->authid.c_str(),
+											   MMU_LOG_INFO("Late load: kicking banned player (%s). Reason: %s\n", p->authid.c_str(),
 															  reason.c_str());
 											   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 										   }
@@ -944,13 +944,13 @@ void CS2APlugin::OnLateLoad()
 void CS2APlugin::OnLevelInit(char const *pMapName, char const *pMapEntities, char const *pOldLevel, char const *pLandmarkName, bool loadGame,
 							 bool background)
 {
-	META_CONPRINTF("[ADMIN] Map loading: %s\n", pMapName);
+	MMU_LOG_INFO("Map loading: %s\n", pMapName);
 
 	// Grab entity system pointer (available once a map is loaded)
 	g_pEntitySystem = GameEntitySystem();
 	if (!g_pEntitySystem)
 	{
-		META_CONPRINTF("[ADMIN] WARNING: Could not acquire CGameEntitySystem\n");
+		MMU_LOG_WARN("Could not acquire CGameEntitySystem\n");
 	}
 
 	// Reload admins on map change
@@ -959,5 +959,5 @@ void CS2APlugin::OnLevelInit(char const *pMapName, char const *pMapEntities, cha
 
 void CS2APlugin::OnLevelShutdown()
 {
-	META_CONPRINTF("[ADMIN] Map unloading.\n");
+	MMU_LOG_INFO("Map unloading.\n");
 }

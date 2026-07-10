@@ -1,4 +1,5 @@
 #include "database.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 
@@ -21,7 +22,7 @@ bool CS2ADatabase::Init()
 
 	if (!m_pSQLInterface)
 	{
-		META_CONPRINTF("[ADMIN] Failed to get ISQLInterface. Is sql_mm loaded?\n");
+		MMU_LOG_WARN("Failed to get ISQLInterface. Is sql_mm loaded?\n");
 		return false;
 	}
 
@@ -31,10 +32,10 @@ bool CS2ADatabase::Init()
 		m_pSQLiteClient = m_pSQLInterface->GetSQLiteClient();
 		if (!m_pSQLiteClient)
 		{
-			META_CONPRINTF("[ADMIN] Failed to get SQLite client from sql_mm.\n");
+			MMU_LOG_WARN("Failed to get SQLite client from sql_mm.\n");
 			return false;
 		}
-		META_CONPRINTF("[ADMIN] Database type: SQLite (standalone mode)\n");
+		MMU_LOG_INFO("Database type: SQLite (standalone mode)\n");
 	}
 	else
 	{
@@ -42,10 +43,10 @@ bool CS2ADatabase::Init()
 		m_pMySQLClient = m_pSQLInterface->GetMySQLClient();
 		if (!m_pMySQLClient)
 		{
-			META_CONPRINTF("[ADMIN] Failed to get MySQL client from sql_mm.\n");
+			MMU_LOG_WARN("Failed to get MySQL client from sql_mm.\n");
 			return false;
 		}
-		META_CONPRINTF("[ADMIN] Database type: MySQL\n");
+		MMU_LOG_INFO("Database type: MySQL\n");
 	}
 
 	m_bInitialized = true;
@@ -58,7 +59,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 	{
 		if (!m_pSQLiteClient)
 		{
-			META_CONPRINTF("[ADMIN] Cannot connect: SQLite client not initialized.\n");
+			MMU_LOG_WARN("Cannot connect: SQLite client not initialized.\n");
 			if (callback)
 			{
 				callback(false);
@@ -74,7 +75,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 		m_pConnection = m_pSQLiteClient->CreateSQLiteConnection(info);
 		if (!m_pConnection)
 		{
-			META_CONPRINTF("[ADMIN] Failed to create SQLite connection object.\n");
+			MMU_LOG_WARN("Failed to create SQLite connection object.\n");
 			if (callback)
 			{
 				callback(false);
@@ -88,7 +89,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 				m_bConnected = success;
 				if (success)
 				{
-					META_CONPRINTF("[ADMIN] SQLite database connected successfully.\n");
+					MMU_LOG_INFO("SQLite database connected successfully.\n");
 					// Enable WAL mode for better concurrent performance
 					Query("PRAGMA journal_mode=WAL", [](ISQLQuery *) {});
 					Query("PRAGMA foreign_keys=ON", [](ISQLQuery *) {});
@@ -97,7 +98,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 				}
 				else
 				{
-					META_CONPRINTF("[ADMIN] SQLite database connection failed.\n");
+					MMU_LOG_WARN("SQLite database connection failed.\n");
 				}
 				if (callback)
 				{
@@ -109,7 +110,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 	{
 		if (!m_pMySQLClient)
 		{
-			META_CONPRINTF("[ADMIN] Cannot connect: MySQL client not initialized.\n");
+			MMU_LOG_WARN("Cannot connect: MySQL client not initialized.\n");
 			if (callback)
 			{
 				callback(false);
@@ -119,7 +120,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 
 		if (g_CS2AConfig.dbHost.empty() || g_CS2AConfig.dbName.empty())
 		{
-			META_CONPRINTF("[ADMIN] Cannot connect: database host or name is empty. Check core.cfg.\n");
+			MMU_LOG_WARN("Cannot connect: database host or name is empty. Check core.cfg.\n");
 			if (callback)
 			{
 				callback(false);
@@ -137,7 +138,7 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 		m_pConnection = m_pMySQLClient->CreateMySQLConnection(info);
 		if (!m_pConnection)
 		{
-			META_CONPRINTF("[ADMIN] Failed to create MySQL connection object.\n");
+			MMU_LOG_WARN("Failed to create MySQL connection object.\n");
 			if (callback)
 			{
 				callback(false);
@@ -151,14 +152,14 @@ void CS2ADatabase::Connect(std::function<void(bool)> callback)
 				m_bConnected = success;
 				if (success)
 				{
-					META_CONPRINTF("[ADMIN] MySQL database connected successfully.\n");
+					MMU_LOG_INFO("MySQL database connected successfully.\n");
 					Query("SET NAMES utf8mb4", [](ISQLQuery *) {});
 					// Create schema if needed
 					CreateSchema();
 				}
 				else
 				{
-					META_CONPRINTF("[ADMIN] MySQL database connection failed.\n");
+					MMU_LOG_WARN("MySQL database connection failed.\n");
 				}
 				if (callback)
 				{
@@ -235,7 +236,7 @@ void CS2ADatabase::Query(const char *query, std::function<void(ISQLQuery *)> cal
 {
 	if (m_bShuttingDown || !m_pConnection || !m_bConnected)
 	{
-		META_CONPRINTF("[ADMIN] Cannot query: not connected.\n");
+		MMU_LOG_WARN("Cannot query: not connected.\n");
 		if (callback)
 		{
 			callback(nullptr);
@@ -477,7 +478,7 @@ void CS2ADatabase::CreateSchema()
 				 prefix);
 		Query(query, [](ISQLQuery *) {});
 
-		META_CONPRINTF("[ADMIN] SQLite schema created/verified.\n");
+		MMU_LOG_INFO("SQLite schema created/verified.\n");
 	}
 	else
 	{
@@ -665,6 +666,6 @@ void CS2ADatabase::CreateSchema()
 				 prefix);
 		Query(query, [](ISQLQuery *) {});
 
-		META_CONPRINTF("[ADMIN] MySQL schema created/verified.\n");
+		MMU_LOG_INFO("MySQL schema created/verified.\n");
 	}
 }

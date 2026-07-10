@@ -1,4 +1,5 @@
 #include "map_manager.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/workshop/workshop_validator.h"
 
@@ -48,7 +49,7 @@ void CS2AMapManager::ScanLocalMaps()
 	fs::directory_iterator it(fs::path(path), ec);
 	if (ec)
 	{
-		META_CONPRINTF("[ADMIN] Could not scan maps folder: %s\n", path);
+		MMU_LOG_WARN("Could not scan maps folder: %s\n", path);
 		return;
 	}
 
@@ -78,7 +79,7 @@ void CS2AMapManager::ScanLocalMaps()
 		m_localMaps.push_back(name);
 	}
 
-	META_CONPRINTF("[ADMIN] Found %d local map(s) in maps folder\n", (int)m_localMaps.size());
+	MMU_LOG_INFO("Found %d local map(s) in maps folder\n", (int)m_localMaps.size());
 }
 
 std::string CS2AMapManager::MatchLocalMap(const std::string &input, std::string &error) const
@@ -138,7 +139,7 @@ bool CS2AMapManager::LoadMapList()
 	std::ifstream file(path);
 	if (!file.is_open())
 	{
-		META_CONPRINTF("[ADMIN] Could not open maplist file: %s\n", path);
+		MMU_LOG_WARN("Could not open maplist file: %s\n", path);
 		return false;
 	}
 
@@ -203,7 +204,7 @@ bool CS2AMapManager::LoadMapList()
 		}
 	}
 
-	META_CONPRINTF("[ADMIN] Loaded %d maps from maplist\n", (int)m_maps.size());
+	MMU_LOG_INFO("Loaded %d maps from maplist\n", (int)m_maps.size());
 	return true;
 }
 

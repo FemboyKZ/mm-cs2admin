@@ -1,4 +1,5 @@
 #include "config.h"
+#include "mmu/log.h"
 #include "mmu/chat_colors.h"
 #include "mmu/kv_parser.h"
 #include "src/common.h"
@@ -294,13 +295,13 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	{
 		if (!isalnum(static_cast<unsigned char>(c)) && c != '_')
 		{
-			META_CONPRINTF("[ADMIN] ERROR: Invalid character '%c' in databasePrefix. Only alphanumeric and underscore allowed.\n", c);
+			MMU_LOG_ERROR("Invalid character '%c' in databasePrefix. Only alphanumeric and underscore allowed.\n", c);
 			return false;
 		}
 	}
 	if (config.databasePrefix.empty())
 	{
-		META_CONPRINTF("[ADMIN] ERROR: databasePrefix cannot be empty.\n");
+		MMU_LOG_ERROR("databasePrefix cannot be empty.\n");
 		return false;
 	}
 
@@ -313,7 +314,7 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	// Ensure command prefixes are different
 	if (!config.commandPrefix.empty() && config.commandPrefix == config.silentCommandPrefix)
 	{
-		META_CONPRINTF("[ADMIN] WARNING: commandPrefix and silentCommandPrefix are the same ('%s'). Silent commands will not work. Resetting "
+		MMU_LOG_WARN("commandPrefix and silentCommandPrefix are the same ('%s'). Silent commands will not work. Resetting "
 					   "silentCommandPrefix to '/'.\n",
 					   config.commandPrefix.c_str());
 		config.silentCommandPrefix = "/";

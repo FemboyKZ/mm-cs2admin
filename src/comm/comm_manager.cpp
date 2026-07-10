@@ -1,4 +1,5 @@
 #include "comm_manager.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -105,7 +106,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					{
 						ADMIN_PrintToChatT(slot, "You are muted (%d seconds remaining). Reason: %s\n", remaining, player->muteReason.c_str());
 					}
-					META_CONPRINTF("[ADMIN] Player \"%s\" has active mute. Reason: %s\n", player->name.c_str(), player->muteReason.c_str());
+					MMU_LOG_INFO("Player \"%s\" has active mute. Reason: %s\n", player->name.c_str(), player->muteReason.c_str());
 				}
 				else if (type == COMM_GAG)
 				{
@@ -128,7 +129,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					{
 						ADMIN_PrintToChatT(slot, "You are gagged (%d seconds remaining). Reason: %s\n", remaining, player->gagReason.c_str());
 					}
-					META_CONPRINTF("[ADMIN] Player \"%s\" has active gag. Reason: %s\n", player->name.c_str(), player->gagReason.c_str());
+					MMU_LOG_INFO("Player \"%s\" has active gag. Reason: %s\n", player->name.c_str(), player->gagReason.c_str());
 				}
 			}
 		});
@@ -150,7 +151,7 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		META_CONPRINTF("[ADMIN] Cannot insert comm: database not connected.\n");
+		MMU_LOG_WARN("Cannot insert comm: database not connected.\n");
 		return;
 	}
 
@@ -188,11 +189,11 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 							 }
 							 if (result->GetAffectedRows() > 0)
 							 {
-								 META_CONPRINTF("[ADMIN] %s inserted successfully.\n", typeName);
+								 MMU_LOG_INFO("%s inserted successfully.\n", typeName);
 							 }
 							 else
 							 {
-								 META_CONPRINTF("[ADMIN] Failed to insert %s.\n", typeName);
+								 MMU_LOG_WARN("Failed to insert %s.\n", typeName);
 							 }
 						 });
 }
@@ -232,11 +233,11 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 							 const char *typeName = (type == COMM_MUTE) ? "mute" : "gag";
 							 if (result && result->GetAffectedRows() > 0)
 							 {
-								 META_CONPRINTF("[ADMIN] Removed %s successfully.\n", typeName);
+								 MMU_LOG_INFO("Removed %s successfully.\n", typeName);
 							 }
 							 else
 							 {
-								 META_CONPRINTF("[ADMIN] No active %s found to remove.\n", typeName);
+								 MMU_LOG_INFO("No active %s found to remove.\n", typeName);
 							 }
 						 });
 }
@@ -289,7 +290,7 @@ void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 			 reason ? reason : "No reason");
 	ADMIN_LogAction(adminSlot, logMsg);
 
-	META_CONPRINTF("[ADMIN] Muted \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
+	MMU_LOG_INFO("Muted \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 }
 
 void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
@@ -340,7 +341,7 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 			 reason ? reason : "No reason");
 	ADMIN_LogAction(adminSlot, logMsg);
 
-	META_CONPRINTF("[ADMIN] Gagged \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
+	MMU_LOG_INFO("Gagged \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 }
 
 void CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
@@ -485,7 +486,7 @@ void CS2ACommManager::CheckExpiredComms()
 			player->muteExpireTime = 0.0;
 			player->muteReason.clear();
 			ADMIN_PrintToChatT(i, "Your mute has expired.\n");
-			META_CONPRINTF("[ADMIN] Mute expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
+			MMU_LOG_INFO("Mute expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
 		}
 
 		if (player->isGagged && !player->isSessionGagged && player->gagExpireTime > 0.0 && curtime >= player->gagExpireTime)
@@ -494,7 +495,7 @@ void CS2ACommManager::CheckExpiredComms()
 			player->gagExpireTime = 0.0;
 			player->gagReason.clear();
 			ADMIN_PrintToChatT(i, "Your gag has expired.\n");
-			META_CONPRINTF("[ADMIN] Gag expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
+			MMU_LOG_INFO("Gag expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
 		}
 	}
 }

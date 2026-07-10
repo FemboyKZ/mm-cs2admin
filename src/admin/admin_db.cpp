@@ -1,4 +1,5 @@
 #include "admin_manager.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -32,7 +33,7 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 						 {
 							 if (!result)
 							 {
-								 META_CONPRINTF("[ADMIN] Failed to load admin groups from database.\n");
+								 MMU_LOG_WARN("Failed to load admin groups from database.\n");
 								 m_dbGroupsLoaded = true;
 								 if (onComplete)
 								 {
@@ -89,7 +90,7 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 								 }
 							 }
 
-							 META_CONPRINTF("[ADMIN] Loaded %zu admin group(s) from database.\n", m_groups.size());
+							 MMU_LOG_INFO("Loaded %zu admin group(s) from database.\n", m_groups.size());
 							 m_dbGroupsLoaded = true;
 							 if (onComplete)
 							 {
@@ -122,7 +123,7 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 						 {
 							 if (!result)
 							 {
-								 META_CONPRINTF("[ADMIN] Failed to load group overrides from database.\n");
+								 MMU_LOG_WARN("Failed to load group overrides from database.\n");
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -192,7 +193,7 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 								 count++;
 							 }
 
-							 META_CONPRINTF("[ADMIN] Loaded %d group override(s) from database.\n", count);
+							 MMU_LOG_INFO("Loaded %d group override(s) from database.\n", count);
 							 if (onComplete)
 							 {
 								 onComplete();
@@ -222,7 +223,7 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 						 {
 							 if (!result)
 							 {
-								 META_CONPRINTF("[ADMIN] Failed to load global overrides from database.\n");
+								 MMU_LOG_WARN("Failed to load global overrides from database.\n");
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -274,7 +275,7 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 								 m_globalOverrides[key] = FlagsFromString(flags);
 							 }
 
-							 META_CONPRINTF("[ADMIN] Loaded %zu global override(s) from database.\n", m_globalOverrides.size());
+							 MMU_LOG_INFO("Loaded %zu global override(s) from database.\n", m_globalOverrides.size());
 							 if (onComplete)
 							 {
 								 onComplete();
@@ -315,7 +316,7 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 
 		if (!hostip_ref.IsValidRef() || !hostport_ref.IsValidRef())
 		{
-			META_CONPRINTF("[ADMIN] Cannot load admins by IP: hostip/hostport cvars not available.\n");
+			MMU_LOG_WARN("Cannot load admins by IP: hostip/hostport cvars not available.\n");
 			m_dbAdminsLoaded = true;
 			if (onComplete)
 			{
@@ -362,7 +363,7 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 						 {
 							 if (!result)
 							 {
-								 META_CONPRINTF("[ADMIN] Failed to load admins from database.\n");
+								 MMU_LOG_WARN("Failed to load admins from database.\n");
 								 m_dbAdminsLoaded = true;
 								 if (onComplete)
 								 {
@@ -447,7 +448,7 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 								 }
 							 }
 
-							 META_CONPRINTF("[ADMIN] Loaded %zu admin(s) from database.\n", m_dbAdmins.size());
+							 MMU_LOG_INFO("Loaded %zu admin(s) from database.\n", m_dbAdmins.size());
 							 m_dbAdminsLoaded = true;
 							 if (onComplete)
 							 {

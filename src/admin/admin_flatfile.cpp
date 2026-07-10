@@ -1,4 +1,5 @@
 #include "admin_manager.h"
+#include "mmu/log.h"
 #include "src/common.h"
 
 #include <fstream>
@@ -54,7 +55,7 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 	std::ifstream file(path);
 	if (!file.is_open())
 	{
-		META_CONPRINTF("[ADMIN] No flat-file admins found at %s (this is normal if you only use DB admins).\n", path);
+		MMU_LOG_INFO("No flat-file admins found at %s (this is normal if you only use DB admins).\n", path);
 		return;
 	}
 
@@ -159,7 +160,7 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 		}
 	}
 
-	META_CONPRINTF("[ADMIN] Loaded %zu admin(s) from flat file.\n", m_flatFileAdmins.size());
+	MMU_LOG_INFO("Loaded %zu admin(s) from flat file.\n", m_flatFileAdmins.size());
 }
 
 // Load SM-compatible admins_simple.ini
@@ -343,7 +344,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 
 	if (count > 0)
 	{
-		META_CONPRINTF("[ADMIN] Loaded %d admin(s) from admins_simple.ini.\n", count);
+		MMU_LOG_INFO("Loaded %d admin(s) from admins_simple.ini.\n", count);
 	}
 }
 
@@ -516,7 +517,7 @@ void CS2AAdminManager::LoadFlatFileGroups()
 
 	if (!m_groups.empty())
 	{
-		META_CONPRINTF("[ADMIN] Loaded %zu group(s) from admin_groups.cfg.\n", m_groups.size());
+		MMU_LOG_INFO("Loaded %zu group(s) from admin_groups.cfg.\n", m_groups.size());
 	}
 }
 
@@ -676,6 +677,6 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 
 	if (count > 0)
 	{
-		META_CONPRINTF("[ADMIN] Loaded %d global override(s) from admin_overrides.cfg.\n", count);
+		MMU_LOG_INFO("Loaded %d global override(s) from admin_overrides.cfg.\n", count);
 	}
 }

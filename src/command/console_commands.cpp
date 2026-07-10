@@ -1,4 +1,5 @@
 #include "src/common.h"
+#include "mmu/log.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
 #include "src/player/player_manager.h"
@@ -20,11 +21,11 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 
 	if (ADMIN_LoadConfig(path, g_CS2AConfig))
 	{
-		META_CONPRINTF("[ADMIN] Config reloaded from %s\n", path);
+		MMU_LOG_INFO("Config reloaded from %s\n", path);
 	}
 	else
 	{
-		META_CONPRINTF("[ADMIN] Failed to reload config from %s\n", path);
+		MMU_LOG_WARN("Failed to reload config from %s\n", path);
 	}
 
 	ADMIN_LoadTranslations();
@@ -46,7 +47,7 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 											   PlayerInfo *pp = g_CS2APlayerManager.GetPlayer(i);
 											   if (pp && pp->connected && pp->steamid64 == steamid64)
 											   {
-												   META_CONPRINTF("[ADMIN] Reload: kicking banned player \"%s\" (%s).\n", pp->name.c_str(),
+												   MMU_LOG_INFO("Reload: kicking banned player \"%s\" (%s).\n", pp->name.c_str(),
 																  pp->authid.c_str());
 												   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 											   }
@@ -62,9 +63,9 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 
 CON_COMMAND_F(mm_rehash, "Rebuild admin cache from database and flat files", FCVAR_NONE)
 {
-	META_CONPRINTF("[ADMIN] Rehashing admin cache...\n");
+	MMU_LOG_INFO("Rehashing admin cache...\n");
 	g_CS2AAdminManager.ReloadAdmins();
-	META_CONPRINTF("[ADMIN] Admin cache rebuilt.\n");
+	MMU_LOG_INFO("Admin cache rebuilt.\n");
 }
 
 CON_COMMAND_F(cs2admin_version, "Display CS2Admin version", FCVAR_NONE)
@@ -105,7 +106,7 @@ CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag a player (RCON)", FCVAR_NONE)
 
 	if (targetSlot < 0)
 	{
-		META_CONPRINTF("[ADMIN] sc_fw_block: Player %s not found on server.\n", authid);
+		MMU_LOG_WARN("sc_fw_block: Player %s not found on server.\n", authid);
 		return;
 	}
 
@@ -118,7 +119,7 @@ CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag a player (RCON)", FCVAR_NONE)
 		g_CS2ACommManager.GagPlayer(targetSlot, time, reason, -1);
 	}
 
-	META_CONPRINTF("[ADMIN] sc_fw_block: Applied type=%d to %s for %d min.\n", type, authid, time);
+	MMU_LOG_INFO("sc_fw_block: Applied type=%d to %s for %d min.\n", type, authid, time);
 }
 
 CON_COMMAND_F(sc_fw_ungag, "Web panel: ungag a player (RCON)", FCVAR_NONE)
@@ -142,11 +143,11 @@ CON_COMMAND_F(sc_fw_ungag, "Web panel: ungag a player (RCON)", FCVAR_NONE)
 		if (p && p->connected && !p->fakePlayer && p->authid == authid)
 		{
 			g_CS2ACommManager.UngagPlayer(i, -1);
-			META_CONPRINTF("[ADMIN] sc_fw_ungag: Ungagged %s.\n", authid);
+			MMU_LOG_INFO("sc_fw_ungag: Ungagged %s.\n", authid);
 			return;
 		}
 	}
-	META_CONPRINTF("[ADMIN] sc_fw_ungag: Player %s not found on server.\n", authid);
+	MMU_LOG_WARN("sc_fw_ungag: Player %s not found on server.\n", authid);
 }
 
 CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
@@ -170,11 +171,11 @@ CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
 		if (p && p->connected && !p->fakePlayer && p->authid == authid)
 		{
 			g_CS2ACommManager.UnmutePlayer(i, -1);
-			META_CONPRINTF("[ADMIN] sc_fw_unmute: Unmuted %s.\n", authid);
+			MMU_LOG_INFO("sc_fw_unmute: Unmuted %s.\n", authid);
 			return;
 		}
 	}
-	META_CONPRINTF("[ADMIN] sc_fw_unmute: Player %s not found on server.\n", authid);
+	MMU_LOG_WARN("sc_fw_unmute: Player %s not found on server.\n", authid);
 }
 
 void ShutdownConsoleCommands()

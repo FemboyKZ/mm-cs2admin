@@ -1,4 +1,5 @@
 #include "offline_queue.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/db/database.h"
 
@@ -14,12 +15,12 @@ void CS2AOfflineQueue::Enqueue(const std::string &query)
 {
 	if (m_queries.size() >= MAX_QUEUE_SIZE)
 	{
-		META_CONPRINTF("[ADMIN] Offline queue full (%zu items), dropping query.\n", m_queries.size());
+		MMU_LOG_INFO("Offline queue full (%zu items), dropping query.\n", m_queries.size());
 		return;
 	}
 	m_queries.push_back(query);
 	SaveToFile();
-	META_CONPRINTF("[ADMIN] Query queued offline (%zu in queue).\n", m_queries.size());
+	MMU_LOG_INFO("Query queued offline (%zu in queue).\n", m_queries.size());
 }
 
 void CS2AOfflineQueue::ProcessQueue()
@@ -29,7 +30,7 @@ void CS2AOfflineQueue::ProcessQueue()
 		return;
 	}
 
-	META_CONPRINTF("[ADMIN] Processing offline queue (%zu items)...\n", m_queries.size());
+	MMU_LOG_INFO("Processing offline queue (%zu items)...\n", m_queries.size());
 
 	std::vector<std::string> pending = std::move(m_queries);
 	m_queries.clear();
@@ -44,7 +45,7 @@ void CS2AOfflineQueue::ProcessQueue()
 									 // Query failed entirely, re-queue and persist
 									 m_queries.push_back(query);
 									 SaveToFile();
-									 META_CONPRINTF("[ADMIN] Offline queue item failed, re-queued.\n");
+									 MMU_LOG_WARN("Offline queue item failed, re-queued.\n");
 								 }
 							 });
 	}
@@ -112,6 +113,6 @@ void CS2AOfflineQueue::LoadFromFile()
 
 	if (!m_queries.empty())
 	{
-		META_CONPRINTF("[ADMIN] Loaded %zu queued queries from file.\n", m_queries.size());
+		MMU_LOG_INFO("Loaded %zu queued queries from file.\n", m_queries.size());
 	}
 }

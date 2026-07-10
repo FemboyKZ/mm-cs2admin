@@ -1,4 +1,5 @@
 #include "command_system.h"
+#include "mmu/log.h"
 #include "map_manager.h"
 #include "src/menu/menu_bridge.h"
 #include "src/player/player_manager.h"
@@ -2122,7 +2123,7 @@ void CS2ACommandSystem::DispatchConsoleCommand(const char *cmdName, const std::v
 	auto it = m_commands.find(lower);
 	if (it == m_commands.end())
 	{
-		META_CONPRINTF("[ADMIN] Unknown command: %s\n", cmdName);
+		MMU_LOG_INFO("Unknown command: %s\n", cmdName);
 		return;
 	}
 

@@ -1,4 +1,5 @@
 #include "discord.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/player/player_manager.h"
@@ -36,7 +37,7 @@ void CS2ADiscord::Init()
 
 	m_running.store(true);
 	m_worker = std::thread(&CS2ADiscord::WorkerThread, this);
-	META_CONPRINTF("[ADMIN] Discord: Worker thread started.\n");
+	MMU_LOG_INFO("Discord: Worker thread started.\n");
 }
 
 void CS2ADiscord::Shutdown()
@@ -97,7 +98,7 @@ void CS2ADiscord::WorkerThread()
 
 		if (!HttpsPost(host, path, payload))
 		{
-			META_CONPRINTF("[ADMIN] Discord: Failed to send webhook.\n");
+			MMU_LOG_WARN("Discord: Failed to send webhook.\n");
 		}
 	}
 }
@@ -313,7 +314,7 @@ void CS2ADiscord::SendPayload(const std::string &json)
 	// Validate URL starts with a Discord webhook URL
 	if (url.find("https://discord.com/api/webhooks/") != 0 && url.find("https://discordapp.com/api/webhooks/") != 0)
 	{
-		META_CONPRINTF("[ADMIN] Discord: Invalid webhook URL (must be a Discord webhook URL).\n");
+		MMU_LOG_WARN("Discord: Invalid webhook URL (must be a Discord webhook URL).\n");
 		return;
 	}
 
@@ -321,7 +322,7 @@ void CS2ADiscord::SendPayload(const std::string &json)
 	size_t pathStart = url.find('/', hostStart);
 	if (pathStart == std::string::npos)
 	{
-		META_CONPRINTF("[ADMIN] Discord: Malformed webhook URL.\n");
+		MMU_LOG_INFO("Discord: Malformed webhook URL.\n");
 		return;
 	}
 
@@ -329,7 +330,7 @@ void CS2ADiscord::SendPayload(const std::string &json)
 		std::lock_guard<std::mutex> lock(m_mutex);
 		if (m_queue.size() >= MAX_QUEUE_SIZE)
 		{
-			META_CONPRINTF("[ADMIN] Discord: Queue full (%zu items), dropping message.\n", m_queue.size());
+			MMU_LOG_INFO("Discord: Queue full (%zu items), dropping message.\n", m_queue.size());
 			return;
 		}
 		m_queue.push(json);
@@ -395,7 +396,7 @@ bool CS2ADiscord::HttpsPost(const std::string &host, const std::string &path, co
 
 			if (!success)
 			{
-				META_CONPRINTF("[ADMIN] Discord: Webhook returned HTTP %d.\n", (int)statusCode);
+				MMU_LOG_INFO("Discord: Webhook returned HTTP %d.\n", (int)statusCode);
 			}
 		}
 	}
@@ -443,12 +444,12 @@ bool CS2ADiscord::HttpsPost(const std::string &host, const std::string &path, co
 
 		if (!success)
 		{
-			META_CONPRINTF("[ADMIN] Discord: Webhook returned HTTP %ld.\n", httpCode);
+			MMU_LOG_INFO("Discord: Webhook returned HTTP %ld.\n", httpCode);
 		}
 	}
 	else
 	{
-		META_CONPRINTF("[ADMIN] Discord: curl error: %s\n", curl_easy_strerror(res));
+		MMU_LOG_WARN("Discord: curl error: %s\n", curl_easy_strerror(res));
 	}
 
 	curl_slist_free_all(headers);

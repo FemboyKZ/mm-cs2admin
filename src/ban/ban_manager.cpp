@@ -1,4 +1,5 @@
 #include "ban_manager.h"
+#include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -94,7 +95,7 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
-		META_CONPRINTF("[ADMIN] BanPlayer: invalid target slot %d\n", targetSlot);
+		MMU_LOG_WARN("BanPlayer: invalid target slot %d\n", targetSlot);
 		return;
 	}
 
@@ -137,7 +138,7 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	ADMIN_LogAction(adminSlot, logMsg);
 
 	g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
-	META_CONPRINTF("[ADMIN] Banned player \"%s\" (%s) for %d min. Reason: %s\n", targetName.c_str(), targetAuth.c_str(), time,
+	MMU_LOG_INFO("Banned player \"%s\" (%s) for %d min. Reason: %s\n", targetName.c_str(), targetAuth.c_str(), time,
 				   reason ? reason : "No reason");
 }
 
@@ -149,7 +150,7 @@ void CS2ABanManager::AddBan(const char *authid, int time, const char *reason, in
 	snprintf(logMsg, sizeof(logMsg), "Added offline ban for %s (%d min). Reason: %s", authid, time, reason ? reason : "No reason");
 	ADMIN_LogAction(adminSlot, logMsg);
 
-	META_CONPRINTF("[ADMIN] Added ban for %s, %d min. Reason: %s\n", authid, time, reason ? reason : "No reason");
+	MMU_LOG_INFO("Added ban for %s, %d min. Reason: %s\n", authid, time, reason ? reason : "No reason");
 }
 
 void CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adminSlot)
@@ -186,11 +187,11 @@ void CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 						 {
 							 if (result && result->GetAffectedRows() > 0)
 							 {
-								 META_CONPRINTF("[ADMIN] IP ban inserted successfully.\n");
+								 MMU_LOG_INFO("IP ban inserted successfully.\n");
 							 }
 							 else
 							 {
-								 META_CONPRINTF("[ADMIN] Failed to insert IP ban.\n");
+								 MMU_LOG_WARN("Failed to insert IP ban.\n");
 							 }
 						 });
 }
@@ -199,7 +200,7 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		META_CONPRINTF("[ADMIN] Cannot insert ban: database not connected.\n");
+		MMU_LOG_WARN("Cannot insert ban: database not connected.\n");
 		return;
 	}
 
@@ -238,11 +239,11 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 							 }
 							 if (result->GetAffectedRows() > 0)
 							 {
-								 META_CONPRINTF("[ADMIN] Ban inserted successfully.\n");
+								 MMU_LOG_INFO("Ban inserted successfully.\n");
 							 }
 							 else
 							 {
-								 META_CONPRINTF("[ADMIN] Failed to insert ban.\n");
+								 MMU_LOG_WARN("Failed to insert ban.\n");
 							 }
 						 });
 }
@@ -285,11 +286,11 @@ void CS2ABanManager::Unban(const char *authid, int adminSlot)
 						 {
 							 if (result && result->GetAffectedRows() > 0)
 							 {
-								 META_CONPRINTF("[ADMIN] Unbanned %s successfully.\n", authid.c_str());
+								 MMU_LOG_INFO("Unbanned %s successfully.\n", authid.c_str());
 							 }
 							 else
 							 {
-								 META_CONPRINTF("[ADMIN] No active ban found for %s.\n", authid.c_str());
+								 MMU_LOG_INFO("No active ban found for %s.\n", authid.c_str());
 							 }
 						 });
 }
@@ -329,11 +330,11 @@ void CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
 						 {
 							 if (result && result->GetAffectedRows() > 0)
 							 {
-								 META_CONPRINTF("[ADMIN] Unbanned IP %s successfully.\n", ip.c_str());
+								 MMU_LOG_INFO("Unbanned IP %s successfully.\n", ip.c_str());
 							 }
 							 else
 							 {
-								 META_CONPRINTF("[ADMIN] No active IP ban found for %s.\n", ip.c_str());
+								 MMU_LOG_INFO("No active IP ban found for %s.\n", ip.c_str());
 							 }
 						 });
 }
@@ -488,7 +489,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 			if (action == 5)
 			{
-				META_CONPRINTF("[ADMIN] Sleuth: kicking \"%s\" - %d IP bans found.\n", player->name.c_str(), count);
+				MMU_LOG_INFO("Sleuth: kicking \"%s\" - %d IP bans found.\n", player->name.c_str(), count);
 				g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 				return;
 			}

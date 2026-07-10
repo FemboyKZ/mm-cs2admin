@@ -20,6 +20,8 @@ void ShutdownConsoleCommands();
 #include "utils/print_utils.h"
 #include "utils/discord.h"
 
+#include "mmu/log.h"
+
 #include <sql_mm.h>
 
 #include <schemasystem/schemasystem.h>
@@ -92,7 +94,7 @@ std::string ADMIN_SlotLanguage(int slot)
 void ADMIN_LoadTranslations()
 {
 	g_pClientCvarValue = static_cast<IClientCvarValue *>(g_SMAPI->MetaFactory(CLIENTCVARVALUE_INTERFACE, nullptr, nullptr));
-	g_CS2ATranslations.Load(g_SMAPI->GetBaseDir());
+	g_CS2ATranslations.Load(g_SMAPI->GetBaseDir(), "cs2admin");
 	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.defaultLanguage);
 }
 
@@ -111,6 +113,12 @@ PLUGIN_EXPOSE(CS2APlugin, g_CS2APlugin);
 bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
 {
 	PLUGIN_SAVEVARS();
+
+	mmu::log::Setup logSetup;
+	logSetup.channelName = "ADMIN";
+	logSetup.addonName = "cs2admin";
+	logSetup.toFile = true;
+	mmu::log::Init(logSetup);
 
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pEngine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
 	GET_V_IFACE_CURRENT(GetEngineFactory, g_pICvar, ICvar, CVAR_INTERFACE_VERSION);
@@ -229,6 +237,9 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	g_AdminSteamAPI.Clear();
 
 	META_CONPRINTF("[ADMIN] Plugin unloaded.\n");
+
+	// Last, the engine must not keep a listener pointing into this DLL.
+	mmu::log::Shutdown();
 	return true;
 }
 

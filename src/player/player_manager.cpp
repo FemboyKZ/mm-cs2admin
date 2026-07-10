@@ -2,7 +2,7 @@
 #include "src/admin/admin_manager.h"
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
-#include "src/entity/ccsplayercontroller.h"
+#include "mmu/entity/ccsplayercontroller.h"
 
 #include <algorithm>
 #include <cctype>

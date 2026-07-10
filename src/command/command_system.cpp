@@ -11,8 +11,8 @@
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
 #include "src/utils/discord.h"
-#include "src/entity/ccsplayercontroller.h"
-#include "src/entity/ccsplayerpawn.h"
+#include "mmu/entity/ccsplayercontroller.h"
+#include "mmu/entity/ccsplayerpawn.h"
 
 #include "tier0/logging.h"
 

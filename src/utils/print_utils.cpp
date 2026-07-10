@@ -6,176 +6,55 @@
 #include "src/lang/translations.h"
 #include "src/player/player_manager.h"
 
-#include <networksystem/inetworkmessages.h>
-#include <networksystem/inetworkserializer.h>
-#include <networksystem/netmessage.h>
-#include <engine/igameeventsystem.h>
-#include <irecipientfilter.h>
-#include <usermessages.pb.h>
+#include "mmu/print.h"
 
 #include <cstdarg>
 #include <cstdio>
 #include <ctime>
 #include <string>
 
-#define HUD_PRINTTALK 3
-
-// Simple recipient filter for a single player slot
-class CSingleRecipientFilter : public IRecipientFilter
+static bool SlotIsHuman(int slot)
 {
-public:
-	CSingleRecipientFilter(int slot)
-	{
-		m_Recipients.Set(slot);
-	}
-
-	~CSingleRecipientFilter() override {}
-
-	NetChannelBufType_t GetNetworkBufType(void) const override
-	{
-		return BUF_RELIABLE;
-	}
-
-	bool IsInitMessage(void) const override
-	{
-		return false;
-	}
-
-	const CPlayerBitVec &GetRecipients(void) const override
-	{
-		return m_Recipients;
-	}
-
-	CPlayerSlot GetPredictedPlayerSlot(void) const override
-	{
-		return CPlayerSlot(-1);
-	}
-
-private:
-	CPlayerBitVec m_Recipients;
-};
-
-// Recipient filter with manually added slots
-class CAdminRecipientFilter : public IRecipientFilter
-{
-public:
-	CAdminRecipientFilter() {}
-
-	~CAdminRecipientFilter() override {}
-
-	void AddRecipient(int slot)
-	{
-		m_Recipients.Set(slot);
-	}
-
-	NetChannelBufType_t GetNetworkBufType(void) const override
-	{
-		return BUF_RELIABLE;
-	}
-
-	bool IsInitMessage(void) const override
-	{
-		return false;
-	}
-
-	const CPlayerBitVec &GetRecipients(void) const override
-	{
-		return m_Recipients;
-	}
-
-	CPlayerSlot GetPredictedPlayerSlot(void) const override
-	{
-		return CPlayerSlot(-1);
-	}
-
-private:
-	CPlayerBitVec m_Recipients;
-};
-
-// Cache the TextMsg network message pointer (lazy init)
-static INetworkMessageInternal *GetTextMsgMessage()
-{
-	static INetworkMessageInternal *s_pTextMsg = nullptr;
-	if (!s_pTextMsg && g_pNetworkMessages)
-	{
-		s_pTextMsg = g_pNetworkMessages->FindNetworkMessagePartial("TextMsg");
-	}
-	return s_pTextMsg;
+	PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+	return p && p->connected && !p->fakePlayer;
 }
 
-// Send a HUD chat message to a recipient filter
-static void SendChatToFilter(IRecipientFilter *pFilter, const char *text)
+static bool SlotIsAdmin(int slot)
 {
-	INetworkMessageInternal *pNetMsg = GetTextMsgMessage();
-	if (!pNetMsg || !g_pGameEventSystem)
-	{
-		return;
-	}
+	return g_CS2AAdminManager.GetPlayerAdmin(slot) != nullptr;
+}
 
-	CNetMessage *pData = pNetMsg->AllocateMessage();
-	if (!pData)
-	{
-		return;
-	}
-
-	auto *pTextMsg = pData->ToPB<CUserMessageTextMsg>();
-	pTextMsg->set_dest(HUD_PRINTTALK);
-	pTextMsg->add_param(text);
-
-	g_pGameEventSystem->PostEventAbstract(-1, false, pFilter, pNetMsg, pData, 0);
-
-	g_pNetworkMessages->DeallocateNetMessageAbstract(pNetMsg, pData);
+static mmu::ChatPrinter &Printer()
+{
+	static mmu::ChatPrinter printer = [] {
+		mmu::ChatPrinter p;
+		mmu::ChatPrinter::Setup s;
+		s.translations = &g_CS2ATranslations;
+		s.slotLanguage = &ADMIN_SlotLanguage;
+		s.chatPrefix = &g_CS2AConfig.chatPrefix;
+		s.resetColorAfterPrefix = true;
+		s.conTag = "ADMIN";
+		s.slotIsHuman = &SlotIsHuman;
+		p.Configure(s);
+		return p;
+	}();
+	return printer;
 }
 
 void ADMIN_PrintToClient(int slot, const char *fmt, ...)
 {
-	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	Printer().ClientConsoleV(slot, fmt, args);
 	va_end(args);
-
-	if (slot < 0)
-	{
-		META_CONPRINTF("%s", buffer);
-		return;
-	}
-
-	if (slot > MAXPLAYERS || !g_pEngine)
-	{
-		return;
-	}
-
-	g_pEngine->ClientPrintf(CPlayerSlot(slot), buffer);
 }
 
 void ADMIN_PrintToAll(const char *fmt, ...)
 {
-	if (!g_pEngine)
-	{
-		return;
-	}
-
-	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	Printer().ConsoleToAllV(fmt, args);
 	va_end(args);
-
-	CGlobalVars *globals = GetGameGlobals();
-	if (!globals)
-	{
-		return;
-	}
-
-	for (int i = 0; i < globals->maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (p && p->connected && !p->fakePlayer)
-		{
-			g_pEngine->ClientPrintf(CPlayerSlot(i), buffer);
-		}
-	}
 }
 
 void ADMIN_LogAction(int adminSlot, const char *message)
@@ -211,314 +90,73 @@ void ADMIN_LogAction(int adminSlot, const char *message)
 
 void ADMIN_PrintToChat(int slot, const char *fmt, ...)
 {
-	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	Printer().ChatToSlotV(slot, fmt, args);
 	va_end(args);
-
-	if (slot < 0)
-	{
-		META_CONPRINTF("[ADMIN] %s", buffer);
-		return;
-	}
-
-	if (slot > MAXPLAYERS)
-	{
-		return;
-	}
-
-	// Build the chat-formatted message with prefix
-	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
-
-	CSingleRecipientFilter filter(slot);
-	SendChatToFilter(&filter, chatBuf);
 }
 
 void ADMIN_ChatToAll(const char *fmt, ...)
 {
-	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	// Callers already include chatPrefix in the message.
+	Printer().ChatToAllV(fmt, args, false);
 	va_end(args);
-
-	// Build the chat message (callers already include chatPrefix)
-	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s", buffer);
-
-	// Build a filter of all connected non-bot players
-	CAdminRecipientFilter filter;
-	CGlobalVars *globals = GetGameGlobals();
-	if (globals)
-	{
-		for (int i = 0; i < globals->maxClients; i++)
-		{
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-			if (p && p->connected && !p->fakePlayer)
-			{
-				filter.AddRecipient(i);
-			}
-		}
-	}
-
-	SendChatToFilter(&filter, chatBuf);
-
-	// Also log to server console
-	META_CONPRINTF("%s", buffer);
 }
 
 void ADMIN_ChatToAdmins(const char *fmt, ...)
 {
-	if (!g_pEngine)
-	{
-		return;
-	}
-
-	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	Printer().ChatToPredV(&SlotIsAdmin, fmt, args);
 	va_end(args);
-
-	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s", buffer);
-
-	CGlobalVars *globals = GetGameGlobals();
-	if (!globals)
-	{
-		return;
-	}
-
-	CAdminRecipientFilter filter;
-	int adminCount = 0;
-	for (int i = 0; i < globals->maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (p && p->connected && !p->fakePlayer)
-		{
-			if (g_CS2AAdminManager.GetPlayerAdmin(i) != nullptr)
-			{
-				filter.AddRecipient(i);
-				adminCount++;
-			}
-		}
-	}
-
-	if (adminCount > 0)
-	{
-		SendChatToFilter(&filter, chatBuf);
-	}
 }
 
 void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
 {
-	char buffer[512];
 	va_list args;
 	va_start(args, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, args);
+	Printer().ReplyV(slot, fmt, args);
 	va_end(args);
-
-	if (slot < 0)
-	{
-		// Server console
-		META_CONPRINTF("[ADMIN] %s", buffer);
-		return;
-	}
-
-	if (slot > MAXPLAYERS)
-	{
-		return;
-	}
-
-	// Send to player's console
-	if (g_pEngine)
-	{
-		char consoleBuffer[512];
-		snprintf(consoleBuffer, sizeof(consoleBuffer), "[ADMIN] %s", buffer);
-		g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
-	}
-
-	// Also send to player's chat
-	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
-
-	CSingleRecipientFilter filter(slot);
-	SendChatToFilter(&filter, chatBuf);
-}
-
-// Strip Source chat color codes (0x01-0x10)
-static void StripChatColors(const char *src, char *dst, size_t dstlen)
-{
-	char *out = dst;
-	for (; *src && out < dst + dstlen - 1; src++)
-	{
-		unsigned char c = (unsigned char)*src;
-		if (c < 0x01 || c > 0x10)
-		{
-			*out++ = *src;
-		}
-	}
-	*out = '\0';
 }
 
 void ADMIN_PrintToClientT(int slot, const char *phrase, ...)
 {
-	std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(slot), phrase);
-
-	char buffer[512];
 	va_list args;
 	va_start(args, phrase);
-	vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+	Printer().ClientConsoleTV(slot, phrase, args);
 	va_end(args);
-
-	if (slot < 0)
-	{
-		META_CONPRINTF("%s", buffer);
-		return;
-	}
-	if (slot > MAXPLAYERS || !g_pEngine)
-	{
-		return;
-	}
-	g_pEngine->ClientPrintf(CPlayerSlot(slot), buffer);
 }
 
 void ADMIN_PrintToChatT(int slot, const char *phrase, ...)
 {
-	std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(slot), phrase);
-
-	char buffer[512];
 	va_list args;
 	va_start(args, phrase);
-	vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+	Printer().ChatToSlotTV(slot, phrase, args);
 	va_end(args);
-
-	if (slot < 0)
-	{
-		META_CONPRINTF("[ADMIN] %s", buffer);
-		return;
-	}
-	if (slot > MAXPLAYERS)
-	{
-		return;
-	}
-
-	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
-
-	CSingleRecipientFilter filter(slot);
-	SendChatToFilter(&filter, chatBuf);
 }
 
 void ADMIN_ChatToAllT(const char *phrase, ...)
 {
-	CGlobalVars *globals = GetGameGlobals();
-	int maxClients = globals ? globals->maxClients : 0;
-
-	for (int i = 0; i < maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (!p || !p->connected || p->fakePlayer)
-		{
-			continue;
-		}
-
-		std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(i), phrase);
-
-		char buffer[512];
-		va_list args;
-		va_start(args, phrase);
-		vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
-		va_end(args);
-
-		char chatBuf[512];
-		snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
-
-		CSingleRecipientFilter filter(i);
-		SendChatToFilter(&filter, chatBuf);
-	}
-
-	// Console mirror, rendered once in the server default language.
-	std::string conTmpl = g_CS2ATranslations.Translate("", phrase);
-	char conFmt[512];
-	va_list conArgs;
-	va_start(conArgs, phrase);
-	vsnprintf(conFmt, sizeof(conFmt), conTmpl.c_str(), conArgs);
-	va_end(conArgs);
-
-	char conBuf[512];
-	StripChatColors(conFmt, conBuf, sizeof(conBuf));
-	META_CONPRINTF("[ADMIN] %s", conBuf);
+	va_list args;
+	va_start(args, phrase);
+	Printer().ChatToAllTV(phrase, args);
+	va_end(args);
 }
 
 void ADMIN_ChatToAdminsT(const char *phrase, ...)
 {
-	CGlobalVars *globals = GetGameGlobals();
-	if (!globals)
-	{
-		return;
-	}
-
-	for (int i = 0; i < globals->maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (!p || !p->connected || p->fakePlayer)
-		{
-			continue;
-		}
-		if (g_CS2AAdminManager.GetPlayerAdmin(i) == nullptr)
-		{
-			continue;
-		}
-
-		std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(i), phrase);
-
-		char buffer[512];
-		va_list args;
-		va_start(args, phrase);
-		vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
-		va_end(args);
-
-		char chatBuf[512];
-		snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
-
-		CSingleRecipientFilter filter(i);
-		SendChatToFilter(&filter, chatBuf);
-	}
+	va_list args;
+	va_start(args, phrase);
+	Printer().ChatToPredTV(&SlotIsAdmin, phrase, args);
+	va_end(args);
 }
 
 void ADMIN_ReplyToCommandT(int slot, const char *phrase, ...)
 {
-	std::string tmpl = g_CS2ATranslations.Translate(ADMIN_SlotLanguage(slot), phrase);
-
-	char buffer[512];
 	va_list args;
 	va_start(args, phrase);
-	vsnprintf(buffer, sizeof(buffer), tmpl.c_str(), args);
+	Printer().ReplyTV(slot, phrase, args);
 	va_end(args);
-
-	if (slot < 0)
-	{
-		META_CONPRINTF("[ADMIN] %s", buffer);
-		return;
-	}
-	if (slot > MAXPLAYERS)
-	{
-		return;
-	}
-
-	if (g_pEngine)
-	{
-		char consoleBuffer[512];
-		snprintf(consoleBuffer, sizeof(consoleBuffer), "[ADMIN] %s", buffer);
-		g_pEngine->ClientPrintf(CPlayerSlot(slot), consoleBuffer);
-	}
-
-	char chatBuf[512];
-	snprintf(chatBuf, sizeof(chatBuf), " %s%s%s", g_CS2AConfig.chatPrefix.c_str(), CHAT_COLOR_DEFAULT, buffer);
-
-	CSingleRecipientFilter filter(slot);
-	SendChatToFilter(&filter, chatBuf);
 }

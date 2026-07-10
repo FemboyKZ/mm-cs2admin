@@ -24,6 +24,7 @@ def additionalIncludes(context, binary, sdk):
         # Path should be absolute only!
         os.path.join(builder.sourcePath, "vendor", "sql_mm", "src", "public"),
         os.path.join(builder.sourcePath, "vendor", "ClientCvarValue", "public"),
+        os.path.join(builder.sourcePath, "vendor", "mm-utils"),
         os.path.join(builder.sourcePath, "src"),
     ]
 

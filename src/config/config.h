@@ -88,9 +88,6 @@ struct CS2AConfig
 // Returns true on success, false if file couldn't be opened/parsed.
 bool ADMIN_LoadConfig(const char *path, CS2AConfig &config);
 
-// Resolve color tags like {purple}, {green}, etc. to chat color codes.
-std::string ADMIN_ResolveColorTags(const std::string &input);
-
 // Global config instance
 extern CS2AConfig g_CS2AConfig;
 

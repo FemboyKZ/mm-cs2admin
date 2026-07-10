@@ -1,5 +1,6 @@
 #include "config.h"
-#include "kv_parser.h"
+#include "mmu/chat_colors.h"
+#include "mmu/kv_parser.h"
 #include "src/common.h"
 #include <fstream>
 #include <sstream>
@@ -34,7 +35,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "chatprefix")
 		{
-			cfg->chatPrefix = ADMIN_ResolveColorTags(value);
+			cfg->chatPrefix = mmu::ResolveColorTags(value);
 		}
 		else if (k == "defaultlanguage")
 		{
@@ -319,31 +320,4 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	}
 
 	return true;
-}
-
-std::string ADMIN_ResolveColorTags(const std::string &input)
-{
-	struct ColorTag
-	{
-		const char *tag;
-		const char *code;
-	};
-
-	static const ColorTag tags[] = {
-		{"{default}", "\x01"}, {"{darkred}", "\x02"}, {"{purple}", "\x03"},   {"{green}", "\x04"},    {"{olive}", "\x05"}, {"{lime}", "\x06"},
-		{"{red}", "\x07"},     {"{grey}", "\x08"},    {"{yellow}", "\x09"},   {"{bluegrey}", "\x0A"}, {"{blue}", "\x0B"},  {"{darkblue}", "\x0C"},
-		{"{grey2}", "\x0D"},   {"{orchid}", "\x0E"},  {"{lightred}", "\x0F"}, {"{gold}", "\x10"},
-	};
-
-	std::string result = input;
-	for (const auto &t : tags)
-	{
-		std::string tag(t.tag);
-		size_t pos = 0;
-		while ((pos = result.find(tag, pos)) != std::string::npos)
-		{
-			result.replace(pos, tag.size(), t.code);
-		}
-	}
-	return result;
 }

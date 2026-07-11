@@ -1,17 +1,23 @@
 #ifndef _INCLUDE_ADMIN_GAMEDATA_H_
 #define _INCLUDE_ADMIN_GAMEDATA_H_
 
-#include "mmu/gamedata.h"
-
 #include <cstddef>
 #include <cstdint>
 
-extern mmu::GameData g_CS2AGameData;
-
+// Platform-specific gamedata. Values sourced from CS2Fixes:
+//   https://github.com/Source2ZE/CS2Fixes/blob/master/gamedata/cs2fixes.jsonc
 namespace gamedata
 {
+	// Offset from IGameResourceService to the CGameEntitySystem* pointer.
+	// CS2Fixes key: "GameEntitySystem"
+#ifdef _WIN32
+	static constexpr int kGameEntitySystemOffset = 88;
+#else
+	static constexpr int kGameEntitySystemOffset = 80;
+#endif
+
 	// Loads CBaseGameSystemFactory::sm_pFirst (RIP-relative mov, displacement at +3).
-	// Signature from CS2Fixes cs2fixes.jsonc "IGameSystem_InitAllSystems_pFirst".
+	// CS2Fixes key: "IGameSystem_InitAllSystems_pFirst"
 #ifdef _WIN32
 	// 48 8B 1D ? ? ? ? 48 85 DB 0F 84 ? ? ? ? BD
 	static constexpr uint8_t kGameSystemFactorySig[] = {0x48, 0x8B, 0x1D, 0x2A, 0x2A, 0x2A, 0x2A, 0x48, 0x85,

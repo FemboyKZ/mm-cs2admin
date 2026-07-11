@@ -12,7 +12,6 @@ for sdk_target in MMSPlugin.sdk_targets:
     binary.sources += [
         "src/cs2admin.cpp",
         "src/config/config.cpp",
-        "src/config/gamedata.cpp",
         "src/lang/translations.cpp",
         "src/db/database.cpp",
         "src/player/player_manager.cpp",
@@ -29,7 +28,6 @@ for sdk_target in MMSPlugin.sdk_targets:
         "src/utils/print_utils.cpp",
         "src/utils/discord.cpp",
         "vendor/mm-utils/mmu/chat_colors.cpp",
-        "vendor/mm-utils/mmu/gamedata.cpp",
         "vendor/mm-utils/mmu/gamesystem.cpp",
         "vendor/mm-utils/mmu/log.cpp",
         "vendor/mm-utils/mmu/print.cpp",

@@ -46,13 +46,7 @@ CGameEntitySystem *GameEntitySystem()
 		return nullptr;
 	}
 
-	int offset = g_CS2AGameData.GetOffset("GameEntitySystem");
-	if (offset < 0)
-	{
-		return nullptr;
-	}
-
-	return *reinterpret_cast<CGameEntitySystem **>(reinterpret_cast<uintptr_t>(g_pGameResourceServiceServer) + offset);
+	return *reinterpret_cast<CGameEntitySystem **>(reinterpret_cast<uintptr_t>(g_pGameResourceServiceServer) + gamedata::kGameEntitySystemOffset);
 }
 
 // SourceHook hook declarations - must match interface method signatures exactly
@@ -144,19 +138,6 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 								  gamedata::kGameSystemFactorySigLen))
 	{
 		MMU_LOG_WARN("Game system list unresolved; workshop map checks fall back to ACF pruning.\n");
-	}
-
-	char gamedataPath[512];
-	snprintf(gamedataPath, sizeof(gamedataPath), "%s/addons/cs2admin/gamedata/cs2admin.txt", g_SMAPI->GetBaseDir());
-
-	if (!g_CS2AGameData.Load(gamedataPath))
-	{
-		MMU_LOG_ERROR("Could not load gamedata from %s\n", gamedataPath);
-		MMU_LOG_INFO("Entity access (team/alive targeting) will not work.\n");
-	}
-	else
-	{
-		MMU_LOG_INFO("Gamedata loaded. GameEntitySystem offset: %d\n", g_CS2AGameData.GetOffset("GameEntitySystem"));
 	}
 
 	char configPath[512];

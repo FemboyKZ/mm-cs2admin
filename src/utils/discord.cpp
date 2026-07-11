@@ -1,4 +1,5 @@
 #include "discord.h"
+#include "mmu/http_client.h"
 #include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
@@ -9,98 +10,19 @@
 #include <cstdio>
 #include <cstring>
 #include <string>
-#include <sstream>
-
-#ifdef _WIN32
-#include <windows.h>
-#include <winhttp.h>
-#pragma comment(lib, "winhttp.lib")
-#else
-#include <curl/curl.h>
-#endif
 
 CS2ADiscord g_CS2ADiscord;
 
-CS2ADiscord::CS2ADiscord() {}
-
-CS2ADiscord::~CS2ADiscord()
-{
-	Shutdown();
-}
-
 void CS2ADiscord::Init()
 {
-	if (m_running.load())
-	{
-		return;
-	}
-
-	m_running.store(true);
-	m_worker = std::thread(&CS2ADiscord::WorkerThread, this);
-	MMU_LOG_INFO("Discord: Worker thread started.\n");
+	mmu::http::SetUserAgent("CS2Admin/1.0");
+	mmu::http::ResetShutdownLatch();
+	MMU_LOG_INFO("Discord: webhook sender ready.\n");
 }
 
 void CS2ADiscord::Shutdown()
 {
-	if (!m_running.load())
-	{
-		return;
-	}
-
-	m_running.store(false);
-	m_cv.notify_all();
-
-	if (m_worker.joinable())
-	{
-		m_worker.join();
-	}
-
-	std::lock_guard<std::mutex> lock(m_mutex);
-	while (!m_queue.empty())
-	{
-		m_queue.pop();
-	}
-}
-
-void CS2ADiscord::WorkerThread()
-{
-	while (m_running.load())
-	{
-		std::string payload;
-		{
-			std::unique_lock<std::mutex> lock(m_mutex);
-			m_cv.wait(lock, [this]() { return !m_queue.empty() || !m_running.load(); });
-
-			if (!m_running.load() && m_queue.empty())
-			{
-				break;
-			}
-
-			if (m_queue.empty())
-			{
-				continue;
-			}
-
-			payload = std::move(m_queue.front());
-			m_queue.pop();
-		}
-
-		const std::string &url = g_CS2AConfig.discordWebhookUrl;
-		size_t hostStart = url.find("://") + 3;
-		size_t pathStart = url.find('/', hostStart);
-		if (pathStart == std::string::npos)
-		{
-			continue;
-		}
-
-		std::string host = url.substr(hostStart, pathStart - hostStart);
-		std::string path = url.substr(pathStart);
-
-		if (!HttpsPost(host, path, payload))
-		{
-			MMU_LOG_WARN("Discord: Failed to send webhook.\n");
-		}
-	}
+	mmu::http::Shutdown();
 }
 
 bool CS2ADiscord::IsEnabled() const
@@ -318,144 +240,12 @@ void CS2ADiscord::SendPayload(const std::string &json)
 		return;
 	}
 
-	size_t hostStart = url.find("://") + 3;
-	size_t pathStart = url.find('/', hostStart);
-	if (pathStart == std::string::npos)
-	{
-		MMU_LOG_INFO("Discord: Malformed webhook URL.\n");
-		return;
-	}
-
-	{
-		std::lock_guard<std::mutex> lock(m_mutex);
-		if (m_queue.size() >= MAX_QUEUE_SIZE)
-		{
-			MMU_LOG_INFO("Discord: Queue full (%zu items), dropping message.\n", m_queue.size());
-			return;
-		}
-		m_queue.push(json);
-	}
-	m_cv.notify_one();
+	mmu::http::Post(url, json,
+					[](bool success, std::string)
+					{
+						if (!success)
+						{
+							MMU_LOG_WARN("Discord: Failed to send webhook.\n");
+						}
+					});
 }
-
-#ifdef _WIN32
-
-bool CS2ADiscord::HttpsPost(const std::string &host, const std::string &path, const std::string &json)
-{
-	// Convert host and path to wide strings for WinHTTP
-	int hostLen = MultiByteToWideChar(CP_UTF8, 0, host.c_str(), -1, nullptr, 0);
-	int pathLen = MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, nullptr, 0);
-	if (hostLen <= 0 || pathLen <= 0)
-	{
-		return false;
-	}
-
-	std::wstring wHost(hostLen, L'\0');
-	std::wstring wPath(pathLen, L'\0');
-	MultiByteToWideChar(CP_UTF8, 0, host.c_str(), -1, &wHost[0], hostLen);
-	MultiByteToWideChar(CP_UTF8, 0, path.c_str(), -1, &wPath[0], pathLen);
-
-	HINTERNET hSession = WinHttpOpen(L"CS2Admin/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY, WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
-	if (!hSession)
-	{
-		return false;
-	}
-
-	HINTERNET hConnect = WinHttpConnect(hSession, wHost.c_str(), INTERNET_DEFAULT_HTTPS_PORT, 0);
-	if (!hConnect)
-	{
-		WinHttpCloseHandle(hSession);
-		return false;
-	}
-
-	HINTERNET hRequest =
-		WinHttpOpenRequest(hConnect, L"POST", wPath.c_str(), nullptr, WINHTTP_NO_REFERER, WINHTTP_DEFAULT_ACCEPT_TYPES, WINHTTP_FLAG_SECURE);
-	if (!hRequest)
-	{
-		WinHttpCloseHandle(hConnect);
-		WinHttpCloseHandle(hSession);
-		return false;
-	}
-
-	const wchar_t *contentType = L"Content-Type: application/json";
-	BOOL result = WinHttpSendRequest(hRequest, contentType, (DWORD)-1, (LPVOID)json.c_str(), (DWORD)json.size(), (DWORD)json.size(), 0);
-
-	bool success = false;
-	if (result)
-	{
-		result = WinHttpReceiveResponse(hRequest, nullptr);
-		if (result)
-		{
-			DWORD statusCode = 0;
-			DWORD statusSize = sizeof(statusCode);
-			WinHttpQueryHeaders(hRequest, WINHTTP_QUERY_STATUS_CODE | WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_HEADER_NAME_BY_INDEX, &statusCode,
-								&statusSize, WINHTTP_NO_HEADER_INDEX);
-
-			// 2xx = success, 204 = no content (normal for Discord webhooks)
-			success = (statusCode >= 200 && statusCode < 300);
-
-			if (!success)
-			{
-				MMU_LOG_INFO("Discord: Webhook returned HTTP %d.\n", (int)statusCode);
-			}
-		}
-	}
-
-	WinHttpCloseHandle(hRequest);
-	WinHttpCloseHandle(hConnect);
-	WinHttpCloseHandle(hSession);
-
-	return success;
-}
-
-#else // Linux
-
-bool CS2ADiscord::HttpsPost(const std::string &host, const std::string &path, const std::string &json)
-{
-	std::string url = "https://" + host + path;
-
-	CURL *curl = curl_easy_init();
-	if (!curl)
-	{
-		return false;
-	}
-
-	struct curl_slist *headers = nullptr;
-	headers = curl_slist_append(headers, "Content-Type: application/json");
-
-	curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-	curl_easy_setopt(curl, CURLOPT_POST, 1L);
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDS, json.c_str());
-	curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)json.size());
-	curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
-	curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-	curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5L);
-
-	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, +[](char *, size_t size, size_t nmemb, void *) -> size_t { return size * nmemb; });
-
-	CURLcode res = curl_easy_perform(curl);
-	bool success = false;
-
-	if (res == CURLE_OK)
-	{
-		long httpCode = 0;
-		curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &httpCode);
-		success = (httpCode >= 200 && httpCode < 300);
-
-		if (!success)
-		{
-			MMU_LOG_INFO("Discord: Webhook returned HTTP %ld.\n", httpCode);
-		}
-	}
-	else
-	{
-		MMU_LOG_WARN("Discord: curl error: %s\n", curl_easy_strerror(res));
-	}
-
-	curl_slist_free_all(headers);
-	curl_easy_cleanup(curl);
-
-	return success;
-}
-
-#endif

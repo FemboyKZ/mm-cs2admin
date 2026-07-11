@@ -20,6 +20,7 @@ void ShutdownConsoleCommands();
 #include "utils/print_utils.h"
 #include "utils/discord.h"
 
+#include "mmu/gamesystem.h"
 #include "mmu/log.h"
 
 #include <sql_mm.h>
@@ -136,6 +137,14 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	m_bLateLoaded = late;
 
 	MMU_LOG_INFO("CS2Admin %s loading...%s\n", PLUGIN_FULL_VERSION, late ? " (late)" : "");
+
+	// Engine-native workshop map checks.
+	// On failure EnsureWorkshopMapReady silently falls back to the .vpk folder scan + ACF prune path.
+	if (!mmu::gamesystem::Resolve(reinterpret_cast<const void *>(g_pServerGameDLL), gamedata::kGameSystemFactorySig,
+								  gamedata::kGameSystemFactorySigLen))
+	{
+		MMU_LOG_WARN("Game system list unresolved; workshop map checks fall back to ACF pruning.\n");
+	}
 
 	char gamedataPath[512];
 	snprintf(gamedataPath, sizeof(gamedataPath), "%s/addons/cs2admin/gamedata/cs2admin.txt", g_SMAPI->GetBaseDir());

@@ -4,189 +4,48 @@
 #include "src/config/config.h"
 
 #include <sql_mm.h>
-#include <mysql_mm.h>
-#include <sqlite_mm.h>
 
 #include <cstdarg>
+#include <cstdio>
 
 CS2ADatabase g_CS2ADatabase;
 
-CS2ADatabase::~CS2ADatabase()
+mmu::sql::ConnectParams CS2ADatabase::BuildParams() const
 {
-	Shutdown();
+	mmu::sql::ConnectParams p;
+	p.path = g_CS2AConfig.dbPath;
+	p.host = g_CS2AConfig.dbHost;
+	p.user = g_CS2AConfig.dbUser;
+	p.pass = g_CS2AConfig.dbPass;
+	p.database = g_CS2AConfig.dbName;
+	p.port = g_CS2AConfig.dbPort;
+	return p;
 }
 
 bool CS2ADatabase::Init()
 {
-	m_pSQLInterface = static_cast<ISQLInterface *>(g_SMAPI->MetaFactory(SQLMM_INTERFACE, nullptr, nullptr));
-
-	if (!m_pSQLInterface)
+	mmu::sql::DbType type = (g_CS2AConfig.dbType == "sqlite") ? mmu::sql::DbType::SQLite : mmu::sql::DbType::MySQL;
+	if (!m_conn.Init(type))
 	{
-		MMU_LOG_WARN("Failed to get ISQLInterface. Is sql_mm loaded?\n");
 		return false;
 	}
-
-	if (g_CS2AConfig.dbType == "sqlite")
-	{
-		m_dbType = DatabaseType::SQLite;
-		m_pSQLiteClient = m_pSQLInterface->GetSQLiteClient();
-		if (!m_pSQLiteClient)
-		{
-			MMU_LOG_WARN("Failed to get SQLite client from sql_mm.\n");
-			return false;
-		}
-		MMU_LOG_INFO("Database type: SQLite (standalone mode)\n");
-	}
-	else
-	{
-		m_dbType = DatabaseType::MySQL;
-		m_pMySQLClient = m_pSQLInterface->GetMySQLClient();
-		if (!m_pMySQLClient)
-		{
-			MMU_LOG_WARN("Failed to get MySQL client from sql_mm.\n");
-			return false;
-		}
-		MMU_LOG_INFO("Database type: MySQL\n");
-	}
-
-	m_bInitialized = true;
+	m_conn.SetSchemaHook([this] { CreateSchema(); });
 	return true;
 }
 
 void CS2ADatabase::Connect(std::function<void(bool)> callback)
 {
-	if (m_dbType == DatabaseType::SQLite)
-	{
-		if (!m_pSQLiteClient)
-		{
-			MMU_LOG_WARN("Cannot connect: SQLite client not initialized.\n");
-			if (callback)
-			{
-				callback(false);
-			}
-			return;
-		}
-
-		// Path is relative to the game directory (e.g. game/csgo/)
-		// sql_mm resolves it via g_pFullFileSystem->RelativePathToFullPath()
-		SQLiteConnectionInfo info;
-		info.database = g_CS2AConfig.dbPath.c_str();
-
-		m_pConnection = m_pSQLiteClient->CreateSQLiteConnection(info);
-		if (!m_pConnection)
-		{
-			MMU_LOG_WARN("Failed to create SQLite connection object.\n");
-			if (callback)
-			{
-				callback(false);
-			}
-			return;
-		}
-
-		m_pConnection->Connect(
-			[this, callback](bool success)
-			{
-				m_bConnected = success;
-				if (success)
-				{
-					MMU_LOG_INFO("SQLite database connected successfully.\n");
-					// Enable WAL mode for better concurrent performance
-					Query("PRAGMA journal_mode=WAL", [](ISQLQuery *) {});
-					Query("PRAGMA foreign_keys=ON", [](ISQLQuery *) {});
-					// Create schema if needed
-					CreateSchema();
-				}
-				else
-				{
-					MMU_LOG_WARN("SQLite database connection failed.\n");
-				}
-				if (callback)
-				{
-					callback(success);
-				}
-			});
-	}
-	else
-	{
-		if (!m_pMySQLClient)
-		{
-			MMU_LOG_WARN("Cannot connect: MySQL client not initialized.\n");
-			if (callback)
-			{
-				callback(false);
-			}
-			return;
-		}
-
-		if (g_CS2AConfig.dbHost.empty() || g_CS2AConfig.dbName.empty())
-		{
-			MMU_LOG_WARN("Cannot connect: database host or name is empty. Check core.cfg.\n");
-			if (callback)
-			{
-				callback(false);
-			}
-			return;
-		}
-
-		MySQLConnectionInfo info;
-		info.host = g_CS2AConfig.dbHost.c_str();
-		info.user = g_CS2AConfig.dbUser.c_str();
-		info.pass = g_CS2AConfig.dbPass.c_str();
-		info.database = g_CS2AConfig.dbName.c_str();
-		info.port = g_CS2AConfig.dbPort;
-
-		m_pConnection = m_pMySQLClient->CreateMySQLConnection(info);
-		if (!m_pConnection)
-		{
-			MMU_LOG_WARN("Failed to create MySQL connection object.\n");
-			if (callback)
-			{
-				callback(false);
-			}
-			return;
-		}
-
-		m_pConnection->Connect(
-			[this, callback](bool success)
-			{
-				m_bConnected = success;
-				if (success)
-				{
-					MMU_LOG_INFO("MySQL database connected successfully.\n");
-					Query("SET NAMES utf8mb4", [](ISQLQuery *) {});
-					// Create schema if needed
-					CreateSchema();
-				}
-				else
-				{
-					MMU_LOG_WARN("MySQL database connection failed.\n");
-				}
-				if (callback)
-				{
-					callback(success);
-				}
-			});
-	}
+	m_conn.Connect(BuildParams(), std::move(callback));
 }
 
 void CS2ADatabase::Shutdown()
 {
-	m_bShuttingDown = true;
-	if (m_pConnection)
-	{
-		m_pConnection->Destroy();
-		m_pConnection = nullptr;
-	}
-	m_bConnected = false;
-	m_bInitialized = false;
-	m_pMySQLClient = nullptr;
-	m_pSQLiteClient = nullptr;
-	m_pSQLInterface = nullptr;
+	m_conn.Shutdown();
 }
 
 void CS2ADatabase::Reconnect(std::function<void(bool)> callback)
 {
-	if (!m_bInitialized)
+	if (!m_conn.IsInitialized())
 	{
 		if (callback)
 		{
@@ -195,25 +54,7 @@ void CS2ADatabase::Reconnect(std::function<void(bool)> callback)
 		return;
 	}
 
-	if (m_dbType == DatabaseType::MySQL && !m_pMySQLClient)
-	{
-		if (callback)
-		{
-			callback(false);
-		}
-		return;
-	}
-
-	if (m_dbType == DatabaseType::SQLite && !m_pSQLiteClient)
-	{
-		if (callback)
-		{
-			callback(false);
-		}
-		return;
-	}
-
-	if (m_bConnected)
+	if (m_conn.IsConnected())
 	{
 		if (callback)
 		{
@@ -222,30 +63,13 @@ void CS2ADatabase::Reconnect(std::function<void(bool)> callback)
 		return;
 	}
 
-	// Destroy old connection object if any
-	if (m_pConnection)
-	{
-		m_pConnection->Destroy();
-		m_pConnection = nullptr;
-	}
-
-	Connect(callback);
+	// Rebuild params from the live config in case it changed since the last connect.
+	m_conn.Connect(BuildParams(), std::move(callback));
 }
 
 void CS2ADatabase::Query(const char *query, std::function<void(ISQLQuery *)> callback)
 {
-	if (m_bShuttingDown || !m_pConnection || !m_bConnected)
-	{
-		MMU_LOG_WARN("Cannot query: not connected.\n");
-		if (callback)
-		{
-			callback(nullptr);
-		}
-		return;
-	}
-
-	// sql_mm requires a valid callback, never pass a null std::function
-	m_pConnection->Query(query, callback ? callback : [](ISQLQuery *) {});
+	m_conn.Query(query, std::move(callback));
 }
 
 void CS2ADatabase::QueryFmt(std::function<void(ISQLQuery *)> callback, const char *fmt, ...)
@@ -256,23 +80,12 @@ void CS2ADatabase::QueryFmt(std::function<void(ISQLQuery *)> callback, const cha
 	vsnprintf(buffer, sizeof(buffer), fmt, args);
 	va_end(args);
 
-	Query(buffer, callback);
+	m_conn.Query(buffer, std::move(callback));
 }
 
 std::string CS2ADatabase::Escape(const char *str)
 {
-	if (!m_pConnection)
-	{
-		return str ? str : "";
-	}
-	return m_pConnection->Escape(str);
-}
-
-std::string CS2ADatabase::AuthMatch(const char *column, const std::string &escapedSuffix)
-{
-	char buf[256];
-	snprintf(buf, sizeof(buf), "(%s LIKE 'STEAM_0:%s' OR %s LIKE 'STEAM_1:%s')", column, escapedSuffix.c_str(), column, escapedSuffix.c_str());
-	return std::string(buf);
+	return m_conn.Escape(str);
 }
 
 void CS2ADatabase::CreateSchema()

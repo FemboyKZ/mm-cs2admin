@@ -1,29 +1,15 @@
 #ifndef _INCLUDE_ADMIN_DATABASE_H_
 #define _INCLUDE_ADMIN_DATABASE_H_
 
+#include "mmu/sql.h"
+
 #include <functional>
 #include <string>
-
-// Forward declarations from sql_mm
-class ISQLInterface;
-class ISQLConnection;
-class ISQLQuery;
-class IMySQLClient;
-class ISQLiteClient;
-
-enum class DatabaseType
-{
-	MySQL,
-	SQLite
-};
 
 class CS2ADatabase
 {
 public:
-	CS2ADatabase() = default;
-	~CS2ADatabase();
-
-	// Initialize: acquire ISQLInterface from Metamod's MetaFactory.
+	// Acquire sql_mm and select the client from the loaded config.
 	// Must be called in AllPluginsLoaded or later.
 	bool Init();
 
@@ -34,49 +20,35 @@ public:
 	// Disconnect and clean up.
 	void Shutdown();
 
-	// Is the database connection established?
 	bool IsConnected() const
 	{
-		return m_bConnected;
+		return m_conn.IsConnected();
 	}
 
 	// Was Init() successful (sql_mm available)?
 	bool IsInitialized() const
 	{
-		return m_bInitialized;
+		return m_conn.IsInitialized();
 	}
 
 	// True from the moment Shutdown() is called.
-	// Guards against in-flight callbacks landing after unload begins.
 	bool IsShuttingDown() const
 	{
-		return m_bShuttingDown;
-	}
-
-	// Get the active database type.
-	DatabaseType GetType() const
-	{
-		return m_dbType;
+		return m_conn.IsShuttingDown();
 	}
 
 	bool IsSQLite() const
 	{
-		return m_dbType == DatabaseType::SQLite;
+		return m_conn.IsSQLite();
 	}
 
 	bool IsMySQL() const
 	{
-		return m_dbType == DatabaseType::MySQL;
+		return m_conn.IsMySQL();
 	}
 
-	// Attempt reconnection (called periodically when connection is lost)
+	// Attempt reconnection (called periodically when the connection is lost).
 	void Reconnect(std::function<void(bool)> callback);
-
-	// Get the raw connection for queries.
-	ISQLConnection *GetConnection() const
-	{
-		return m_pConnection;
-	}
 
 	// Convenience: run a query with a callback.
 	void Query(const char *query, std::function<void(ISQLQuery *)> callback);
@@ -89,20 +61,19 @@ public:
 
 	// Generate SQL fragment matching a Steam authid by suffix (works in both MySQL and SQLite).
 	// Returns e.g.: "(authid LIKE 'STEAM_0:0:12345' OR authid LIKE 'STEAM_1:0:12345')"
-	static std::string AuthMatch(const char *column, const std::string &escapedSuffix);
+	static std::string AuthMatch(const char *column, const std::string &escapedSuffix)
+	{
+		return mmu::sql::AuthMatch(column, escapedSuffix);
+	}
 
 	// Create database schema tables if they don't exist.
 	void CreateSchema();
 
 private:
-	ISQLInterface *m_pSQLInterface = nullptr;
-	IMySQLClient *m_pMySQLClient = nullptr;
-	ISQLiteClient *m_pSQLiteClient = nullptr;
-	ISQLConnection *m_pConnection = nullptr;
-	DatabaseType m_dbType = DatabaseType::MySQL;
-	bool m_bConnected = false;
-	bool m_bInitialized = false;
-	bool m_bShuttingDown = false;
+	// Build connection params from the loaded config.
+	mmu::sql::ConnectParams BuildParams() const;
+
+	mmu::sql::Connection m_conn;
 };
 
 extern CS2ADatabase g_CS2ADatabase;

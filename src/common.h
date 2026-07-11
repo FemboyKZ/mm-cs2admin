@@ -8,20 +8,15 @@
 #include <iplayerinfo.h>
 
 #include "mmu/chat_colors.h"
+#include "mmu/plugin_globals.h"
 
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <cstdio>
 
-#define MAXPLAYERS 64
-
-// Engine interfaces
-extern IServerGameDLL *g_pServerGameDLL;
-extern IServerGameClients *g_pGameClients;
-extern IVEngineServer *g_pEngine;
+// Plugin-specific engine interfaces. Shared ones live in mmu/plugin_globals.h.
 extern IGameEventManager2 *g_pGameEvents;
-extern ICvar *g_pICvar;
 
 class INetworkMessages;
 
@@ -34,12 +29,6 @@ extern IFileSystem *g_pFullFileSystem;
 // Schema & entity system
 class CGameEntitySystem;
 extern CGameEntitySystem *g_pEntitySystem;
-
-// Metamod globals
-extern ISmmAPI *g_SMAPI;
-extern ISmmPlugin *g_PLAPI;
-extern PluginId g_PLID;
-extern SourceHook::ISourceHook *g_SHPtr;
 
 // SteamID conversion utilities
 #include "mmu/steam_utils.h"

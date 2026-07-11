@@ -100,7 +100,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	PLUGIN_SAVEVARS();
 
 	mmu::log::Setup logSetup;
-	logSetup.channelName = "ADMIN";
+	logSetup.channelName = "CS2Admin";
 	logSetup.addonName = "cs2admin";
 	logSetup.toFile = true;
 	mmu::log::Init(logSetup);

@@ -42,9 +42,14 @@ extern PluginId g_PLID;
 extern SourceHook::ISourceHook *g_SHPtr;
 
 // SteamID conversion utilities
-#include "utils/steam_utils.h"
+#include "mmu/steam_utils.h"
 
 // CGlobalVars accessor, only valid during active game
-CGlobalVars *GetGameGlobals();
+#include "mmu/print.h"
+
+inline CGlobalVars *GetGameGlobals()
+{
+	return mmu::GetGameGlobals();
+}
 
 #endif // _INCLUDE_ADMIN_COMMON_H_

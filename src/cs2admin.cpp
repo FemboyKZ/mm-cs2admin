@@ -93,16 +93,6 @@ void ADMIN_LoadTranslations()
 	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.defaultLanguage);
 }
 
-CGlobalVars *GetGameGlobals()
-{
-	INetworkGameServer *server = g_pNetworkServerService->GetIGameServer();
-	if (!server)
-	{
-		return nullptr;
-	}
-	return server->GetGlobals();
-}
-
 PLUGIN_EXPOSE(CS2APlugin, g_CS2APlugin);
 
 bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)

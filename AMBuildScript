@@ -10,6 +10,8 @@ def additionalLibs(context, binary, sdk):
         libs.append(
             os.path.join(sdk["path"], "lib", "public", "win64", "steam_api64.lib")
         )
+    else:
+        libs.append("-lcurl")
     return libs
 
 

@@ -63,6 +63,16 @@ void CS2ADatabase::Reconnect(std::function<void(bool)> callback)
 		return;
 	}
 
+	// A connect is already in flight, let it finish rather than starting a second one.
+	if (m_conn.IsConnecting())
+	{
+		if (callback)
+		{
+			callback(false);
+		}
+		return;
+	}
+
 	// Rebuild params from the live config in case it changed since the last connect.
 	m_conn.Connect(BuildParams(), std::move(callback));
 }
@@ -289,9 +299,19 @@ void CS2ADatabase::CreateSchema()
 				 "server INTEGER DEFAULT NULL"
 				 ")",
 				 prefix);
-		Query(query, [](ISQLQuery *) {});
-
-		MMU_LOG_INFO("SQLite schema created/verified.\n");
+		// Logged from the last statement's callback, which only fires once the query actually round-trips.
+		Query(query,
+			  [](ISQLQuery *q)
+			  {
+				  if (q)
+				  {
+					  MMU_LOG_INFO("SQLite schema created/verified.\n");
+				  }
+				  else
+				  {
+					  MMU_LOG_WARN("SQLite schema creation failed, tables may be missing.\n");
+				  }
+			  });
 	}
 	else
 	{
@@ -477,8 +497,18 @@ void CS2ADatabase::CreateSchema()
 				 "PRIMARY KEY (`subid`)"
 				 ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 				 prefix);
-		Query(query, [](ISQLQuery *) {});
-
-		MMU_LOG_INFO("MySQL schema created/verified.\n");
+		// Logged from the last statement's callback, which only fires once the query actually round-trips.
+		Query(query,
+			  [](ISQLQuery *q)
+			  {
+				  if (q)
+				  {
+					  MMU_LOG_INFO("MySQL schema created/verified.\n");
+				  }
+				  else
+				  {
+					  MMU_LOG_WARN("MySQL schema creation failed, tables may be missing.\n");
+				  }
+			  });
 	}
 }

@@ -805,8 +805,10 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 		}
 	}
 
-	// DB reconnection timer
-	if (m_bConfigLoaded && g_CS2ADatabase.IsInitialized() && !g_CS2ADatabase.IsConnected() && !m_bReconnectGaveUp && curtime >= m_flNextReconnect)
+	// DB reconnection timer.
+	// IsConnecting() must be checked.
+	if (m_bConfigLoaded && g_CS2ADatabase.IsInitialized() && !g_CS2ADatabase.IsConnected() && !g_CS2ADatabase.IsConnecting() && !m_bReconnectGaveUp
+		&& curtime >= m_flNextReconnect)
 	{
 		m_flNextReconnect = curtime + g_CS2AConfig.retryTime;
 		m_iReconnectAttempts++;

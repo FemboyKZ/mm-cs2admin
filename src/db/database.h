@@ -25,6 +25,12 @@ public:
 		return m_conn.IsConnected();
 	}
 
+	// True while an async connect is in flight.
+	bool IsConnecting() const
+	{
+		return m_conn.IsConnecting();
+	}
+
 	// Was Init() successful (sql_mm available)?
 	bool IsInitialized() const
 	{

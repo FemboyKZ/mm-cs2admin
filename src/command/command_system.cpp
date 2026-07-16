@@ -1883,14 +1883,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 								continue;
 							}
 
-							CEntityHandle &hPawn = controller->m_hPawn();
-							CEntityInstance *pawnInst = ResolveEntityHandle(hPawn);
-							if (!pawnInst)
+							CCSPlayerPawn *pawn = controller->GetPlayerPawn();
+							if (!pawn)
 							{
 								continue;
 							}
 
-							CBasePlayerPawn *pawn = reinterpret_cast<CBasePlayerPawn *>(pawnInst);
 							CCSPlayer_ItemServices *itemServices = pawn->m_pItemServices();
 							if (!itemServices)
 							{
@@ -1972,14 +1970,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 								continue;
 							}
 
-							CEntityHandle &hPawn = controller->m_hPawn();
-							CEntityInstance *pawnInst = ResolveEntityHandle(hPawn);
-							if (!pawnInst)
+							CCSPlayerPawn *pawn = controller->GetPlayerPawn();
+							if (!pawn)
 							{
 								continue;
 							}
 
-							CBasePlayerPawn *pawn = reinterpret_cast<CBasePlayerPawn *>(pawnInst);
 							CCSPlayer_ItemServices *itemServices = pawn->m_pItemServices();
 							if (!itemServices)
 							{

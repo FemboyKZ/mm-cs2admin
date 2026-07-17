@@ -26,43 +26,44 @@ namespace
 		return g_pICvar && g_pICvar->FindConVar(kCs2kzProbeConVar).IsValidRef();
 	}
 
-	struct OptionSearch
+	// What cs2kz's config says it takes over.
+	// Both default on, which is what cs2kz defaults to, so an absent key has to mean on rather than off.
+	struct Cs2kzOptions
 	{
-		const char *wanted;
-		bool found = false;
-		bool value = false;
+		bool overridesChat = true;
+		bool overridesClantag = true;
 	};
 
 	void OptionHandler(const std::string &, const std::string &key, const std::string &value, void *userdata)
 	{
-		OptionSearch *search = static_cast<OptionSearch *>(userdata);
-		if (search->found || key != search->wanted)
+		Cs2kzOptions *options = static_cast<Cs2kzOptions *>(userdata);
+		const bool on = (value == "true" || value == "1");
+
+		if (key == "overridePlayerChat")
 		{
-			return;
+			options->overridesChat = on;
 		}
-		search->found = true;
-		search->value = (value == "true" || value == "1");
+		else if (key == "overridePlayerClantag")
+		{
+			options->overridesClantag = on;
+		}
 	}
 
-	// Whether cs2kz is set to render player chat.
+	// Read what cs2kz is configured to take over.
 	//
-	// overridePlayerChat is a KeyValues option in its own config rather than a convar, so reading the file is the only way to ask.
-	// Missing file or missing key both mean on, matching the default cs2kz passes to GetOptionInt.
-	bool Cs2kzOverridesChat()
+	// These are KeyValues options in its own config rather than convars, so reading the file is the only way to ask.
+	// An unreadable file leaves both on, conceding chat and the clan tag rather than fighting it over them.
+	Cs2kzOptions ReadCs2kzOptions()
 	{
 		char path[512];
 		snprintf(path, sizeof(path), "%s/cfg/cs2kz-server-config.txt", g_SMAPI->GetBaseDir());
 
-		OptionSearch search;
-		search.wanted = "overridePlayerChat";
-
-		if (!kv::LoadFile(path, OptionHandler, &search))
+		Cs2kzOptions options;
+		if (!kv::LoadFile(path, OptionHandler, &options))
 		{
-			MMU_LOG_WARN("%s is loaded but %s could not be read. Assuming it renders chat.\n", kCs2kz, path);
-			return true;
+			MMU_LOG_WARN("%s is loaded but %s could not be read. Assuming it handles both chat and the clan tag.\n", kCs2kz, path);
 		}
-
-		return search.found ? search.value : true;
+		return options;
 	}
 } // namespace
 
@@ -76,11 +77,14 @@ void CS2AForeignPlugins::Refresh()
 
 	if (Cs2kzLoaded())
 	{
-		// It writes the clan tag whenever it's loaded, with nothing to turn that off.
-		m_clanTagOwner = kCs2kz;
-		if (Cs2kzOverridesChat())
+		const Cs2kzOptions options = ReadCs2kzOptions();
+		if (options.overridesChat)
 		{
 			m_chatOwner = kCs2kz;
+		}
+		if (options.overridesClantag)
+		{
+			m_clanTagOwner = kCs2kz;
 		}
 	}
 
@@ -88,8 +92,7 @@ void CS2AForeignPlugins::Refresh()
 	{
 		if (m_chatOwner && g_CS2AConfig.chatOwnership)
 		{
-			MMU_LOG_WARN("%s renders player chat (its overridePlayerChat is on), so ours stays off to avoid every message "
-						 "appearing twice. Set overridePlayerChat to false in its config to hand chat to us.\n",
+			MMU_LOG_WARN("%s renders player chat (its overridePlayerChat is on). Set overridePlayerChat to false in its config to hand chat to us.\n",
 						 m_chatOwner);
 		}
 		else if (!m_chatOwner && previousChat)
@@ -102,13 +105,12 @@ void CS2AForeignPlugins::Refresh()
 	{
 		if (m_clanTagOwner && g_CS2AConfig.boardTagsEnabled)
 		{
-			MMU_LOG_WARN("%s writes the scoreboard clan tag for its ranks and cannot be told not to, so leaderboard tags "
-						 "stay off. Both plugins writing it would leave whichever wrote last on screen.\n",
-						 m_clanTagOwner);
+			MMU_LOG_WARN("%s writes the scoreboard clan tag for its ranks, so leaderboard tags stay off. Set overridePlayerClantag to false in its "
+						 "config to hand the clan tag to us.\n" m_clanTagOwner);
 		}
 		else if (!m_clanTagOwner && previousClanTag)
 		{
-			MMU_LOG_INFO("%s unloaded. Leaderboard tags follow TagsConfig again.\n", previousClanTag);
+			MMU_LOG_INFO("%s no longer writes the clan tag. Leaderboard tags follow TagsConfig again.\n", previousClanTag);
 		}
 	}
 }

@@ -221,7 +221,9 @@ void CS2AChatProcessor::RenderPlayerChat(int slot, const char *message, bool tea
 
 	// The whole line is composed already, colors and all, so it just prints as-is.
 	// SayText2 would attribute the line to a player entity, which turns CHAT_COLOR_PURPLE into that player's team color.
-	mmu::SendChatToFilter(&filter, line.c_str());
+	std::string chatLine = " ";
+	chatLine += line;
+	mmu::SendChatToFilter(&filter, chatLine.c_str());
 
 	// Chat normally shows up in the console too, and superseding say took that away along with the chat line.
 	// It goes to the same recipients rather than everyone, or team chat would leak through the console.

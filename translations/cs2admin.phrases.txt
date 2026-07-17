@@ -533,4 +533,44 @@
 	"No player found matching that name."
 	{
 		"en"	"No player found matching that name."
+	}
+	"This command cannot be used from the server console.\n"
+	{
+		"en"	"This command cannot be used from the server console.\n"
+	}
+	"Tags are disabled on this server.\n"
+	{
+		"en"	"Tags are disabled on this server.\n"
+	}
+	"Tags are unavailable while %s is handling chat.\n"
+	{
+		"en"	"Tags are unavailable while %s is handling chat.\n"
+	}
+	"You do not have any tags.\n"
+	{
+		"en"	"You do not have any tags.\n"
+	}
+	"Your tag is now hidden.\n"
+	{
+		"en"	"Your tag is now hidden.\n"
+	}
+	"Your tag is now \"%s\".\n"
+	{
+		"en"	"Your tag is now \"%s\".\n"
+	}
+	"You do not have a tag called \"%s\".\n"
+	{
+		"en"	"You do not have a tag called \"%s\".\n"
+	}
+	"That tag is no longer available to you.\n"
+	{
+		"en"	"That tag is no longer available to you.\n"
+	}
+	"Your tags:\n"
+	{
+		"en"	"Your tags:\n"
+	}
+	"Use %stag <name>, or %stag none to hide it.\n"
+	{
+		"en"	"Use %stag <name>, or %stag none to hide it.\n"
 }}

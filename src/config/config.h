@@ -72,6 +72,30 @@ struct CS2AConfig
 	int chatFloodMaxMessages = 5;    // Messages in window before action
 	int chatFloodMuteDuration = 0;   // Minutes to auto-mute (0 = block only)
 
+	// Tags config.
+	//
+	// chatOwnership makes us render every player chat line ourselves and suppress the game's own.
+	// It is off by default because only one plugin on a server can do this, a second one produces duplicate lines.
+	// These three say what the server asked for, not what happens: another plugin may own chat or the clan tag.
+	// ADMIN_ChatTagsActive / ADMIN_BoardTagsActive answer that, and the two differ, since a plugin can own one surface without the other.
+	bool chatOwnership = false;
+	// Show tags in chat. Implies chatOwnership, since a tag can't be injected into a line the game renders.
+	bool chatTagsEnabled = false;
+	// Show tags on the scoreboard via the clan tag. Independent of chat ownership.
+	bool boardTagsEnabled = false;
+
+	// Chat line layout. Tokens: {tag} {name} {msg} {namecolor} {msgcolor} {teamcolor} {teamname}, plus the usual {color} tags.
+	// Dead/team variants pick up the same tokens.
+	std::string chatFormat = "{tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+	std::string chatFormatDead = "{grey}*{default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+	std::string chatFormatTeam = "{grey}({teamname}){default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+	std::string chatFormatTeamDead = "{grey}*({teamname}){default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+
+	// Which palette color stands in for each team.
+	std::string teamColorCT = "{blue}";
+	std::string teamColorT = "{gold}";
+	std::string teamColorSpec = "{grey}";
+
 	// Menu config (only used when the mm-cs2menus plugin is loaded; no-arg
 	// targeting commands open a picker instead of printing usage).
 	std::string menuType = "default"; // "default" (let cs2menus decide) | "chat" | "html"

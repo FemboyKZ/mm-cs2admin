@@ -242,6 +242,49 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->chatFloodMuteDuration = std::atoi(value.c_str());
 		}
 	}
+	else if (sec == "tagsconfig")
+	{
+		if (k == "chatownership")
+		{
+			cfg->chatOwnership = (value != "0");
+		}
+		else if (k == "chattags")
+		{
+			cfg->chatTagsEnabled = (value != "0");
+		}
+		else if (k == "leaderboardtags")
+		{
+			cfg->boardTagsEnabled = (value != "0");
+		}
+		else if (k == "format")
+		{
+			cfg->chatFormat = value;
+		}
+		else if (k == "formatdead")
+		{
+			cfg->chatFormatDead = value;
+		}
+		else if (k == "formatteam")
+		{
+			cfg->chatFormatTeam = value;
+		}
+		else if (k == "formatteamdead")
+		{
+			cfg->chatFormatTeamDead = value;
+		}
+		else if (k == "teamcolorct")
+		{
+			cfg->teamColorCT = value;
+		}
+		else if (k == "teamcolort")
+		{
+			cfg->teamColorT = value;
+		}
+		else if (k == "teamcolorspec")
+		{
+			cfg->teamColorSpec = value;
+		}
+	}
 	else if (sec == "menuconfig")
 	{
 		if (k == "type")
@@ -326,6 +369,13 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 					 "silentCommandPrefix to '/'.\n",
 					 config.commandPrefix.c_str());
 		config.silentCommandPrefix = "/";
+	}
+
+	// A tag can only be injected into a line we render ourselves.
+	if (config.chatTagsEnabled && !config.chatOwnership)
+	{
+		MMU_LOG_WARN("TagsConfig: ChatTags needs ChatOwnership to render the tag. Enabling ChatOwnership.\n");
+		config.chatOwnership = true;
 	}
 
 	return true;

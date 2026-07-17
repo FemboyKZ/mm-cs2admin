@@ -12,14 +12,18 @@ void ShutdownConsoleCommands();
 #include "comm/comm_manager.h"
 #include "command/command_system.h"
 #include "command/map_manager.h"
+#include "chat/chat_processor.h"
+#include "compat/foreign_plugins.h"
 #include "lang/translations.h"
 #include "menu/menu_bridge.h"
+#include "tags/tag_manager.h"
 #include "admin/admin_manager.h"
 #include "public/forwards.h"
 #include "queue/offline_queue.h"
 #include "utils/print_utils.h"
 #include "utils/discord.h"
 
+#include "mmu/chat_command.h"
 #include "mmu/gamesystem.h"
 #include "mmu/log.h"
 
@@ -398,6 +402,10 @@ void CS2APlugin::AllPluginsLoaded()
 	// Resolve the optional mm-cs2menus interface now that all plugins are up.
 	g_AdminMenus.Init();
 
+	// Everything is loaded, so any other chat owner has registered its convars by now.
+	g_CS2AForeignPlugins.Refresh();
+	g_CS2ATagManager.LoadTags();
+
 	// Always load flat-file admins regardless of DB state
 	auto loadFlatFileOnly = [this]()
 	{
@@ -453,6 +461,8 @@ void CS2APlugin::AllPluginsLoaded()
 				// Load admins from both DB and flat file
 				g_CS2AAdminManager.ReloadAdmins();
 
+				g_CS2ATagManager.EnsureSchema();
+
 				// Handle late load after DB is ready
 				if (m_bLateLoaded)
 				{
@@ -473,12 +483,16 @@ void CS2APlugin::OnPluginLoad(PluginId /*id*/)
 {
 	// mm-cs2menus may have just loaded; re-resolve so menus light up without a restart.
 	g_AdminMenus.Refresh();
+	// A chat owner may have just loaded, in which case we have to stop owning chat.
+	g_CS2AForeignPlugins.Refresh();
 }
 
 void CS2APlugin::OnPluginUnload(PluginId /*id*/)
 {
 	// Drop our cached pointer if mm-cs2menus is the one going away.
 	g_AdminMenus.Refresh();
+	// The departing plugin's convars may still be registered at this point.
+	g_CS2AForeignPlugins.Refresh();
 }
 
 void CS2APlugin::LookupServerID()
@@ -607,6 +621,10 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 	// Assign admin permissions (merges DB + flat file entries)
 	g_CS2AAdminManager.AssignAdminToPlayer(slotIdx);
 
+	// Needs the admin entry above, since eligibility reads flags/group/immunity.
+	g_CS2ATagManager.LoadPlayerPref(slotIdx, steamid64);
+	g_CS2ATagManager.UpdateClanTag(slotIdx);
+
 	// Check ban/comm history to notify admins on connect
 	if (g_CS2AConfig.printCheckOnConnect && g_CS2ADatabase.IsConnected())
 	{
@@ -638,6 +656,7 @@ void CS2APlugin::Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionRe
 	int slotIdx = slot.Get();
 	g_CS2AForwards.FireOnClientDisconnect(slotIdx);
 	g_CS2ACommManager.OnClientDisconnect(slotIdx);
+	g_CS2ATagManager.OnClientDisconnect(slotIdx);
 	g_CS2APlayerManager.OnClientDisconnect(slotIdx);
 }
 
@@ -733,6 +752,13 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 	if (g_CS2ACommandSystem.ShouldBlockChat(slotIdx))
 	{
 		MMU_LOG_INFO("Blocked chat from gagged player in slot %d\n", slotIdx);
+		RETURN_META(MRES_SUPERCEDE);
+	}
+
+	// Render the line ourselves and stop the game from rendering its own.
+	if (g_CS2AChatProcessor.ShouldRender(slotIdx))
+	{
+		g_CS2AChatProcessor.RenderPlayerChat(slotIdx, mmu::StripSayQuotes(message).c_str(), isSayTeam);
 		RETURN_META(MRES_SUPERCEDE);
 	}
 }

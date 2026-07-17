@@ -153,6 +153,17 @@ void AdminMenuBridge::CancelMenu(int slot)
 	}
 }
 
+bool AdminMenuBridge::EatsChatInput(int slot) const
+{
+	if (!m_pMenus || slot < 0 || slot > MAXPLAYERS)
+	{
+		return false;
+	}
+	// Ask for the resolved type rather than the menu's own:
+	// "default" defers to the menu plugin's config, so only the per-viewer answer says what's on screen.
+	return m_pMenus->HasMenu(slot) && m_pMenus->GetActiveMenuType(slot) == MenuType::Chat;
+}
+
 bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect)
 {
 	if (!m_pMenus || slot < 0 || slot > MAXPLAYERS)

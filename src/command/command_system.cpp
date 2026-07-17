@@ -2,8 +2,11 @@
 #include "mmu/chat_command.h"
 #include "mmu/log.h"
 #include "map_manager.h"
+#include "src/chat/chat_processor.h"
+#include "src/compat/foreign_plugins.h"
 #include "src/menu/menu_bridge.h"
 #include "src/player/player_manager.h"
+#include "src/tags/tag_manager.h"
 #include "src/ban/ban_manager.h"
 #include "src/comm/comm_manager.h"
 #include "src/admin/admin_manager.h"
@@ -1371,6 +1374,108 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						{
 							ADMIN_ReplyToCommandT(slot, "%d admin(s) online\n", count);
 						}
+					});
+
+	// !tag [id] - Pick which of your tags is displayed, or open a picker
+	RegisterCommand("tag",
+					[](int slot, const std::vector<std::string> &args, bool silent)
+					{
+						// Deliberately no flag check: a player only ever sees the tags they already matched, so eligibility is the permission.
+						if (slot < 0)
+						{
+							ADMIN_ReplyToCommandT(slot, "This command cannot be used from the server console.\n");
+							return;
+						}
+
+						// Nothing to pick when neither surface can show a tag.
+						// Config asking for them isn't enough, another plugin may own both.
+						if (!ADMIN_ChatTagsActive() && !ADMIN_BoardTagsActive())
+						{
+							const char *chatOwner = g_CS2AForeignPlugins.ChatOwner();
+							const char *boardOwner = g_CS2AForeignPlugins.ClanTagOwner();
+							const char *blocker = chatOwner ? chatOwner : boardOwner;
+
+							if (blocker && (g_CS2AConfig.chatTagsEnabled || g_CS2AConfig.boardTagsEnabled))
+							{
+								ADMIN_ReplyToCommandT(slot, "Tags are unavailable while %s is loaded.\n", blocker);
+							}
+							else
+							{
+								ADMIN_ReplyToCommandT(slot, "Tags are disabled on this server.\n");
+							}
+							return;
+						}
+
+						std::vector<const TagDef *> eligible = g_CS2ATagManager.EligibleFor(slot);
+						if (eligible.empty())
+						{
+							ADMIN_ReplyToCommandT(slot, "You do not have any tags.\n");
+							return;
+						}
+
+						// Text form: !tag <id>, or !tag none to show nothing.
+						if (!args.empty())
+						{
+							const std::string &want = args[0];
+							if (want == "none" || want == "off")
+							{
+								g_CS2ATagManager.SelectTag(slot, "");
+								ADMIN_ReplyToCommandT(slot, "Your tag is now hidden.\n");
+								return;
+							}
+
+							if (!g_CS2ATagManager.SelectTag(slot, want.c_str()))
+							{
+								ADMIN_ReplyToCommandT(slot, "You do not have a tag called \"%s\".\n", want.c_str());
+								return;
+							}
+							ADMIN_ReplyToCommandT(slot, "Your tag is now \"%s\".\n", want.c_str());
+							return;
+						}
+
+						if (!g_AdminMenus.Available())
+						{
+							ADMIN_ReplyToCommandT(slot, "Your tags:\n");
+							for (const TagDef *tag : eligible)
+							{
+								ADMIN_ReplyToCommandT(slot, "  %s\n", tag->id.c_str());
+							}
+							ADMIN_ReplyToCommandT(slot, "Use %stag <name>, or %stag none to hide it.\n", g_CS2AConfig.commandPrefix.c_str(),
+												  g_CS2AConfig.commandPrefix.c_str());
+							return;
+						}
+
+						std::vector<AdminMenuItem> items;
+						for (const TagDef *tag : eligible)
+						{
+							AdminMenuItem item;
+							item.text = tag->id;
+							item.info = tag->id;
+							items.push_back(item);
+						}
+						// Empty info is what SelectTag reads as "show nothing".
+						AdminMenuItem none;
+						none.text = "No tag";
+						none.info = "";
+						items.push_back(none);
+
+						g_AdminMenus.ShowMenu(slot, "Choose your tag", items,
+											  [](int s, int, const std::string &info)
+											  {
+												  if (!g_CS2ATagManager.SelectTag(s, info.c_str()))
+												  {
+													  ADMIN_ReplyToCommandT(s, "That tag is no longer available to you.\n");
+													  return;
+												  }
+												  if (info.empty())
+												  {
+													  ADMIN_ReplyToCommandT(s, "Your tag is now hidden.\n");
+												  }
+												  else
+												  {
+													  ADMIN_ReplyToCommandT(s, "Your tag is now \"%s\".\n", info.c_str());
+												  }
+											  });
 					});
 
 	// !listdc - Show recently disconnected players

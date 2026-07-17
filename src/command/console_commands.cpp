@@ -6,7 +6,9 @@
 #include "src/ban/ban_manager.h"
 #include "src/comm/comm_manager.h"
 #include "src/admin/admin_manager.h"
+#include "src/compat/foreign_plugins.h"
 #include "src/lang/translations.h"
+#include "src/tags/tag_manager.h"
 #include "src/utils/print_utils.h"
 #include "src/cs2admin.h"
 
@@ -35,6 +37,12 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	// Reload admins (flat file + database)
 	g_CS2AAdminManager.ReloadAdmins();
 
+	// Tags first, then clan tags: a reload can drop a tag someone was wearing,
+	// and UpdateAllClanTags is what walks that back off the scoreboard.
+	g_CS2ATagManager.LoadTags();
+	g_CS2ATagManager.UpdateAllClanTags();
+	g_CS2AForeignPlugins.Refresh();
+
 	// Re-verify bans and comms for all connected players
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
@@ -49,8 +57,7 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 											   PlayerInfo *pp = g_CS2APlayerManager.GetPlayer(i);
 											   if (pp && pp->connected && pp->steamid64 == steamid64)
 											   {
-												   MMU_LOG_INFO("Reload: kicking banned player \"%s\" (%s).\n", pp->name.c_str(),
-																  pp->authid.c_str());
+												   MMU_LOG_INFO("Reload: kicking banned player \"%s\" (%s).\n", pp->name.c_str(), pp->authid.c_str());
 												   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 											   }
 										   }

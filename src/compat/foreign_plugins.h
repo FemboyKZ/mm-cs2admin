@@ -4,8 +4,9 @@
 // Detects other plugins that write the same things we do.
 //
 // Chat and the clan tag are separate questions with separate answers, because the plugins that take them do so under different conditions.
-// cs2kz-metamod renders chat only when its own overridePlayerChat option is on,
-// but it writes the clan tag unconditionally, so a server can have us own chat while it owns the tag.
+// cs2kz-metamod renders chat when its overridePlayerChat config option is on, and writes the clan tag when its
+// kz_profile_clantag_enabled convar is on (older builds lack that convar and always write it). Either can be off
+// while the other is on, so a server can have us own chat while cs2kz keeps the scoreboard, or the reverse.
 class CS2AForeignPlugins
 {
 public:

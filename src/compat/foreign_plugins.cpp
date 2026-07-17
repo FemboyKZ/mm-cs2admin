@@ -26,44 +26,53 @@ namespace
 		return g_pICvar && g_pICvar->FindConVar(kCs2kzProbeConVar).IsValidRef();
 	}
 
-	// What cs2kz's config says it takes over.
-	// Both default on, which is what cs2kz defaults to, so an absent key has to mean on rather than off.
-	struct Cs2kzOptions
+	struct ChatOptionSearch
 	{
-		bool overridesChat = true;
-		bool overridesClantag = true;
+		bool found = false;
+		bool value = false;
 	};
 
-	void OptionHandler(const std::string &, const std::string &key, const std::string &value, void *userdata)
+	void ChatOptionHandler(const std::string &, const std::string &key, const std::string &value, void *userdata)
 	{
-		Cs2kzOptions *options = static_cast<Cs2kzOptions *>(userdata);
-		const bool on = (value == "true" || value == "1");
-
-		if (key == "overridePlayerChat")
+		if (key != "overridePlayerChat")
 		{
-			options->overridesChat = on;
+			return;
 		}
-		else if (key == "overridePlayerClantag")
-		{
-			options->overridesClantag = on;
-		}
+		ChatOptionSearch *search = static_cast<ChatOptionSearch *>(userdata);
+		search->found = true;
+		search->value = (value == "true" || value == "1");
 	}
 
-	// Read what cs2kz is configured to take over.
-	//
-	// These are KeyValues options in its own config rather than convars, so reading the file is the only way to ask.
-	// An unreadable file leaves both on, conceding chat and the clan tag rather than fighting it over them.
-	Cs2kzOptions ReadCs2kzOptions()
+	// Whether cs2kz is set to render player chat.
+	// overridePlayerChat is a KeyValues option in its config, not a convar, so reading the file is the only way to ask.
+	// Missing file or missing key both mean on, matching the default cs2kz itself uses.
+	bool Cs2kzOverridesChat()
 	{
 		char path[512];
 		snprintf(path, sizeof(path), "%s/cfg/cs2kz-server-config.txt", g_SMAPI->GetBaseDir());
 
-		Cs2kzOptions options;
-		if (!kv::LoadFile(path, OptionHandler, &options))
+		ChatOptionSearch search;
+		if (!kv::LoadFile(path, ChatOptionHandler, &search))
 		{
-			MMU_LOG_WARN("%s is loaded but %s could not be read. Assuming it handles both chat and the clan tag.\n", kCs2kz, path);
+			MMU_LOG_WARN("%s is loaded but %s could not be read. Assuming it renders chat.\n", kCs2kz, path);
+			return true;
 		}
-		return options;
+		return search.found ? search.value : true;
+	}
+
+	// Whether cs2kz is set to write the scoreboard clan tag.
+	bool Cs2kzOverridesClantag()
+	{
+		if (!g_pICvar)
+		{
+			return true;
+		}
+		ConVarRefAbstract ref("kz_profile_clantag_enabled");
+		if (!ref.IsValidRef())
+		{
+			return true;
+		}
+		return ref.GetBool();
 	}
 } // namespace
 
@@ -77,12 +86,11 @@ void CS2AForeignPlugins::Refresh()
 
 	if (Cs2kzLoaded())
 	{
-		const Cs2kzOptions options = ReadCs2kzOptions();
-		if (options.overridesChat)
+		if (Cs2kzOverridesChat())
 		{
 			m_chatOwner = kCs2kz;
 		}
-		if (options.overridesClantag)
+		if (Cs2kzOverridesClantag())
 		{
 			m_clanTagOwner = kCs2kz;
 		}
@@ -92,8 +100,7 @@ void CS2AForeignPlugins::Refresh()
 	{
 		if (m_chatOwner && g_CS2AConfig.chatOwnership)
 		{
-			MMU_LOG_WARN("%s renders player chat (its overridePlayerChat is on). Set overridePlayerChat to false in its config to hand chat to us.\n",
-						 m_chatOwner);
+			MMU_LOG_WARN("%s renders player chat. Set overridePlayerChat to false in its config to disable it.\n", m_chatOwner);
 		}
 		else if (!m_chatOwner && previousChat)
 		{
@@ -105,8 +112,9 @@ void CS2AForeignPlugins::Refresh()
 	{
 		if (m_clanTagOwner && g_CS2AConfig.boardTagsEnabled)
 		{
-			MMU_LOG_WARN("%s writes the scoreboard clan tag for its ranks, so leaderboard tags stay off. Set overridePlayerClantag to false in its "
-						 "config to hand the clan tag to us.\n" m_clanTagOwner);
+			MMU_LOG_WARN("%s writes the scoreboard clan tag for its ranks, so leaderboard tags stay off. Set the "
+						 "kz_profile_clantag_enabled convar to 0 to disable it.\n",
+						 m_clanTagOwner);
 		}
 		else if (!m_clanTagOwner && previousClanTag)
 		{

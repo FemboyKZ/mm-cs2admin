@@ -219,10 +219,9 @@ void CS2AChatProcessor::RenderPlayerChat(int slot, const char *message, bool tea
 		}
 	}
 
-	// entityindex 0 keeps CHAT_COLOR_PURPLE meaning purple.
-	// Attributing the line to the speaker would silently turn every one of those into their team color.
-	// {teamcolor} is expanded in ComposeLine instead.
-	mmu::SendSayText2ToFilter(&filter, 0, line.c_str());
+	// The whole line is composed already, colors and all, so it just prints as-is.
+	// SayText2 would attribute the line to a player entity, which turns CHAT_COLOR_PURPLE into that player's team color.
+	mmu::SendChatToFilter(&filter, line.c_str());
 
 	// Chat normally shows up in the console too, and superseding say took that away along with the chat line.
 	// It goes to the same recipients rather than everyone, or team chat would leak through the console.

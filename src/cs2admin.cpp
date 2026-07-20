@@ -761,6 +761,8 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 		g_CS2AChatProcessor.RenderPlayerChat(slotIdx, mmu::StripSayQuotes(message).c_str(), isSayTeam);
 		RETURN_META(MRES_SUPERCEDE);
 	}
+
+	RETURN_META(MRES_IGNORED);
 }
 
 void CS2APlugin::Hook_ClientSettingsChanged(CPlayerSlot slot)

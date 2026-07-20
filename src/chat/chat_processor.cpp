@@ -196,6 +196,11 @@ bool CS2AChatProcessor::CanHear(int listener, int speaker, bool teamOnly) const
 		return false;
 	}
 
+	if (!g_pEngine || !g_pEngine->GetPlayerNetInfo(CPlayerSlot(listener)))
+	{
+		return false;
+	}
+
 	if (teamOnly && PlayerTeam(listener) != PlayerTeam(speaker))
 	{
 		return false;

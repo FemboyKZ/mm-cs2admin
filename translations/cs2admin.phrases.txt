@@ -5,572 +5,716 @@
 	"[ADMIN] You are banned from this server. Reason: %s\n"
 	{
 		"en"	"[ADMIN] You are banned from this server. Reason: %s\n"
+		"zh"	"[ADMIN] 你已被此服务器封禁。原因: %s\n"
 	}
 	"Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n"
 	{
 		"en"	"Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n"
+		"zh"	"玩家 \"%s\" (%s) 曾有过 %d 次封禁、%d 次禁言(语音)、%d 次封禁(文字)。\n"
 	}
 	"You have been gagged for %d minute(s) for chat flooding.\n"
 	{
 		"en"	"You have been gagged for %d minute(s) for chat flooding.\n"
+		"zh"	"由于刷屏，你已被禁言 %d 分钟。\n"
 	}
 	"%s was auto-gagged for chat flooding.\n"
 	{
 		"en"	"%s was auto-gagged for chat flooding.\n"
+		"zh"	"%s 因刷屏被系统自动禁言。\n"
 	}
 	"Slow down! You are sending messages too fast.\n"
 	{
 		"en"	"Slow down! You are sending messages too fast.\n"
+		"zh"	"发太快了！请慢一点发言。\n"
 	}
 	"You have been permanently banned. Reason: %s\n"
 	{
 		"en"	"You have been permanently banned. Reason: %s\n"
+		"zh"	"你已被永久封禁。原因: %s\n"
 	}
 	"You have been banned for %d minutes. Reason: %s\n"
 	{
 		"en"	"You have been banned for %d minutes. Reason: %s\n"
+		"zh"	"你已被封禁 %d 分钟。原因: %s\n"
 	}
 	"%s banned %s (%d min). Reason: %s\n"
 	{
 		"en"	"%s banned %s (%d min). Reason: %s\n"
+		"zh"	"%s 被封禁了 %s (%d 分钟)。原因: %s\n"
 	}
 	"WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n"
 	{
 		"en"	"WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n"
+		"zh"	"警告：检测到玩家 \"%s\" (%s) 有 %d 个关联的 IP 封禁记录。\n"
 	}
 	"Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n"
 	{
 		"en"	"Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n"
+		"zh"	"Sleuth 已自动封禁 \"%s\" (%s) - 因检测到 %d 个关联 IP 封禁。\n"
 	}
 	"Database not connected.\n"
 	{
 		"en"	"Database not connected.\n"
+		"zh"	"数据库未连接。\n"
 	}
 	"Query failed.\n"
 	{
 		"en"	"Query failed.\n"
+		"zh"	"查询失败。\n"
 	}
 	"No bans found for %s.\n"
 	{
 		"en"	"No bans found for %s.\n"
+		"zh"	"未找到关于 %s 的封禁记录。\n"
 	}
 	"Ban history for %s (last 10):\n"
 	{
 		"en"	"Ban history for %s (last 10):\n"
+		"zh"	"%s 的封禁历史记录（最近 10 条）：\n"
 	}
 	"  %-12s %-16s %-12s %-4s %s\n"
 	{
 		"en"	"  %-12s %-16s %-12s %-4s %s\n"
+		"zh"	"  %-12s %-16s %-12s %-4s %s\n"
 	}
 	"  %-12d %-16s %-12s %-4s %s\n"
 	{
 		"en"	"  %-12d %-16s %-12s %-4s %s\n"
+		"zh"	"  %-12d %-16s %-12s %-4s %s\n"
 	}
 	"No comm blocks found for %s.\n"
 	{
 		"en"	"No comm blocks found for %s.\n"
+		"zh"	"未找到关于 %s 的禁言记录。\n"
 	}
 	"Comm history for %s (last 10):\n"
 	{
 		"en"	"Comm history for %s (last 10):\n"
+		"zh"	"%s 的禁言历史记录（最近 10 条）：\n"
 	}
 	"  %-12s %-16s %-6s %-12s %-4s %s\n"
 	{
 		"en"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
+		"zh"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
 	}
 	"  %-12d %-16s %-6s %-12s %-4s %s\n"
 	{
 		"en"	"  %-12d %-16s %-6s %-12s %-4s %s\n"
+		"zh"	"  %-12d %-16s %-6s %-12s %-4s %s\n"
 	}
 	"You are permanently muted. Reason: %s\n"
 	{
 		"en"	"You are permanently muted. Reason: %s\n"
+		"zh"	"你已被永久禁止使用语音。原因: %s\n"
 	}
 	"You are muted (%d seconds remaining). Reason: %s\n"
 	{
 		"en"	"You are muted (%d seconds remaining). Reason: %s\n"
+		"zh"	"你已被禁止使用语音（持续 %d 秒）。原因: %s\n"
 	}
 	"You are permanently gagged. Reason: %s\n"
 	{
 		"en"	"You are permanently gagged. Reason: %s\n"
+		"zh"	"你已被永久禁言。原因: %s\n"
 	}
 	"You are gagged (%d seconds remaining). Reason: %s\n"
 	{
 		"en"	"You are gagged (%d seconds remaining). Reason: %s\n"
+		"zh"	"你已被禁言（持续 %d 秒）。原因: %s\n"
 	}
 	"You have been permanently muted. Reason: %s\n"
 	{
 		"en"	"You have been permanently muted. Reason: %s\n"
+		"zh"	"你已被永久禁止使用语音。原因: %s\n"
 	}
 	"You have been muted for %d minutes. Reason: %s\n"
 	{
 		"en"	"You have been muted for %d minutes. Reason: %s\n"
+		"zh"	"你已被禁止使用语音 %d 分钟。原因: %s\n"
 	}
 	"%s muted %s (%d min). Reason: %s\n"
 	{
 		"en"	"%s muted %s (%d min). Reason: %s\n"
+		"zh"	"%s 语音禁言了 %s (%d 分钟)。原因: %s\n"
 	}
 	"You have been permanently gagged. Reason: %s\n"
 	{
 		"en"	"You have been permanently gagged. Reason: %s\n"
+		"zh"	"你已被永久禁言。原因: %s\n"
 	}
 	"You have been gagged for %d minutes. Reason: %s\n"
 	{
 		"en"	"You have been gagged for %d minutes. Reason: %s\n"
+		"zh"	"你已被禁言 %d 分钟。原因: %s\n"
 	}
 	"%s gagged %s (%d min). Reason: %s\n"
 	{
 		"en"	"%s gagged %s (%d min). Reason: %s\n"
+		"zh"	"%s 禁言了 %s (%d 分钟)。原因: %s\n"
 	}
 	"You have been unmuted.\n"
 	{
 		"en"	"You have been unmuted.\n"
+		"zh"	"你的语音禁言已被解除。\n"
 	}
 	"%s unmuted %s.\n"
 	{
 		"en"	"%s unmuted %s.\n"
+		"zh"	"%s 解除了 %s 的语音禁言。\n"
 	}
 	"You have been ungagged.\n"
 	{
 		"en"	"You have been ungagged.\n"
+		"zh"	"你的禁言已被解除。\n"
 	}
 	"%s ungagged %s.\n"
 	{
 		"en"	"%s ungagged %s.\n"
+		"zh"	"%s 解除了 %s 的禁言。\n"
 	}
 	"You have been muted for this session.\n"
 	{
 		"en"	"You have been muted for this session.\n"
+		"zh"	"你在本局游戏中已被禁止使用语音。\n"
 	}
 	"%s session-muted %s.\n"
 	{
 		"en"	"%s session-muted %s.\n"
+		"zh"	"%s 禁用了 %s 的本局游戏语音。\n"
 	}
 	"You have been gagged for this session.\n"
 	{
 		"en"	"You have been gagged for this session.\n"
+		"zh"	"你在本局游戏中已被禁言。\n"
 	}
 	"%s session-gagged %s.\n"
 	{
 		"en"	"%s session-gagged %s.\n"
+		"zh"	"%s 禁言了 %s 。\n"
 	}
 	"Your mute has expired.\n"
 	{
 		"en"	"Your mute has expired.\n"
+		"zh"	"你的语音禁言已到期。\n"
 	}
 	"Your gag has expired.\n"
 	{
 		"en"	"Your gag has expired.\n"
+		"zh"	"你的文字禁言已到期。\n"
 	}
 	"Invalid target.\n"
 	{
 		"en"	"Invalid target.\n"
+		"zh"	"无效的目标。\n"
 	}
 	"Comm status for \"%s\" (%s):\n"
 	{
 		"en"	"Comm status for \"%s\" (%s):\n"
+		"zh"	"\"%s\" (%s) 的禁言禁音状态：\n"
 	}
 	"  Muted: Session only\n"
 	{
 		"en"	"  Muted: Session only\n"
+		"zh"	"  语音禁言：仅本局游戏\n"
 	}
 	"  Muted: %d seconds remaining. Reason: %s\n"
 	{
 		"en"	"  Muted: %d seconds remaining. Reason: %s\n"
+		"zh"	"  语音禁言：剩余 %d 秒。原因: %s\n"
 	}
 	"  Muted: Permanent. Reason: %s\n"
 	{
 		"en"	"  Muted: Permanent. Reason: %s\n"
+		"zh"	"  语音禁言：永久。原因: %s\n"
 	}
 	"  Muted: No\n"
 	{
 		"en"	"  Muted: No\n"
+		"zh"	"  语音禁言：否\n"
 	}
 	"  Gagged: Session only\n"
 	{
 		"en"	"  Gagged: Session only\n"
+		"zh"	"  文字禁言：仅本局\n"
 	}
 	"  Gagged: %d seconds remaining. Reason: %s\n"
 	{
 		"en"	"  Gagged: %d seconds remaining. Reason: %s\n"
+		"zh"	"  文字禁言：剩余 %d 秒。原因: %s\n"
 	}
 	"  Gagged: Permanent. Reason: %s\n"
 	{
 		"en"	"  Gagged: Permanent. Reason: %s\n"
+		"zh"	"  文字禁言：永久。原因: %s\n"
 	}
 	"  Gagged: No\n"
 	{
 		"en"	"  Gagged: No\n"
+		"zh"	"  文字禁言：否\n"
 	}
 	"(no output)\n"
 	{
 		"en"	"(no output)\n"
+		"zh"	"(无输出)\n"
 	}
 	"[output truncated: too many lines]\n"
 	{
 		"en"	"[output truncated: too many lines]\n"
+		"zh"	"[输出截断：行数过多]\n"
 	}
 	"[output truncated]\n"
 	{
 		"en"	"[output truncated]\n"
+		"zh"	"[输出截断]\n"
 	}
 	"Cannot target this player (higher immunity).\n"
 	{
 		"en"	"Cannot target this player (higher immunity).\n"
+		"zh"	"无法对此玩家生效（其拥有更高的权限）。\n"
 	}
 	"No valid targets online.\n"
 	{
 		"en"	"No valid targets online.\n"
+		"zh"	"当前没有在线的有效目标。\n"
 	}
 	"No maps loaded. Check cfg/maplist.txt\n"
 	{
 		"en"	"No maps loaded. Check cfg/maplist.txt\n"
+		"zh"	"未加载任何地图。请检查 cfg/maplist.txt\n"
 	}
 	"You do not have permission to use this command.\n"
 	{
 		"en"	"You do not have permission to use this command.\n"
+		"zh"	"你没有使用此命令的权限。\n"
 	}
 	"Usage: !ban <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
 		"en"	"Usage: !ban <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"zh"	"用法: !ban <目标> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
 	{
 		"en"	"Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
+		"zh"	"无效的时长。请输入分钟数（如 30）或后缀：h(小时)、d(天)、w(周)、m(月)。0 为永久。\n"
 	}
 	"Usage: !unban <steamid>\n"
 	{
 		"en"	"Usage: !unban <steamid>\n"
+		"zh"	"用法: !unban <SteamID>\n"
 	}
 	"Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
 		"en"	"Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"zh"	"用法: !addban <时长> <SteamID> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
 		"en"	"Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"zh"	"用法: !mute <目标> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !unmute <target>\n"
 	{
 		"en"	"Usage: !unmute <target>\n"
+		"zh"	"用法: !unmute <目标>\n"
 	}
 	"Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
 		"en"	"Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"zh"	"用法: !gag <目标> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !ungag <target>\n"
 	{
 		"en"	"Usage: !ungag <target>\n"
+		"zh"	"用法: !ungag <目标>\n"
 	}
 	"Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
 		"en"	"Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"zh"	"用法: !silence <目标> <时长> [原因] (双重禁言：语音+文字；时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !unsilence <target>\n"
 	{
 		"en"	"Usage: !unsilence <target>\n"
+		"zh"	"用法: !unsilence <目标>\n"
 	}
 	"Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
 		"en"	"Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"zh"	"用法: !banip <IP地址> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Invalid IP address format.\n"
 	{
 		"en"	"Invalid IP address format.\n"
+		"zh"	"IP 地址格式无效。\n"
 	}
 	"Usage: !listbans <target>\n"
 	{
 		"en"	"Usage: !listbans <target>\n"
+		"zh"	"用法: !listbans <目标>\n"
 	}
 	"Usage: !listcomms <target>\n"
 	{
 		"en"	"Usage: !listcomms <target>\n"
+		"zh"	"用法: !listcomms <目标>\n"
 	}
 	"This command cannot be used from console.\n"
 	{
 		"en"	"This command cannot be used from console.\n"
+		"zh"	"无法在控制台中执行此指令。\n"
 	}
 	"Usage: !report <target> <reason>\n"
 	{
 		"en"	"Usage: !report <target> <reason>\n"
+		"zh"	"用法: !report <目标> <原因>\n"
 	}
 	"You must wait %d seconds before reporting again.\n"
 	{
 		"en"	"You must wait %d seconds before reporting again.\n"
+		"zh"	"你必须等待 %d 秒后才能再次举报。\n"
 	}
 	"You cannot report yourself.\n"
 	{
 		"en"	"You cannot report yourself.\n"
+		"zh"	"你不能举报自己。\n"
 	}
 	"Report reason must be at least %d characters.\n"
 	{
 		"en"	"Report reason must be at least %d characters.\n"
+		"zh"	"举报原因至少需要 %d 个字符。\n"
 	}
 	"%s reported %s: %s\n"
 	{
 		"en"	"%s reported %s: %s\n"
+		"zh"	"%s 举报了 %s: %s\n"
 	}
 	"Report submitted against %s.\n"
 	{
 		"en"	"Report submitted against %s.\n"
+		"zh"	"已成功提交对 %s 的举报。\n"
 	}
 	"Usage: !kick <target> [reason]\n"
 	{
 		"en"	"Usage: !kick <target> [reason]\n"
+		"zh"	"用法: !kick <目标> [原因]\n"
 	}
 	"You cannot kick yourself.\n"
 	{
 		"en"	"You cannot kick yourself.\n"
+		"zh"	"你不能踢出你自己。\n"
 	}
 	"%s kicked %s. Reason: %s\n"
 	{
 		"en"	"%s kicked %s. Reason: %s\n"
+		"zh"	"%s 踢出了 %s。原因: %s\n"
 	}
 	"Usage: !slay <target>\n"
 	{
 		"en"	"Usage: !slay <target>\n"
+		"zh"	"用法: !slay <目标>\n"
 	}
 	"%s slayed %d players.\n"
 	{
 		"en"	"%s slayed %d players.\n"
+		"zh"	"%s 处决了 %d 名玩家。\n"
 	}
 	"%s slayed %s.\n"
 	{
 		"en"	"%s slayed %s.\n"
+		"zh"	"%s 处决了 %s。\n"
 	}
 	"Online Admins:\n"
 	{
 		"en"	"Online Admins:\n"
+		"zh"	"在线管理员：\n"
 	}
 	"  %s [%s] flags: %s imm: %d\n"
 	{
 		"en"	"  %s [%s] flags: %s imm: %d\n"
+		"zh"	"  %s [%s] flags: %s imm: %d\n"
 	}
 	"  No admins currently online.\n"
 	{
 		"en"	"  No admins currently online.\n"
+		"zh"	"  当前没有管理员在线。\n"
 	}
 	"%d admin(s) online\n"
 	{
 		"en"	"%d admin(s) online\n"
+		"zh"	"当前有 %d 名管理员在线\n"
 	}
 	"No recently disconnected players.\n"
 	{
 		"en"	"No recently disconnected players.\n"
+		"zh"	"最近没有断开连接的玩家。\n"
 	}
 	"Recently Disconnected Players:\n"
 	{
 		"en"	"Recently Disconnected Players:\n"
+		"zh"	"最近断开连接的玩家：\n"
 	}
 	"  %s (%s) [%s] - %s\n"
 	{
 		"en"	"  %s (%s) [%s] - %s\n"
+		"zh"	"  %s (%s) [%s] - %s\n"
 	}
 	"%d player(s) recently disconnected\n"
 	{
 		"en"	"%d player(s) recently disconnected\n"
+		"zh"	"最近有 %d 名玩家断开连接\n"
 	}
 	"Commands (page %d/%d):\n"
 	{
 		"en"	"Commands (page %d/%d):\n"
+		"zh"	"指令列表 (页码 %d/%d):\n"
 	}
 	"  %s%s\n"
 	{
 		"en"	"  %s%s\n"
+		"zh"	"  %s%s\n"
 	}
 	"Use !adminhelp %d for next page.\n"
 	{
 		"en"	"Use !adminhelp %d for next page.\n"
+		"zh"	"使用 !adminhelp %d 查看下一页。\n"
 	}
 	"Usage: !find <text>\n"
 	{
 		"en"	"Usage: !find <text>\n"
+		"zh"	"用法: !find <文本>\n"
 	}
 	"No commands found matching '%s'.\n"
 	{
 		"en"	"No commands found matching '%s'.\n"
+		"zh"	"未找到匹配 '%s' 的指令。\n"
 	}
 	"Commands matching '%s':\n"
 	{
 		"en"	"Commands matching '%s':\n"
+		"zh"	"匹配 '%s' 的指令：\n"
 	}
 	"Usage: !rcon <command>\n"
 	{
 		"en"	"Usage: !rcon <command>\n"
+		"zh"	"用法: !rcon <指令>\n"
 	}
 	"Queued: %s\n"
 	{
 		"en"	"Queued: %s\n"
+		"zh"	"已入队: %s\n"
 	}
 	"Executed: %s, check console for output.\n"
 	{
 		"en"	"Executed: %s, check console for output.\n"
+		"zh"	"已执行: %s，请在控制台查看输出。\n"
 	}
 	"Usage: !pm <target> <message>\n"
 	{
 		"en"	"Usage: !pm <target> <message>\n"
+		"zh"	"用法: !pm <目标> <私聊消息>\n"
 	}
 	"[PM from %s] %s\n"
 	{
 		"en"	"{orchid}[PM from %s]{default} %s\n"
+		"zh"	"{orchid}[来自 %s 的私聊]{default} %s\n"
 	}
 	"[PM to %s] %s\n"
 	{
 		"en"	"{orchid}[PM to %s]{default} %s\n"
+		"zh"	"{orchid}[发给 %s 的私聊]{default} %s\n"
 	}
 	"[PM %s -> %s] %s\n"
 	{
 		"en"	"{yellow}[PM %s -> %s]{default} %s\n"
+		"zh"	"{yellow}[私聊 %s -> %s]{default} %s\n"
 	}
 	"Usage: !map <mapname|workshopid>\n"
 	{
 		"en"	"Usage: !map <mapname|workshopid>\n"
+		"zh"	"用法: !map <地图名|创意工坊ID>\n"
 	}
 	"%s changed map to %s.\n"
 	{
 		"en"	"%s changed map to %s.\n"
+		"zh"	"%s 将地图更换为了 %s。\n"
 	}
 	"Maps (page %d/%d):\n"
 	{
 		"en"	"Maps (page %d/%d):\n"
+		"zh"	"地图列表 (页码 %d/%d):\n"
 	}
 	"  %s [ws:%s]\n"
 	{
 		"en"	"  %s [ws:%s]\n"
+		"zh"	"  %s [ws:%s]\n"
 	}
 	"  %s\n"
 	{
 		"en"	"  %s\n"
+		"zh"	"  %s\n"
 	}
 	"Use !maps %d for next page.\n"
 	{
 		"en"	"Use !maps %d for next page.\n"
+		"zh"	"使用 !maps %d 查看下一页。\n"
 	}
 	"Usage: !entfire <entity> <input> [value]\n"
 	{
 		"en"	"Usage: !entfire <entity> <input> [value]\n"
+		"zh"	"用法: !entfire <实体> <输入信号> [参数值]\n"
 	}
 	"Fired: %s %s%s\n"
 	{
 		"en"	"Fired: %s %s%s\n"
+		"zh"	"已触发实体: %s %s%s\n"
 	}
 	"Usage: !give <target> <weapon>\n"
 	{
 		"en"	"Usage: !give <target> <weapon>\n"
+		"zh"	"用法: !give <目标> <武器代码>\n"
 	}
 	"%s gave %s to %d players.\n"
 	{
 		"en"	"%s gave %s to %d players.\n"
+		"zh"	"%s 给予了 %d 名玩家 %s。\n"
 	}
 	"%s gave %s to %s.\n"
 	{
 		"en"	"%s gave %s to %s.\n"
+		"zh"	"%s 给予了 %s %s。\n"
 	}
 	"No valid alive targets found.\n"
 	{
 		"en"	"No valid alive targets found.\n"
+		"zh"	"未找到存活的有效目标。\n"
 	}
 	"Usage: !strip <target>\n"
 	{
 		"en"	"Usage: !strip <target>\n"
+		"zh"	"用法: !strip <目标>\n"
 	}
 	"%s stripped weapons from %d players.\n"
 	{
 		"en"	"%s stripped weapons from %d players.\n"
+		"zh"	"%s 剥夺了 %d 名玩家的武器。\n"
 	}
 	"%s stripped weapons from %s.\n"
 	{
 		"en"	"%s stripped weapons from %s.\n"
+		"zh"	"%s 剥夺了 %s 的武器。\n"
 	}
 	"Multiple players matched. Use a more specific target.\n"
 	{
 		"en"	"Multiple players matched. Use a more specific target.\n"
+		"zh"	"匹配到多名玩家，请使用更具体的名称或目标。\n"
 	}
 	"No player found.\n"
 	{
 		"en"	"No player found.\n"
+		"zh"	"未找到玩家。\n"
 	}
 	"[ADMIN] %s"
 	{
 		"en"	"[ADMIN] %s"
+		"zh"	"[ADMIN] %s"
 	}
 	" %s%s%s"
 	{
 		"en"	" %s%s%s"
+		"zh"	" %s%s%s"
 	}
 	"No target specified."
 	{
 		"en"	"No target specified."
+		"zh"	"未指定目标。"
 	}
 	"You are not in-game."
 	{
 		"en"	"You are not in-game."
+		"zh"	"你当前不在游戏中。"
 	}
 	"No matching players found."
 	{
 		"en"	"No matching players found."
+		"zh"	"未找到匹配的玩家。"
 	}
 	"Invalid SteamID64."
 	{
 		"en"	"Invalid SteamID64."
+		"zh"	"无效的 SteamID64。"
 	}
 	"Player with that SteamID64 not found."
 	{
 		"en"	"Player with that SteamID64 not found."
+		"zh"	"未找到该 SteamID64 对应的玩家。"
 	}
 	"No player found with exact name."
 	{
 		"en"	"No player found with exact name."
+		"zh"	"未找到完全同名的玩家。"
 	}
 	"Player not found with that slot/userid."
 	{
 		"en"	"Player not found with that slot/userid."
+		"zh"	"未找到该 Slot 或 UserID 对应的玩家。"
 	}
 	"Multiple players match that name. Be more specific."
 	{
 		"en"	"Multiple players match that name. Be more specific."
+		"zh"	"有多个玩家匹配该名字，请输入更精确的名称。"
 	}
 	"No player found matching that name."
 	{
 		"en"	"No player found matching that name."
+		"zh"	"未找到匹配该名字的玩家。"
 	}
 	"This command cannot be used from the server console.\n"
 	{
 		"en"	"This command cannot be used from the server console.\n"
+		"zh"	"无法从服务器服务端控制台执行此命令。\n"
 	}
 	"Tags are disabled on this server.\n"
 	{
 		"en"	"Tags are disabled on this server.\n"
+		"zh"	"本服务器已禁用称号/称号标签功能。\n"
 	}
 	"Tags are unavailable while %s is handling chat.\n"
 	{
 		"en"	"Tags are unavailable while %s is handling chat.\n"
+		"zh"	"当 %s 接管聊天框时，称号功能暂不可用。\n"
 	}
 	"You do not have any tags.\n"
 	{
 		"en"	"You do not have any tags.\n"
+		"zh"	"你当前没有任何称号。\n"
 	}
 	"Your tag is now hidden.\n"
 	{
 		"en"	"Your tag is now hidden.\n"
+		"zh"	"你的称号现已隐藏。\n"
 	}
 	"Your tag is now \"%s\".\n"
 	{
 		"en"	"Your tag is now \"%s\".\n"
+		"zh"	"你的称号现已佩戴为 \"%s\"。\n"
 	}
 	"You do not have a tag called \"%s\".\n"
 	{
 		"en"	"You do not have a tag called \"%s\".\n"
+		"zh"	"你没有名为 \"%s\" 的称号。\n"
 	}
 	"That tag is no longer available to you.\n"
 	{
 		"en"	"That tag is no longer available to you.\n"
+		"zh"	"你已无法使用该称号。\n"
 	}
 	"Your tags:\n"
 	{
 		"en"	"Your tags:\n"
+		"zh"	"你的称号列表：\n"
 	}
 	"Use %stag <name>, or %stag none to hide it.\n"
 	{
 		"en"	"Use %stag <name>, or %stag none to hide it.\n"
-}}
+		"zh"	"使用 %stag <称号名称> 佩戴，或输入 %stag none 隐藏称号。\n"
+	}
+}

@@ -5,7 +5,6 @@
 #include <igameevents.h>
 #include <iserver.h>
 #include <sh_vector.h>
-#include <iplayerinfo.h>
 
 #include "mmu/chat_colors.h"
 #include "mmu/plugin_globals.h"

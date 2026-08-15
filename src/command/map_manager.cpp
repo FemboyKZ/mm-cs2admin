@@ -357,6 +357,10 @@ bool CS2AMapManager::BeginWorkshopChange(const std::string &workshopId, const st
 		return false;
 	}
 
+	// Drops an ACF entry left behind by a deleted addon,
+	// otherwise Steam still thinks the map is installed and the download below is a no-op.
+	mmu::EnsureWorkshopMapReady(workshopId, g_AdminSteamAPI);
+
 	if (!mmu::workshop::StartDownload(fileId, g_AdminSteamAPI))
 	{
 		error = "Map '" + label + "' is not installed and no download could be started.";

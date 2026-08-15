@@ -1820,7 +1820,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						ADMIN_ChatToAllT("%s changed map to %s.\n", adminName.c_str(), args[0].c_str());
+						// A workshop map still downloading has already announced itself.
+						if (!g_CS2AMapManager.IsChangePending())
+						{
+							ADMIN_ChatToAllT("%s changed map to %s.\n", adminName.c_str(), args[0].c_str());
+						}
 						ADMIN_LogAction(slot, (std::string("Changed map to ") + args[0]).c_str());
 
 						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Map Change", args[0].c_str(), "", -1,

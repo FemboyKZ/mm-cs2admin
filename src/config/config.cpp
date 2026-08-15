@@ -96,6 +96,10 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->processQueueTime = std::atoi(value.c_str());
 		}
+		else if (k == "workshopdownloadtimeout")
+		{
+			cfg->workshopDownloadTimeout = std::atoi(value.c_str());
+		}
 		else if (k == "autoaddserver")
 		{
 			cfg->autoAddServer = std::atoi(value.c_str());

@@ -2,12 +2,15 @@
 #include "mmu/log.h"
 #include "src/common.h"
 #include "mmu/workshop.h"
+#include "src/config/config.h"
+#include "src/utils/print_utils.h"
 
 extern CSteamGameServerAPIContext g_AdminSteamAPI;
 
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -18,6 +21,19 @@ extern CSteamGameServerAPIContext g_AdminSteamAPI;
 namespace fs = std::filesystem;
 
 CS2AMapManager g_CS2AMapManager;
+
+static const char *MapLabel(const MapEntry &entry)
+{
+	return entry.displayName.empty() ? entry.mapName.c_str() : entry.displayName.c_str();
+}
+
+static void IssueWorkshopChange(const std::string &workshopId)
+{
+	mmu::EnsureWorkshopMapReady(workshopId, g_AdminSteamAPI);
+	char cmd[256];
+	snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", workshopId.c_str());
+	g_pEngine->ServerCommand(cmd);
+}
 
 static std::string TrimString(const std::string &s)
 {
@@ -289,19 +305,12 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 		const MapEntry *entry = FindMap(input, error);
 		if (entry && entry->isWorkshop)
 		{
-			mmu::EnsureWorkshopMapReady(entry->workshopId, g_AdminSteamAPI);
-			char cmd[256];
-			snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", entry->workshopId.c_str());
-			g_pEngine->ServerCommand(cmd);
-			return true;
+			error.clear();
+			return BeginWorkshopChange(entry->workshopId, MapLabel(*entry), error);
 		}
 
 		error.clear();
-		mmu::EnsureWorkshopMapReady(inputStr, g_AdminSteamAPI);
-		char cmd[256];
-		snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", input);
-		g_pEngine->ServerCommand(cmd);
-		return true;
+		return BeginWorkshopChange(inputStr, inputStr, error);
 	}
 
 	const MapEntry *entry = FindMap(input, error);
@@ -325,15 +334,94 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 
 	if (entry->isWorkshop)
 	{
-		mmu::EnsureWorkshopMapReady(entry->workshopId, g_AdminSteamAPI);
-		char cmd[256];
-		snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", entry->workshopId.c_str());
-		g_pEngine->ServerCommand(cmd);
-	}
-	else
-	{
-		g_pEngine->ChangeLevel(entry->mapName.c_str(), nullptr);
+		return BeginWorkshopChange(entry->workshopId, MapLabel(*entry), error);
 	}
 
+	g_pEngine->ChangeLevel(entry->mapName.c_str(), nullptr);
 	return true;
+}
+
+bool CS2AMapManager::BeginWorkshopChange(const std::string &workshopId, const std::string &label, std::string &error)
+{
+	uint64_t fileId = std::strtoull(workshopId.c_str(), nullptr, 10);
+
+	if (fileId == 0 || mmu::workshop::IsReady(fileId, g_AdminSteamAPI))
+	{
+		IssueWorkshopChange(workshopId);
+		return true;
+	}
+
+	if (g_CS2AConfig.workshopDownloadTimeout <= 0)
+	{
+		error = "Map '" + label + "' is not installed on this server.";
+		return false;
+	}
+
+	if (!mmu::workshop::StartDownload(fileId, g_AdminSteamAPI))
+	{
+		error = "Map '" + label + "' is not installed and no download could be started.";
+		return false;
+	}
+
+	CGlobalVars *globals = GetGameGlobals();
+	float now = globals ? globals->curtime : 0.0f;
+
+	m_pendingChange = true;
+	m_pendingFileId = fileId;
+	m_pendingWorkshopId = workshopId;
+	m_pendingLabel = label;
+	m_pendingDeadline = now + static_cast<float>(g_CS2AConfig.workshopDownloadTimeout);
+	m_pendingNextAnnounce = now + 10.0f;
+
+	MMU_LOG_INFO("Downloading workshop map '%s' (%s) before changing.\n", label.c_str(), workshopId.c_str());
+	ADMIN_ChatToAllT("Downloading %s, the map will change once it finishes.", label.c_str());
+	return true;
+}
+
+void CS2AMapManager::ClearPendingChange()
+{
+	m_pendingChange = false;
+	m_pendingFileId = 0;
+	m_pendingWorkshopId.clear();
+	m_pendingLabel.clear();
+}
+
+void CS2AMapManager::OnMapStart()
+{
+	ClearPendingChange();
+}
+
+void CS2AMapManager::Tick(float curtime)
+{
+	if (!m_pendingChange)
+	{
+		return;
+	}
+
+	if (mmu::workshop::IsReady(m_pendingFileId, g_AdminSteamAPI))
+	{
+		std::string id = m_pendingWorkshopId;
+		ClearPendingChange();
+		IssueWorkshopChange(id);
+		return;
+	}
+
+	if (curtime >= m_pendingDeadline)
+	{
+		MMU_LOG_WARN("Workshop map '%s' (%s) did not download in time, staying on the current map.\n", m_pendingLabel.c_str(),
+					 m_pendingWorkshopId.c_str());
+		ADMIN_ChatToAllT("%s could not be downloaded in time. Staying on the current map.", m_pendingLabel.c_str());
+		ClearPendingChange();
+		return;
+	}
+
+	if (curtime >= m_pendingNextAnnounce)
+	{
+		m_pendingNextAnnounce = curtime + 10.0f;
+		uint64_t done = 0, total = 0;
+		if (mmu::workshop::DownloadProgress(m_pendingFileId, g_AdminSteamAPI, done, total))
+		{
+			ADMIN_ChatToAllT("Downloading %s... %d%%", m_pendingLabel.c_str(), static_cast<int>((done * 100) / total));
+		}
+	}
 }

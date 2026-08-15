@@ -816,6 +816,8 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 		}
 	}
 
+	g_CS2AMapManager.Tick(curtime);
+
 	// Check for expired timed comm blocks (every 1 second)
 	if (curtime >= m_flNextExpiryCheck)
 	{
@@ -963,6 +965,8 @@ void CS2APlugin::OnLevelInit(char const *pMapName, char const *pMapEntities, cha
 	{
 		MMU_LOG_WARN("Could not acquire CGameEntitySystem\n");
 	}
+
+	g_CS2AMapManager.OnMapStart();
 
 	// Reload admins on map change
 	g_CS2AAdminManager.ReloadAdmins();

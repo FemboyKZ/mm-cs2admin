@@ -36,6 +36,8 @@ struct CS2AConfig
 	// Max consecutive reconnect attempts before giving up (0 = unlimited).
 	int maxReconnectAttempts = 5;
 	int processQueueTime = 5;
+	// Seconds to wait for an absent workshop map to download before giving up on the change.
+	int workshopDownloadTimeout = 120;
 	int autoAddServer = 0;
 	bool backupConfigs = true;
 	bool enableAdmins = true;

@@ -717,4 +717,18 @@
 		"en"	"Use %stag <name>, or %stag none to hide it.\n"
 		"chi"	"使用 %stag <称号名称> 佩戴，或输入 %stag none 隐藏称号。\n"
 	}
+
+	// Workshop downloads
+	"Downloading %s, the map will change once it finishes."
+	{
+		"en"	"{green}Downloading {gold}%s{green}, the map will change once it finishes."
+	}
+	"Downloading %s... %d%%"
+	{
+		"en"	"{green}Downloading {gold}%s{green}... {gold}%d%%"
+	}
+	"%s could not be downloaded in time. Staying on the current map."
+	{
+		"en"	"{red}%s could not be downloaded in time.{default} Staying on the current map."
+	}
 }

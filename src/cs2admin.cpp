@@ -865,6 +865,9 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 					{
 						g_CS2AOfflineQueue.ProcessQueue();
 					}
+
+					// Admin data is whatever the last reload could reach. Pick up the DB side now.
+					g_CS2AAdminManager.ReloadAdmins();
 				}
 			});
 

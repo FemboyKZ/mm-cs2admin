@@ -11,11 +11,8 @@
 
 void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 {
-	m_dbGroupsLoaded = false;
-
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		m_dbGroupsLoaded = true;
 		if (onComplete)
 		{
 			onComplete();
@@ -33,7 +30,6 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load admin groups from database.\n");
-								 m_dbGroupsLoaded = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -44,7 +40,6 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs)
 							 {
-								 m_dbGroupsLoaded = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -92,7 +87,6 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 							 }
 
 							 MMU_LOG_INFO("Loaded %d admin group(s) from database.\n", count);
-							 m_dbGroupsLoaded = true;
 							 if (onComplete)
 							 {
 								 onComplete();
@@ -287,11 +281,8 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 
 void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 {
-	m_dbAdminsLoaded = false;
-
 	if (!g_CS2ADatabase.IsConnected())
 	{
-		m_dbAdminsLoaded = true;
 		if (onComplete)
 		{
 			onComplete();
@@ -318,7 +309,6 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 		if (!hostip_ref.IsValidRef() || !hostport_ref.IsValidRef())
 		{
 			MMU_LOG_WARN("Cannot load admins by IP: hostip/hostport cvars not available.\n");
-			m_dbAdminsLoaded = true;
 			if (onComplete)
 			{
 				onComplete();
@@ -365,7 +355,6 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load admins from database.\n");
-								 m_dbAdminsLoaded = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -376,7 +365,6 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs)
 							 {
-								 m_dbAdminsLoaded = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -450,7 +438,6 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 							 }
 
 							 MMU_LOG_INFO("Loaded %zu admin(s) from database.\n", m_loadingDbAdmins.size());
-							 m_dbAdminsLoaded = true;
 							 if (onComplete)
 							 {
 								 onComplete();

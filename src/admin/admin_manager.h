@@ -97,6 +97,8 @@ public:
 	static uint64_t AuthIdToSteamID64(const char *authid);
 
 	// Admin management
+	// The group and override loaders below fill the reload staging set,
+	// so they only make sense as part of a ReloadAdmins pass.
 
 	// Load flatfile admins from cfg/cs2admin/admins.cfg
 	void LoadFlatFileAdmins();
@@ -188,9 +190,6 @@ private:
 	// Merged admin entries per connected player slot
 	AdminEntry m_playerAdmins[MAXPLAYERS + 1];
 	bool m_playerHasAdmin[MAXPLAYERS + 1] = {};
-
-	bool m_dbGroupsLoaded = false;
-	bool m_dbAdminsLoaded = false;
 };
 
 extern CS2AAdminManager g_CS2AAdminManager;

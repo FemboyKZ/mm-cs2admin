@@ -445,6 +445,4 @@ void CS2AAdminManager::Clear()
 		m_playerHasAdmin[i] = false;
 		m_playerAdmins[i] = {};
 	}
-	m_dbGroupsLoaded = false;
-	m_dbAdminsLoaded = false;
 }

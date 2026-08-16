@@ -134,12 +134,26 @@ std::string CS2AAdminManager::NormalizeSteamID(const char *input)
 
 void CS2AAdminManager::ReloadAdmins()
 {
+	// Startup fires this from both the DB connect callback and the first level init,
+	// and a map change can land on top of an mm_reload. Run one chain at a time.
+	if (m_reloadInFlight)
+	{
+		m_reloadPending = true;
+		return;
+	}
+	m_reloadInFlight = true;
+
 	// Clear per-player admin state
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
 		m_playerHasAdmin[i] = false;
 		m_playerAdmins[i] = {};
 	}
+
+	m_loadingDbAdmins.clear();
+	m_loadingGroups.clear();
+	m_loadingGroupIdToName.clear();
+	m_loadingGlobalOverrides.clear();
 
 	// Load flat file groups and overrides first (synchronous, needed for group resolution)
 	LoadFlatFileGroups();
@@ -152,13 +166,44 @@ void CS2AAdminManager::ReloadAdmins()
 	// Then load from DB (async)
 	if (g_CS2AConfig.enableAdmins && g_CS2ADatabase.IsConnected())
 	{
-		LoadDatabaseAdmins([]() { MMU_LOG_INFO("Admin reload complete.\n"); });
+		LoadDatabaseAdmins(
+			[this]()
+			{
+				MMU_LOG_INFO("Admin reload complete.\n");
+				FinishReload();
+			});
 	}
 	else
 	{
 		// No DB, just apply flat file admins to connected players
+		CommitLoadedData();
 		MergeAndApplyAll();
 		MMU_LOG_INFO("Admin reload complete (flat file only).\n");
+		FinishReload();
+	}
+}
+
+void CS2AAdminManager::CommitLoadedData()
+{
+	m_dbAdmins = std::move(m_loadingDbAdmins);
+	m_groups = std::move(m_loadingGroups);
+	m_groupIdToName = std::move(m_loadingGroupIdToName);
+	m_globalOverrides = std::move(m_loadingGlobalOverrides);
+
+	m_loadingDbAdmins.clear();
+	m_loadingGroups.clear();
+	m_loadingGroupIdToName.clear();
+	m_loadingGlobalOverrides.clear();
+}
+
+void CS2AAdminManager::FinishReload()
+{
+	m_reloadInFlight = false;
+
+	if (m_reloadPending)
+	{
+		m_reloadPending = false;
+		ReloadAdmins();
 	}
 }
 
@@ -226,8 +271,8 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 			}
 			else
 			{
-				MMU_LOG_INFO("Warning: admin \"%s\" references group \"%s\" which does not exist in admin_groups.cfg.\n",
-							   normalized.c_str(), flatIt->second.group.c_str());
+				MMU_LOG_INFO("Warning: admin \"%s\" references group \"%s\" which does not exist in admin_groups.cfg.\n", normalized.c_str(),
+							 flatIt->second.group.c_str());
 			}
 		}
 		found = true;
@@ -256,7 +301,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 	if (found)
 	{
 		MMU_LOG_INFO("Admin assigned: \"%s\" (%s) flags=%s immunity=%d\n", player->name.c_str(), normalized.c_str(),
-					   FlagsToString(merged.flags).c_str(), merged.immunity);
+					 FlagsToString(merged.flags).c_str(), merged.immunity);
 	}
 }
 
@@ -391,6 +436,10 @@ void CS2AAdminManager::Clear()
 	m_groups.clear();
 	m_groupIdToName.clear();
 	m_globalOverrides.clear();
+	m_loadingDbAdmins.clear();
+	m_loadingGroups.clear();
+	m_loadingGroupIdToName.clear();
+	m_loadingGlobalOverrides.clear();
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
 		m_playerHasAdmin[i] = false;

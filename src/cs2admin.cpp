@@ -123,6 +123,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	g_SMAPI->AddListener(this, this);
 
 	m_bLateLoaded = late;
+	m_bSkipLevelInitReload = !late;
 
 	MMU_LOG_INFO("CS2Admin %s loading...%s\n", PLUGIN_FULL_VERSION, late ? " (late)" : "");
 
@@ -406,11 +407,11 @@ void CS2APlugin::AllPluginsLoaded()
 	g_CS2AForeignPlugins.Refresh();
 	g_CS2ATagManager.LoadTags();
 
-	// Always load flat-file admins regardless of DB state
+	// Always load flat-file admins regardless of DB state.
+	// ReloadAdmins takes its flat-file-only path when the DB is not connected.
 	auto loadFlatFileOnly = [this]()
 	{
-		g_CS2AAdminManager.LoadFlatFileAdmins();
-		g_CS2AAdminManager.MergeAndApplyAll();
+		g_CS2AAdminManager.ReloadAdmins();
 		if (m_bLateLoaded)
 		{
 			OnLateLoad();
@@ -473,8 +474,7 @@ void CS2APlugin::AllPluginsLoaded()
 			{
 				MMU_LOG_WARN("Database connection failed! Bans will not be enforced.\n");
 				// Load and apply flat-file admins only
-				g_CS2AAdminManager.LoadFlatFileAdmins();
-				g_CS2AAdminManager.MergeAndApplyAll();
+				g_CS2AAdminManager.ReloadAdmins();
 			}
 		});
 }
@@ -969,7 +969,14 @@ void CS2APlugin::OnLevelInit(char const *pMapName, char const *pMapEntities, cha
 	g_CS2AMapManager.OnMapStart();
 
 	// Reload admins on map change
-	g_CS2AAdminManager.ReloadAdmins();
+	if (m_bSkipLevelInitReload)
+	{
+		m_bSkipLevelInitReload = false;
+	}
+	else
+	{
+		g_CS2AAdminManager.ReloadAdmins();
+	}
 }
 
 void CS2APlugin::OnLevelShutdown()

@@ -413,11 +413,11 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			{
 				if (!currentGroupName.empty())
 				{
-					auto it = m_groups.find(currentGroupName);
-					if (it == m_groups.end())
+					auto it = m_loadingGroups.find(currentGroupName);
+					if (it == m_loadingGroups.end())
 					{
 						currentGroup.name = currentGroupName;
-						m_groups[currentGroupName] = currentGroup;
+						m_loadingGroups[currentGroupName] = currentGroup;
 					}
 					else
 					{
@@ -515,9 +515,9 @@ void CS2AAdminManager::LoadFlatFileGroups()
 		}
 	}
 
-	if (!m_groups.empty())
+	if (!m_loadingGroups.empty())
 	{
-		MMU_LOG_INFO("Loaded %zu group(s) from admin_groups.cfg.\n", m_groups.size());
+		MMU_LOG_INFO("Loaded %zu group(s) from admin_groups.cfg.\n", m_loadingGroups.size());
 	}
 }
 
@@ -595,10 +595,10 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 						key = "cmd:" + StripCommandPrefix(currentName);
 					}
 
-					// Only add if not already set by DB
-					if (m_globalOverrides.find(key) == m_globalOverrides.end())
+					// First entry for a key wins. The DB load runs later and overwrites it.
+					if (m_loadingGlobalOverrides.find(key) == m_loadingGlobalOverrides.end())
 					{
-						m_globalOverrides[key] = FlagsFromString(currentFlag.c_str());
+						m_loadingGlobalOverrides[key] = FlagsFromString(currentFlag.c_str());
 						count++;
 					}
 				}
@@ -636,9 +636,9 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 					key = "cmd:" + StripCommandPrefix(name);
 				}
 
-				if (m_globalOverrides.find(key) == m_globalOverrides.end())
+				if (m_loadingGlobalOverrides.find(key) == m_loadingGlobalOverrides.end())
 				{
-					m_globalOverrides[key] = FlagsFromString(value.c_str());
+					m_loadingGlobalOverrides[key] = FlagsFromString(value.c_str());
 					count++;
 				}
 			}

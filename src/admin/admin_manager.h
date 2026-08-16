@@ -152,6 +152,12 @@ private:
 	void LoadGlobalOverrides(std::function<void()> onComplete);
 	void LoadAdminsFromDB(std::function<void()> onComplete);
 
+	// Swap the staging set into the live set once a reload has all its data.
+	void CommitLoadedData();
+
+	// Release the reload lock and run a request that arrived mid-reload.
+	void FinishReload();
+
 	// Flatfile admins (keyed by normalized SteamID)
 	std::unordered_map<std::string, AdminEntry> m_flatFileAdmins;
 
@@ -166,6 +172,18 @@ private:
 
 	// Global command overrides: key = "cmd:<name>" or "grp:<name>", value = required flags
 	std::unordered_map<std::string, uint32_t> m_globalOverrides;
+
+	// Staging set for a reload in progress. Flat-file and DB loads both fill these,
+	// and CommitLoadedData swaps them into the live maps above once the DB is done.
+	// Permission checks keep reading the previous data until then.
+	std::unordered_map<std::string, AdminEntry> m_loadingDbAdmins;
+	std::unordered_map<std::string, AdminGroup> m_loadingGroups;
+	std::unordered_map<int, std::string> m_loadingGroupIdToName;
+	std::unordered_map<std::string, uint32_t> m_loadingGlobalOverrides;
+
+	// A reload spans several async queries. Overlapping requests coalesce into one re-run.
+	bool m_reloadInFlight = false;
+	bool m_reloadPending = false;
 
 	// Merged admin entries per connected player slot
 	AdminEntry m_playerAdmins[MAXPLAYERS + 1];

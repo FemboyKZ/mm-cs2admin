@@ -11,7 +11,6 @@
 
 void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 {
-	m_groupIdToName.clear();
 	m_dbGroupsLoaded = false;
 
 	if (!g_CS2ADatabase.IsConnected())
@@ -53,6 +52,7 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 								 return;
 							 }
 
+							 int count = 0;
 							 while (rs->MoreRows())
 							 {
 								 ISQLRow *row = rs->FetchRow();
@@ -72,8 +72,8 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 								 if (!group.name.empty())
 								 {
 									 // Merge with existing group
-									 auto existing = m_groups.find(group.name);
-									 if (existing != m_groups.end())
+									 auto existing = m_loadingGroups.find(group.name);
+									 if (existing != m_loadingGroups.end())
 									 {
 										 existing->second.flags |= group.flags;
 										 if (group.immunity > existing->second.immunity)
@@ -84,13 +84,14 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 									 }
 									 else
 									 {
-										 m_groups[group.name] = group;
+										 m_loadingGroups[group.name] = group;
 									 }
-									 m_groupIdToName[group.id] = group.name;
+									 m_loadingGroupIdToName[group.id] = group.name;
+									 count++;
 								 }
 							 }
 
-							 MMU_LOG_INFO("Loaded %zu admin group(s) from database.\n", m_groups.size());
+							 MMU_LOG_INFO("Loaded %d admin group(s) from database.\n", count);
 							 m_dbGroupsLoaded = true;
 							 if (onComplete)
 							 {
@@ -161,14 +162,14 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 								 }
 
 								 // Find the group by DB id
-								 auto it = m_groupIdToName.find(groupId);
-								 if (it == m_groupIdToName.end())
+								 auto it = m_loadingGroupIdToName.find(groupId);
+								 if (it == m_loadingGroupIdToName.end())
 								 {
 									 continue;
 								 }
 
-								 auto grpIt = m_groups.find(it->second);
-								 if (grpIt == m_groups.end())
+								 auto grpIt = m_loadingGroups.find(it->second);
+								 if (grpIt == m_loadingGroups.end())
 								 {
 									 continue;
 								 }
@@ -203,8 +204,6 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 
 void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 {
-	m_globalOverrides.clear();
-
 	if (!g_CS2ADatabase.IsConnected())
 	{
 		if (onComplete)
@@ -241,6 +240,7 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 								 return;
 							 }
 
+							 int count = 0;
 							 while (rs->MoreRows())
 							 {
 								 ISQLRow *row = rs->FetchRow();
@@ -272,10 +272,12 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 									 continue;
 								 }
 
-								 m_globalOverrides[key] = FlagsFromString(flags);
+								 // DB overrides win over a flat-file entry for the same key
+								 m_loadingGlobalOverrides[key] = FlagsFromString(flags);
+								 count++;
 							 }
 
-							 MMU_LOG_INFO("Loaded %zu global override(s) from database.\n", m_globalOverrides.size());
+							 MMU_LOG_INFO("Loaded %d global override(s) from database.\n", count);
 							 if (onComplete)
 							 {
 								 onComplete();
@@ -285,7 +287,6 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 
 void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 {
-	m_dbAdmins.clear();
 	m_dbAdminsLoaded = false;
 
 	if (!g_CS2ADatabase.IsConnected())
@@ -418,8 +419,8 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 								 // Inherit group flags and immunity
 								 if (!entry.group.empty())
 								 {
-									 auto it = m_groups.find(entry.group);
-									 if (it != m_groups.end())
+									 auto it = m_loadingGroups.find(entry.group);
+									 if (it != m_loadingGroups.end())
 									 {
 										 entry.flags |= it->second.flags;
 										 if (it->second.immunity > entry.immunity)
@@ -432,8 +433,8 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 								 if (!entry.identity.empty())
 								 {
 									 // If there's already a DB entry for this identity (e.g., multiple group assignments), merge flags additively
-									 auto existing = m_dbAdmins.find(entry.identity);
-									 if (existing != m_dbAdmins.end())
+									 auto existing = m_loadingDbAdmins.find(entry.identity);
+									 if (existing != m_loadingDbAdmins.end())
 									 {
 										 existing->second.flags |= entry.flags;
 										 if (entry.immunity > existing->second.immunity)
@@ -443,12 +444,12 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 									 }
 									 else
 									 {
-										 m_dbAdmins[entry.identity] = entry;
+										 m_loadingDbAdmins[entry.identity] = entry;
 									 }
 								 }
 							 }
 
-							 MMU_LOG_INFO("Loaded %zu admin(s) from database.\n", m_dbAdmins.size());
+							 MMU_LOG_INFO("Loaded %zu admin(s) from database.\n", m_loadingDbAdmins.size());
 							 m_dbAdminsLoaded = true;
 							 if (onComplete)
 							 {
@@ -471,6 +472,7 @@ void CS2AAdminManager::LoadDatabaseAdmins(std::function<void()> onComplete)
 							LoadAdminsFromDB(
 								[this, onComplete]()
 								{
+									CommitLoadedData();
 									MergeAndApplyAll();
 									if (onComplete)
 									{

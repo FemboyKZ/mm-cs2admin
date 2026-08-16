@@ -402,7 +402,7 @@ void CS2AMapManager::Tick(float curtime)
 		return;
 	}
 
-	if (mmu::workshop::IsReady(m_pendingFileId, g_AdminSteamAPI))
+	if (mmu::workshop::DownloadSettled(m_pendingFileId, g_AdminSteamAPI))
 	{
 		std::string id = m_pendingWorkshopId;
 		ClearPendingChange();

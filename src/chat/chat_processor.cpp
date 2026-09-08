@@ -141,7 +141,7 @@ bool CS2AChatProcessor::ShouldRender(int slot) const
 	}
 
 	// A chat menu eats the player's numeric input to drive itself and suppresses the line.
-	// cs2menus hooks the same ICvar chain we do, and SourceHook runs every pre-hook regardless of who supersedes,
+	// cs2menus hooks the same ICvar chain we do, and KHook runs every pre-hook regardless of who supersedes,
 	// so without this we'd render the keypress as a chat message.
 	// HTML menus navigate on buttons and never touch say.
 	if (g_AdminMenus.EatsChatInput(slot))

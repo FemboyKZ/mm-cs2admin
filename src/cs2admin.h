@@ -21,17 +21,22 @@ public: // IMetamodListener
 	void OnPluginLoad(PluginId id);
 	void OnPluginUnload(PluginId id);
 
+public:
+	CS2APlugin();
+
 public: // Hooks
-	void Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick);
-	bool Hook_ClientConnect(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, bool unk1, CBufferString *pRejectReason);
-	void Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, const char *pszAddress,
-								bool bFakePlayer);
-	void Hook_ClientActive(CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid);
-	void Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName, uint64 xuid, const char *pszNetworkID);
-	void Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
-	void Hook_ClientSettingsChanged(CPlayerSlot slot);
-	void Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
-	void Hook_GameServerSteamAPIActivated();
+	KHook::Return<void> Hook_GameFrame(IServerGameDLL *, bool simulating, bool bFirstTick, bool bLastTick);
+	KHook::Return<bool> Hook_ClientConnect(IServerGameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID,
+										   bool unk1, CBufferString *pRejectReason);
+	KHook::Return<void> Hook_OnClientConnected(IServerGameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID,
+											   const char *pszAddress, bool bFakePlayer);
+	KHook::Return<void> Hook_ClientActive(IServerGameClients *, CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid);
+	KHook::Return<void> Hook_ClientDisconnect(IServerGameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
+											  uint64 xuid, const char *pszNetworkID);
+	KHook::Return<void> Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
+	KHook::Return<void> Hook_ClientSettingsChanged(IServerGameClients *, CPlayerSlot slot);
+	KHook::Return<void> Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
+	KHook::Return<void> Hook_GameServerSteamAPIActivated(IServerGameDLL *);
 
 public:
 	const char *GetAuthor()
@@ -89,6 +94,16 @@ private:
 	float m_flNextReconnect = 0.0f;
 	int m_iReconnectAttempts = 0;
 	bool m_bReconnectGaveUp = false;
+
+	KHook::Virtual<IServerGameDLL, void, bool, bool, bool> m_GameFrame;
+	KHook::Virtual<IServerGameClients, void, CPlayerSlot, bool, const char *, uint64> m_ClientActive;
+	KHook::Virtual<IServerGameClients, void, CPlayerSlot, ENetworkDisconnectionReason, const char *, uint64, const char *> m_ClientDisconnect;
+	KHook::Virtual<IServerGameClients, void, CPlayerSlot, char const *, int, uint64> m_ClientPutInServer;
+	KHook::Virtual<IServerGameClients, void, CPlayerSlot> m_ClientSettingsChanged;
+	KHook::Virtual<IServerGameClients, void, CPlayerSlot, const char *, uint64, const char *, const char *, bool> m_OnClientConnected;
+	KHook::Virtual<IServerGameClients, bool, CPlayerSlot, const char *, uint64, const char *, bool, CBufferString *> m_ClientConnect;
+	KHook::Virtual<ICvar, void, ConCommandRef, const CCommandContext &, const CCommand &> m_DispatchConCommand;
+	KHook::Virtual<IServerGameDLL, void> m_GameServerSteamAPIActivated;
 };
 
 extern CS2APlugin g_CS2APlugin;

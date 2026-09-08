@@ -53,18 +53,6 @@ CGameEntitySystem *GameEntitySystem()
 	return *reinterpret_cast<CGameEntitySystem **>(reinterpret_cast<uintptr_t>(g_pGameResourceServiceServer) + gamedata::kGameEntitySystemOffset);
 }
 
-// SourceHook hook declarations - must match interface method signatures exactly
-SH_DECL_HOOK3_void(IServerGameDLL, GameFrame, SH_NOATTRIB, 0, bool, bool, bool);
-SH_DECL_HOOK4_void(IServerGameClients, ClientActive, SH_NOATTRIB, 0, CPlayerSlot, bool, const char *, uint64);
-SH_DECL_HOOK5_void(IServerGameClients, ClientDisconnect, SH_NOATTRIB, 0, CPlayerSlot, ENetworkDisconnectionReason, const char *, uint64,
-				   const char *);
-SH_DECL_HOOK4_void(IServerGameClients, ClientPutInServer, SH_NOATTRIB, 0, CPlayerSlot, char const *, int, uint64);
-SH_DECL_HOOK1_void(IServerGameClients, ClientSettingsChanged, SH_NOATTRIB, 0, CPlayerSlot);
-SH_DECL_HOOK6_void(IServerGameClients, OnClientConnected, SH_NOATTRIB, 0, CPlayerSlot, const char *, uint64, const char *, const char *, bool);
-SH_DECL_HOOK6(IServerGameClients, ClientConnect, SH_NOATTRIB, 0, bool, CPlayerSlot, const char *, uint64, const char *, bool, CBufferString *);
-SH_DECL_HOOK3_void(ICvar, DispatchConCommand, SH_NOATTRIB, 0, ConCommandRef, const CCommandContext &, const CCommand &);
-SH_DECL_HOOK0_void(IServerGameDLL, GameServerSteamAPIActivated, SH_NOATTRIB, 0);
-
 CS2APlugin g_CS2APlugin;
 CS2AForwards g_CS2AForwards;
 
@@ -98,6 +86,19 @@ void ADMIN_LoadTranslations()
 }
 
 PLUGIN_EXPOSE(CS2APlugin, g_CS2APlugin);
+
+CS2APlugin::CS2APlugin()
+	: m_GameFrame(&IServerGameDLL::GameFrame, this, nullptr, &CS2APlugin::Hook_GameFrame),
+	  m_ClientActive(&IServerGameClients::ClientActive, this, nullptr, &CS2APlugin::Hook_ClientActive),
+	  m_ClientDisconnect(&IServerGameClients::ClientDisconnect, this, nullptr, &CS2APlugin::Hook_ClientDisconnect),
+	  m_ClientPutInServer(&IServerGameClients::ClientPutInServer, this, nullptr, &CS2APlugin::Hook_ClientPutInServer),
+	  m_ClientSettingsChanged(&IServerGameClients::ClientSettingsChanged, this, &CS2APlugin::Hook_ClientSettingsChanged, nullptr),
+	  m_OnClientConnected(&IServerGameClients::OnClientConnected, this, &CS2APlugin::Hook_OnClientConnected, nullptr),
+	  m_ClientConnect(&IServerGameClients::ClientConnect, this, &CS2APlugin::Hook_ClientConnect, nullptr),
+	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &CS2APlugin::Hook_DispatchConCommand, nullptr),
+	  m_GameServerSteamAPIActivated(&IServerGameDLL::GameServerSteamAPIActivated, this, nullptr, &CS2APlugin::Hook_GameServerSteamAPIActivated)
+{
+}
 
 bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bool late)
 {
@@ -156,15 +157,15 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	ADMIN_LoadTranslations();
 
-	SH_ADD_HOOK(IServerGameDLL, GameFrame, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameFrame), true);
-	SH_ADD_HOOK(IServerGameClients, ClientActive, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientActive), true);
-	SH_ADD_HOOK(IServerGameClients, ClientDisconnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientDisconnect), true);
-	SH_ADD_HOOK(IServerGameClients, ClientPutInServer, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientPutInServer), true);
-	SH_ADD_HOOK(IServerGameClients, ClientSettingsChanged, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientSettingsChanged), false);
-	SH_ADD_HOOK(IServerGameClients, OnClientConnected, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_OnClientConnected), false);
-	SH_ADD_HOOK(IServerGameClients, ClientConnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientConnect), false);
-	SH_ADD_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
-	SH_ADD_HOOK(IServerGameDLL, GameServerSteamAPIActivated, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameServerSteamAPIActivated), true);
+	m_GameFrame.Add(g_pServerGameDLL);
+	m_ClientActive.Add(g_pGameClients);
+	m_ClientDisconnect.Add(g_pGameClients);
+	m_ClientPutInServer.Add(g_pGameClients);
+	m_ClientSettingsChanged.Add(g_pGameClients);
+	m_OnClientConnected.Add(g_pGameClients);
+	m_ClientConnect.Add(g_pGameClients);
+	m_DispatchConCommand.Add(g_pICvar);
+	m_GameServerSteamAPIActivated.Add(g_pServerGameDLL);
 
 	g_pCVar = g_pICvar;
 	META_CONVAR_REGISTER(FCVAR_RELEASE | FCVAR_GAMEDLL);
@@ -183,17 +184,16 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 bool CS2APlugin::Unload(char *error, size_t maxlen)
 {
-	// Remove all SourceHook hooks first so no new requests come in.
-	SH_REMOVE_HOOK(IServerGameDLL, GameFrame, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameFrame), true);
-	SH_REMOVE_HOOK(IServerGameClients, ClientActive, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientActive), true);
-	SH_REMOVE_HOOK(IServerGameClients, ClientDisconnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientDisconnect), true);
-	SH_REMOVE_HOOK(IServerGameClients, ClientPutInServer, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientPutInServer), true);
-	SH_REMOVE_HOOK(IServerGameClients, ClientSettingsChanged, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientSettingsChanged), false);
-	SH_REMOVE_HOOK(IServerGameClients, OnClientConnected, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_OnClientConnected), false);
-	SH_REMOVE_HOOK(IServerGameClients, ClientConnect, g_pGameClients, SH_MEMBER(this, &CS2APlugin::Hook_ClientConnect), false);
-	SH_REMOVE_HOOK(ICvar, DispatchConCommand, g_pICvar, SH_MEMBER(this, &CS2APlugin::Hook_DispatchConCommand), false);
-	SH_REMOVE_HOOK(IServerGameDLL, GameServerSteamAPIActivated, g_pServerGameDLL, SH_MEMBER(this, &CS2APlugin::Hook_GameServerSteamAPIActivated),
-				   true);
+	// Remove all hooks first so no new requests come in.
+	m_GameFrame.Remove(g_pServerGameDLL);
+	m_ClientActive.Remove(g_pGameClients);
+	m_ClientDisconnect.Remove(g_pGameClients);
+	m_ClientPutInServer.Remove(g_pGameClients);
+	m_ClientSettingsChanged.Remove(g_pGameClients);
+	m_OnClientConnected.Remove(g_pGameClients);
+	m_ClientConnect.Remove(g_pGameClients);
+	m_DispatchConCommand.Remove(g_pICvar);
+	m_GameServerSteamAPIActivated.Remove(g_pServerGameDLL);
 
 	// Cancel any open external menus and drop the ICS2Menus pointer before our code unloads,
 	//  so mm-cs2menus never invokes a lambda inside this DLL.
@@ -543,19 +543,19 @@ void CS2APlugin::LookupServerID()
 						 });
 }
 
-bool CS2APlugin::Hook_ClientConnect(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, bool unk1,
-									CBufferString *pRejectReason)
+KHook::Return<bool> CS2APlugin::Hook_ClientConnect(IServerGameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID,
+												   bool unk1, CBufferString *pRejectReason)
 {
 	MMU_LOG_INFO("ClientConnect: slot=%d name=\"%s\" xuid=%llu\n", slot.Get(), pszName, (unsigned long long)xuid);
 
 	// Note: We cannot do async DB ban checks here and block, so IP-based bans
 	// are checked in ClientPutInServer along with SteamID bans. ClientConnect must return synchronously.
 
-	RETURN_META_VALUE(MRES_IGNORED, true);
+	return {KHook::Action::Ignore, true};
 }
 
-void CS2APlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, uint64 xuid, const char *pszNetworkID, const char *pszAddress,
-										bool bFakePlayer)
+KHook::Return<void> CS2APlugin::Hook_OnClientConnected(IServerGameClients *, CPlayerSlot slot, const char *pszName, uint64 xuid,
+													   const char *pszNetworkID, const char *pszAddress, bool bFakePlayer)
 {
 	int slotIdx = slot.Get();
 
@@ -564,26 +564,28 @@ void CS2APlugin::Hook_OnClientConnected(CPlayerSlot slot, const char *pszName, u
 
 	if (bFakePlayer)
 	{
-		return;
+		return {KHook::Action::Ignore};
 	}
 
 	MMU_LOG_INFO("Client connected: \"%s\" (%s) [%s] slot=%d\n", pszName, SteamID64ToAuthId(xuid).c_str(), pszAddress, slotIdx);
 
 	g_CS2AForwards.FireOnClientConnected(slotIdx, pszName, xuid, pszAddress);
+	return {KHook::Action::Ignore};
 }
 
-void CS2APlugin::Hook_ClientActive(CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid)
+KHook::Return<void> CS2APlugin::Hook_ClientActive(IServerGameClients *, CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid)
 {
 	// Player is fully in-game
+	return {KHook::Action::Ignore};
 }
 
-void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
+KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
 {
 	int slotIdx = slot.Get();
 	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slotIdx);
 	if (!player || player->fakePlayer)
 	{
-		return;
+		return {KHook::Action::Ignore};
 	}
 
 	// Player entity is created and Steam auth is confirmed - safe to check bans/admins
@@ -648,23 +650,25 @@ void CS2APlugin::Hook_ClientPutInServer(CPlayerSlot slot, char const *pszName, i
 	{
 		g_CS2ABanManager.CheckSleuth(slotIdx, steamid64, playerIP.c_str());
 	}
+	return {KHook::Action::Ignore};
 }
 
-void CS2APlugin::Hook_ClientDisconnect(CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName, uint64 xuid,
-									   const char *pszNetworkID)
+KHook::Return<void> CS2APlugin::Hook_ClientDisconnect(IServerGameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
+													  uint64 xuid, const char *pszNetworkID)
 {
 	int slotIdx = slot.Get();
 	g_CS2AForwards.FireOnClientDisconnect(slotIdx);
 	g_CS2ACommManager.OnClientDisconnect(slotIdx);
 	g_CS2ATagManager.OnClientDisconnect(slotIdx);
 	g_CS2APlayerManager.OnClientDisconnect(slotIdx);
+	return {KHook::Action::Ignore};
 }
 
-void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
 	if (!cmd.IsValidRef())
 	{
-		RETURN_META(MRES_IGNORED);
+		return {KHook::Action::Ignore};
 	}
 
 	CPlayerSlot slot = ctx.GetPlayerSlot();
@@ -673,13 +677,13 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 	// Ignore server console commands (slot -1)
 	if (slotIdx < 0 || slotIdx > MAXPLAYERS)
 	{
-		RETURN_META(MRES_IGNORED);
+		return {KHook::Action::Ignore};
 	}
 
 	const char *cmdName = cmd.GetName();
 	if (!cmdName)
 	{
-		RETURN_META(MRES_IGNORED);
+		return {KHook::Action::Ignore};
 	}
 
 	bool isSay = (strcmp(cmdName, "say") == 0);
@@ -687,7 +691,7 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 
 	if (!isSay && !isSayTeam)
 	{
-		RETURN_META(MRES_IGNORED);
+		return {KHook::Action::Ignore};
 	}
 
 	const char *message = args.ArgC() > 1 ? args.Arg(1) : "";
@@ -726,7 +730,7 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 
 						player->chatMessageCount = 0;
 						player->lastChatTime = curtime;
-						RETURN_META(MRES_SUPERCEDE);
+						return {KHook::Action::Supersede};
 					}
 				}
 				else
@@ -745,47 +749,48 @@ void CS2APlugin::Hook_DispatchConCommand(ConCommandRef cmd, const CCommandContex
 	if (g_CS2ACommandSystem.ProcessChatMessage(slotIdx, message, isSayTeam))
 	{
 		// Command was handled - suppress the chat message from appearing in chat
-		RETURN_META(MRES_SUPERCEDE);
+		return {KHook::Action::Supersede};
 	}
 
 	// Block gagged players from sending normal chat
 	if (g_CS2ACommandSystem.ShouldBlockChat(slotIdx))
 	{
 		MMU_LOG_INFO("Blocked chat from gagged player in slot %d\n", slotIdx);
-		RETURN_META(MRES_SUPERCEDE);
+		return {KHook::Action::Supersede};
 	}
 
 	// Render the line ourselves and stop the game from rendering its own.
 	if (g_CS2AChatProcessor.ShouldRender(slotIdx))
 	{
 		g_CS2AChatProcessor.RenderPlayerChat(slotIdx, mmu::StripSayQuotes(message).c_str(), isSayTeam);
-		RETURN_META(MRES_SUPERCEDE);
+		return {KHook::Action::Supersede};
 	}
 
-	RETURN_META(MRES_IGNORED);
+	return {KHook::Action::Ignore};
 }
 
-void CS2APlugin::Hook_ClientSettingsChanged(CPlayerSlot slot)
+KHook::Return<void> CS2APlugin::Hook_ClientSettingsChanged(IServerGameClients *, CPlayerSlot slot)
 {
 	// Could track name changes here if needed
+	return {KHook::Action::Ignore};
 }
 
-void CS2APlugin::Hook_GameServerSteamAPIActivated()
+KHook::Return<void> CS2APlugin::Hook_GameServerSteamAPIActivated(IServerGameDLL *)
 {
 	if (g_AdminSteamAPI.SteamUGC())
 	{
-		RETURN_META(MRES_IGNORED);
+		return {KHook::Action::Ignore};
 	}
 	g_AdminSteamAPI.Init();
-	RETURN_META(MRES_IGNORED);
+	return {KHook::Action::Ignore};
 }
 
-void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick)
+KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating, bool bFirstTick, bool bLastTick)
 {
 	CGlobalVars *globals = GetGameGlobals();
 	if (!globals)
 	{
-		return;
+		return {KHook::Action::Ignore};
 	}
 
 	float curtime = globals->curtime;
@@ -878,6 +883,7 @@ void CS2APlugin::Hook_GameFrame(bool simulating, bool bFirstTick, bool bLastTick
 			MMU_LOG_WARN("Database reconnection failed after %d attempts. Giving up and running offline.\n", maxAttempts);
 		}
 	}
+	return {KHook::Action::Ignore};
 }
 
 void CS2APlugin::OnLateLoad()

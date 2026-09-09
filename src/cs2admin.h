@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "version_gen.h"
-#include "public/ics2admin.h"
+#include "interfaces/cs2admin/ics2admin.h"
 
 class CS2APlugin : public ISmmPlugin, public IMetamodListener
 {

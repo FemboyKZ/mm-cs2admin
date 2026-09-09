@@ -3,7 +3,7 @@
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
-#include "src/public/forwards.h"
+#include "interfaces/cs2admin/forwards.h"
 #include "src/queue/offline_queue.h"
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"

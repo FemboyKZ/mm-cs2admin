@@ -17,7 +17,7 @@ void ShutdownConsoleCommands();
 #include "menu/menu_bridge.h"
 #include "tags/tag_manager.h"
 #include "admin/admin_manager.h"
-#include "public/forwards.h"
+#include "interfaces/cs2admin/forwards.h"
 #include "queue/offline_queue.h"
 #include "utils/print_utils.h"
 #include "utils/discord.h"

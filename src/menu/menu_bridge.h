@@ -4,6 +4,7 @@
 // Optional integration with the mm-cs2menus plugin (ICS2Menus).
 // There is no built-in menu backend, this bridge only wraps the external plugin.
 
+#include "mmu/interface_bridge.h"
 #include "src/common.h"
 
 #include <cstdint>
@@ -25,6 +26,9 @@ class AdminMenuBridge
 public:
 	// Fired when a player picks an item: (slot, itemIndex, item's info tag).
 	using SelectFn = std::function<void(int slot, int item, const std::string &info)>;
+
+	// Defined in the .cpp so this header stays free of the cs2menus API.
+	AdminMenuBridge();
 
 	// Acquire the ICS2Menus interface. Call from AllPluginsLoaded().
 	void Init();
@@ -50,7 +54,7 @@ public:
 	bool EatsChatInput(int slot) const;
 
 private:
-	ICS2Menus *m_pMenus = nullptr;
+	mmu::InterfaceBridge<ICS2Menus> m_menus;
 	// External menu handle currently displayed to each slot (0 = none).
 	uint32_t m_extHandle[MAXPLAYERS + 1] = {};
 };

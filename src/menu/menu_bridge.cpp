@@ -25,6 +25,8 @@ static MenuType ConfiguredMenuType()
 	return MenuType::Default;
 }
 
+AdminMenuBridge::AdminMenuBridge() : m_menus(CS2MENUS_INTERFACE) {}
+
 void AdminMenuBridge::Init()
 {
 	Refresh();
@@ -32,45 +34,38 @@ void AdminMenuBridge::Init()
 
 void AdminMenuBridge::Refresh()
 {
-	ICS2Menus *prev = m_pMenus;
-	ICS2Menus *now = nullptr;
-
-	if (g_SMAPI)
+	switch (m_menus.Refresh())
 	{
-		now = static_cast<ICS2Menus *>(g_SMAPI->MetaFactory(CS2MENUS_INTERFACE, nullptr, nullptr));
+		case mmu::BridgeChange::Unloaded:
+			// The handles we were holding belong to a now-dead instance.
+			for (int i = 0; i <= MAXPLAYERS; i++)
+			{
+				m_extHandle[i] = kInvalidMenuHandle;
+			}
+			MMU_LOG_WARN("mm-cs2menus unloaded - admin menus disabled.\n");
+			break;
+		case mmu::BridgeChange::Loaded:
+			MMU_LOG_INFO("mm-cs2menus found - menus enabled.\n");
+			break;
+		case mmu::BridgeChange::Unchanged:
+			break;
 	}
-
-	// If the menu plugin unloaded, our handles belong to a now-dead instance.
-	if (prev && !now)
-	{
-		for (int i = 0; i <= MAXPLAYERS; i++)
-		{
-			m_extHandle[i] = kInvalidMenuHandle;
-		}
-		MMU_LOG_WARN("mm-cs2menus unloaded - admin menus disabled.\n");
-	}
-	else if (!prev && now)
-	{
-		MMU_LOG_INFO("mm-cs2menus found - menus enabled.\n");
-	}
-
-	m_pMenus = now;
 }
 
 void AdminMenuBridge::Shutdown()
 {
-	if (m_pMenus)
+	if (m_menus)
 	{
 		for (int i = 0; i <= MAXPLAYERS; i++)
 		{
 			if (m_extHandle[i] != kInvalidMenuHandle)
 			{
-				m_pMenus->CancelMenu(i);
+				m_menus->CancelMenu(i);
 			}
 		}
 	}
 
-	m_pMenus = nullptr;
+	m_menus.Shutdown();
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
 		m_extHandle[i] = kInvalidMenuHandle;
@@ -79,31 +74,31 @@ void AdminMenuBridge::Shutdown()
 
 bool AdminMenuBridge::Available() const
 {
-	return m_pMenus != nullptr;
+	return m_menus.Available();
 }
 
 void AdminMenuBridge::CancelMenu(int slot)
 {
-	if (m_pMenus && slot >= 0 && slot <= MAXPLAYERS)
+	if (m_menus && slot >= 0 && slot <= MAXPLAYERS)
 	{
-		m_pMenus->CancelMenu(slot);
+		m_menus->CancelMenu(slot);
 	}
 }
 
 bool AdminMenuBridge::EatsChatInput(int slot) const
 {
-	if (!m_pMenus || slot < 0 || slot > MAXPLAYERS)
+	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
 	{
 		return false;
 	}
 	// Ask for the resolved type rather than the menu's own:
 	// "default" defers to the menu plugin's config, so only the per-viewer answer says what's on screen.
-	return m_pMenus->HasMenu(slot) && m_pMenus->GetActiveMenuType(slot) == MenuType::Chat;
+	return m_menus->HasMenu(slot) && m_menus->GetActiveMenuType(slot) == MenuType::Chat;
 }
 
 bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect)
 {
-	if (!m_pMenus || slot < 0 || slot > MAXPLAYERS)
+	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
 	{
 		return false;
 	}
@@ -116,14 +111,14 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 		infos.push_back(item.info);
 	}
 
-	MenuHandle h = m_pMenus->CreateMenu(ConfiguredMenuType(), title,
-										[onSelect, infos](MenuHandle, int s, int item)
-										{
-											if (onSelect && item >= 0 && item < static_cast<int>(infos.size()))
-											{
-												onSelect(s, item, infos[item]);
-											}
-										});
+	MenuHandle h = m_menus->CreateMenu(ConfiguredMenuType(), title,
+									   [onSelect, infos](MenuHandle, int s, int item)
+									   {
+										   if (onSelect && item >= 0 && item < static_cast<int>(infos.size()))
+										   {
+											   onSelect(s, item, infos[item]);
+										   }
+									   });
 	if (h == kInvalidMenuHandle)
 	{
 		return false;
@@ -131,35 +126,35 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 
 	for (const auto &item : items)
 	{
-		m_pMenus->AddItem(h, item.text.c_str(), item.info.c_str(), item.disabled);
+		m_menus->AddItem(h, item.text.c_str(), item.info.c_str(), item.disabled);
 	}
-	m_pMenus->SetExitButton(h, true);
-	m_pMenus->SetCloseOnSelect(h, true);
+	m_menus->SetExitButton(h, true);
+	m_menus->SetCloseOnSelect(h, true);
 
 	// Apply configured HTML nav-key overrides.
 	// MenuButton::Default delegates back to the menu plugin's own binding.
-	m_pMenus->SetMenuKey(h, MenuNavAction::Up, ParseMenuButton(g_CS2AConfig.menuNavUp));
-	m_pMenus->SetMenuKey(h, MenuNavAction::Down, ParseMenuButton(g_CS2AConfig.menuNavDown));
-	m_pMenus->SetMenuKey(h, MenuNavAction::Select, ParseMenuButton(g_CS2AConfig.menuNavSelect));
-	m_pMenus->SetMenuKey(h, MenuNavAction::Back, ParseMenuButton(g_CS2AConfig.menuNavBack));
+	m_menus->SetMenuKey(h, MenuNavAction::Up, ParseMenuButton(g_CS2AConfig.menuNavUp));
+	m_menus->SetMenuKey(h, MenuNavAction::Down, ParseMenuButton(g_CS2AConfig.menuNavDown));
+	m_menus->SetMenuKey(h, MenuNavAction::Select, ParseMenuButton(g_CS2AConfig.menuNavSelect));
+	m_menus->SetMenuKey(h, MenuNavAction::Back, ParseMenuButton(g_CS2AConfig.menuNavBack));
 
 	// One-shot: free the menu when its display ends, and forget the handle.
-	m_pMenus->SetMenuEndCallback(h,
-								 [this](MenuHandle menu, int s, MenuEndReason)
-								 {
-									 if (s >= 0 && s <= MAXPLAYERS && m_extHandle[s] == menu)
-									 {
-										 m_extHandle[s] = kInvalidMenuHandle;
-									 }
-									 if (m_pMenus)
-									 {
-										 m_pMenus->DestroyMenu(menu);
-									 }
-								 });
+	m_menus->SetMenuEndCallback(h,
+								[this](MenuHandle menu, int s, MenuEndReason)
+								{
+									if (s >= 0 && s <= MAXPLAYERS && m_extHandle[s] == menu)
+									{
+										m_extHandle[s] = kInvalidMenuHandle;
+									}
+									if (m_menus)
+									{
+										m_menus->DestroyMenu(menu);
+									}
+								});
 
 	// Record before DisplayMenu: a chained ShowMenu replaces the current menu for
 	// the slot and fires its end callback, which must not clear the handle we just set.
 	m_extHandle[slot] = h;
-	m_pMenus->DisplayMenu(h, slot, kMenuDuration);
+	m_menus->DisplayMenu(h, slot, kMenuDuration);
 	return true;
 }

@@ -1,4 +1,5 @@
 #include "player_manager.h"
+#include "mmu/str_utils.h"
 #include "mmu/log.h"
 #include "src/admin/admin_manager.h"
 #include "src/lang/translations.h"
@@ -175,13 +176,6 @@ std::string GetAdminIP(int adminSlot)
 	return "";
 }
 
-static std::string ToLowerStr(const std::string &s)
-{
-	std::string out = s;
-	std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-	return out;
-}
-
 TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 {
 	TargetResult result;
@@ -200,7 +194,7 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 	// @ group targets
 	if (pat[0] == '@')
 	{
-		std::string group = ToLowerStr(pat.substr(1));
+		std::string group = str::ToLower(pat.substr(1));
 		result.isMultiTarget = true;
 
 		if (group == "me")
@@ -371,7 +365,7 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 	// & exact name targeting (case insensitive)
 	if (pat[0] == '&')
 	{
-		std::string exactName = ToLowerStr(pat.substr(1));
+		std::string exactName = str::ToLower(pat.substr(1));
 		for (int i = 0; i < maxClients; i++)
 		{
 			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
@@ -380,7 +374,7 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 				continue;
 			}
 
-			if (ToLowerStr(p->name) == exactName)
+			if (str::ToLower(p->name) == exactName)
 			{
 				result.slots.push_back(i);
 				return result;
@@ -433,7 +427,7 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 	}
 
 	// Partial name match (single target only)
-	std::string search = ToLowerStr(pat);
+	std::string search = str::ToLower(pat);
 	int found = -1;
 	int matches = 0;
 
@@ -445,7 +439,7 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 			continue;
 		}
 
-		std::string name = ToLowerStr(p->name);
+		std::string name = str::ToLower(p->name);
 		if (name.find(search) != std::string::npos)
 		{
 			found = i;

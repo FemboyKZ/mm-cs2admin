@@ -1,5 +1,6 @@
 #include "discord.h"
 #include "mmu/http_client.h"
+#include "mmu/json.h"
 #include "mmu/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
@@ -30,46 +31,6 @@ bool CS2ADiscord::IsEnabled() const
 	return !g_CS2AConfig.discordWebhookUrl.empty();
 }
 
-static std::string JsonEscape(const std::string &input)
-{
-	std::string output;
-	output.reserve(input.size() + 16);
-	for (char c : input)
-	{
-		switch (c)
-		{
-			case '"':
-				output += "\\\"";
-				break;
-			case '\\':
-				output += "\\\\";
-				break;
-			case '\n':
-				output += "\\n";
-				break;
-			case '\r':
-				output += "\\r";
-				break;
-			case '\t':
-				output += "\\t";
-				break;
-			default:
-				if (static_cast<unsigned char>(c) < 0x20)
-				{
-					char buf[8];
-					snprintf(buf, sizeof(buf), "\\u%04x", (unsigned char)c);
-					output += buf;
-				}
-				else
-				{
-					output += c;
-				}
-				break;
-		}
-	}
-	return output;
-}
-
 void CS2ADiscord::SendTextMessage(const char *content)
 {
 	if (!IsEnabled() || !content || !*content)
@@ -77,7 +38,7 @@ void CS2ADiscord::SendTextMessage(const char *content)
 		return;
 	}
 
-	std::string json = "{\"content\":\"" + JsonEscape(content) + "\"}";
+	std::string json = "{\"content\":\"" + mmu::json::Escape(content) + "\"}";
 	SendPayload(json);
 }
 
@@ -89,12 +50,12 @@ void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, i
 	}
 
 	std::string json = "{\"embeds\":[{";
-	json += "\"title\":\"" + JsonEscape(title ? title : "") + "\",";
-	json += "\"description\":\"" + JsonEscape(description ? description : "") + "\",";
+	json += "\"title\":\"" + mmu::json::Escape(title ? title : "") + "\",";
+	json += "\"description\":\"" + mmu::json::Escape(description ? description : "") + "\",";
 	json += "\"color\":" + std::to_string(color);
 	if (footer && *footer)
 	{
-		json += ",\"footer\":{\"text\":\"" + JsonEscape(footer) + "\"}";
+		json += ",\"footer\":{\"text\":\"" + mmu::json::Escape(footer) + "\"}";
 	}
 	json += "}]}";
 
@@ -118,19 +79,19 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 			CUtlString s = hn.GetString();
 			if (s.Get() && *s.Get())
 			{
-				desc += "**Server:** ``" + JsonEscape(s.Get()) + "``\n";
+				desc += "**Server:** ``" + mmu::json::Escape(s.Get()) + "``\n";
 			}
 		}
 	}
 
-	desc += "**Admin:** ``" + JsonEscape(adminName ? adminName : "Console") + "``";
+	desc += "**Admin:** ``" + mmu::json::Escape(adminName ? adminName : "Console") + "``";
 	if (adminSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(adminSteamid64) + "``";
 	}
 	desc += "\n";
-	desc += "**Action:** ``" + JsonEscape(action ? action : "") + "``\n";
-	desc += "**Target:** ``" + JsonEscape(targetName ? targetName : "") + "``";
+	desc += "**Action:** ``" + mmu::json::Escape(action ? action : "") + "``\n";
+	desc += "**Target:** ``" + mmu::json::Escape(targetName ? targetName : "") + "``";
 	if (targetSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(targetSteamid64) + "``";
@@ -140,12 +101,12 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 	if (durationMinutes >= 0)
 	{
 		std::string dur = (durationMinutes == 0) ? "Permanent" : ADMIN_FormatDuration(durationMinutes);
-		desc += "**Duration:** ``" + JsonEscape(dur) + "``\n";
+		desc += "**Duration:** ``" + mmu::json::Escape(dur) + "``\n";
 	}
 
 	if (reason && *reason)
 	{
-		desc += "**Reason:** ``" + JsonEscape(reason) + "``\n";
+		desc += "**Reason:** ``" + mmu::json::Escape(reason) + "``\n";
 	}
 
 	if (output && *output)
@@ -165,7 +126,7 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 			capped.replace(pos, 3, "''`");
 			pos += 3;
 		}
-		desc += "**Output:**\n```\n" + JsonEscape(capped) + "\n```";
+		desc += "**Output:**\n```\n" + mmu::json::Escape(capped) + "\n```";
 	}
 
 	int color = 0xE74C3C; // red default
@@ -203,23 +164,23 @@ void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName,
 			CUtlString s = hn.GetString();
 			if (s.Get() && *s.Get())
 			{
-				desc += "**Server:** ``" + JsonEscape(s.Get()) + "``\n";
+				desc += "**Server:** ``" + mmu::json::Escape(s.Get()) + "``\n";
 			}
 		}
 	}
-	desc += "**Reporter:** ``" + JsonEscape(reporterName ? reporterName : "") + "``";
+	desc += "**Reporter:** ``" + mmu::json::Escape(reporterName ? reporterName : "") + "``";
 	if (reporterSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(reporterSteamid64) + "``";
 	}
 	desc += "\n";
-	desc += "**Target:** ``" + JsonEscape(targetName ? targetName : "") + "``";
+	desc += "**Target:** ``" + mmu::json::Escape(targetName ? targetName : "") + "``";
 	if (targetSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(targetSteamid64) + "``";
 	}
 	desc += "\n";
-	desc += "**Reason:** ``" + JsonEscape(reason ? reason : "") + "``\n";
+	desc += "**Reason:** ``" + mmu::json::Escape(reason ? reason : "") + "``\n";
 
 	SendEmbedMessage("Player Report", desc.c_str(), 0xF39C12, g_CS2AConfig.discordFooterText.c_str());
 }

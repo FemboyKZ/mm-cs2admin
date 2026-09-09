@@ -1,4 +1,5 @@
 #include "config.h"
+#include "mmu/str_utils.h"
 #include "mmu/log.h"
 #include "mmu/chat_colors.h"
 #include "mmu/kv_parser.h"
@@ -10,13 +11,6 @@
 
 CS2AConfig g_CS2AConfig;
 
-static std::string ToLower(const std::string &s)
-{
-	std::string out = s;
-	std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-	return out;
-}
-
 // Parse a section body (after the opening brace).
 // Calls handler(sectionName, key, value) for each keyvalue pair.
 // Recurses into subsections.
@@ -25,8 +19,8 @@ typedef kv::Handler KVHandler;
 static void ConfigHandler(const std::string &section, const std::string &key, const std::string &value, void *userdata)
 {
 	CS2AConfig *cfg = static_cast<CS2AConfig *>(userdata);
-	std::string sec = ToLower(section);
-	std::string k = ToLower(key);
+	std::string sec = str::ToLower(section);
+	std::string k = str::ToLower(key);
 
 	if (sec == "config")
 	{
@@ -293,7 +287,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "type")
 		{
-			cfg->menuType = ToLower(value);
+			cfg->menuType = str::ToLower(value);
 		}
 		else if (k == "durations")
 		{
@@ -305,19 +299,19 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "navup")
 		{
-			cfg->menuNavUp = ToLower(value);
+			cfg->menuNavUp = str::ToLower(value);
 		}
 		else if (k == "navdown")
 		{
-			cfg->menuNavDown = ToLower(value);
+			cfg->menuNavDown = str::ToLower(value);
 		}
 		else if (k == "navselect")
 		{
-			cfg->menuNavSelect = ToLower(value);
+			cfg->menuNavSelect = str::ToLower(value);
 		}
 		else if (k == "navback")
 		{
-			cfg->menuNavBack = ToLower(value);
+			cfg->menuNavBack = str::ToLower(value);
 		}
 	}
 }

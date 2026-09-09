@@ -1,4 +1,5 @@
 #include "map_manager.h"
+#include "mmu/str_utils.h"
 #include "mmu/log.h"
 #include "src/common.h"
 #include "mmu/workshop.h"
@@ -33,24 +34,6 @@ static void IssueWorkshopChange(const std::string &workshopId)
 	char cmd[256];
 	snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", workshopId.c_str());
 	g_pEngine->ServerCommand(cmd);
-}
-
-static std::string TrimString(const std::string &s)
-{
-	size_t start = s.find_first_not_of(" \t\r\n");
-	if (start == std::string::npos)
-	{
-		return "";
-	}
-	size_t end = s.find_last_not_of(" \t\r\n");
-	return s.substr(start, end - start + 1);
-}
-
-static std::string ToLower(const std::string &s)
-{
-	std::string result = s;
-	std::transform(result.begin(), result.end(), result.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-	return result;
 }
 
 // Scan <gamedir>/maps for *.vpk map files.
@@ -102,11 +85,11 @@ void CS2AMapManager::ScanLocalMaps()
 
 std::string CS2AMapManager::MatchLocalMap(const std::string &input, std::string &error) const
 {
-	std::string search = ToLower(input);
+	std::string search = str::ToLower(input);
 
 	for (const std::string &name : m_localMaps)
 	{
-		if (ToLower(name) == search)
+		if (str::ToLower(name) == search)
 		{
 			return name;
 		}
@@ -115,7 +98,7 @@ std::string CS2AMapManager::MatchLocalMap(const std::string &input, std::string 
 	std::vector<const std::string *> matches;
 	for (const std::string &name : m_localMaps)
 	{
-		if (ToLower(name).find(search) != std::string::npos)
+		if (str::ToLower(name).find(search) != std::string::npos)
 		{
 			matches.push_back(&name);
 		}
@@ -164,7 +147,7 @@ bool CS2AMapManager::LoadMapList()
 	std::string line;
 	while (std::getline(file, line))
 	{
-		line = TrimString(line);
+		line = str::Trim(line);
 
 		if (line.empty() || line[0] == '/' || line[0] == '#')
 		{
@@ -177,8 +160,8 @@ bool CS2AMapManager::LoadMapList()
 		size_t colonPos = line.rfind(':');
 		if (colonPos != std::string::npos)
 		{
-			std::string beforeColon = TrimString(line.substr(0, colonPos));
-			std::string afterColon = TrimString(line.substr(colonPos + 1));
+			std::string beforeColon = str::Trim(line.substr(0, colonPos));
+			std::string afterColon = str::Trim(line.substr(colonPos + 1));
 
 			bool isWorkshopId = !afterColon.empty() && std::all_of(afterColon.begin(), afterColon.end(), ::isdigit);
 
@@ -234,11 +217,11 @@ const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error) c
 		return nullptr;
 	}
 
-	std::string search = ToLower(input);
+	std::string search = str::ToLower(input);
 
 	for (const auto &entry : m_maps)
 	{
-		if (ToLower(entry.mapName) == search)
+		if (str::ToLower(entry.mapName) == search)
 		{
 			return &entry;
 		}
@@ -255,7 +238,7 @@ const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error) c
 	std::vector<const MapEntry *> matches;
 	for (const auto &entry : m_maps)
 	{
-		if (ToLower(entry.mapName).find(search) != std::string::npos)
+		if (str::ToLower(entry.mapName).find(search) != std::string::npos)
 		{
 			matches.push_back(&entry);
 		}

@@ -13,7 +13,7 @@ extern mmu::Translations g_CS2ATranslations;
 std::string ADMIN_SlotLanguage(int slot);
 
 // Defined in cs2admin.cpp.
-// Re-acquires ClientCvarValue and reloads phrase tables. Call after (re)loading the plugin config.
+// Reloads phrase tables. Call after (re)loading the plugin config.
 void ADMIN_LoadTranslations();
 
 // Translate `phrase` into the language of the client in `slot`.

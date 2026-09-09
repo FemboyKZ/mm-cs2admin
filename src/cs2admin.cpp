@@ -24,6 +24,7 @@ void ShutdownConsoleCommands();
 #include "utils/discord.h"
 
 #include "mmu/chat_command.h"
+#include "mmu/cvarquery.h"
 #include "mmu/gamesystem.h"
 #include "mmu/log.h"
 
@@ -36,8 +37,6 @@ void ShutdownConsoleCommands();
 #include <engine/igameeventsystem.h>
 #include <filesystem.h>
 #include "steam/steam_gameserver.h"
-
-#include "iclientcvarvalue.h"
 
 // Entity system global (declared extern in common.h)
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
@@ -64,23 +63,17 @@ ICvar *g_pICvar = nullptr;
 IGameEventSystem *g_pGameEventSystem = nullptr;
 // g_pFullFileSystem is defined by interfaces.lib
 
-// Optional. Provides each client's cl_language for phrase translation.
-// May load after us, so it is re-acquired whenever translations reload.
-static IClientCvarValue *g_pClientCvarValue = nullptr;
-
 // Steam game-server API context used for workshop validation (ISteamUGC).
 CSteamGameServerAPIContext g_AdminSteamAPI;
 
 std::string ADMIN_SlotLanguage(int slot)
 {
-	const char *raw = g_pClientCvarValue ? g_pClientCvarValue->GetClientLanguage(CPlayerSlot(slot)) : nullptr;
+	const char *raw = mmu::cvarquery::GetClientLanguage(slot);
 	return g_CS2ATranslations.MapClientLanguage(raw);
 }
 
-// Re-acquire ClientCvarValue and reload phrase tables.
 void ADMIN_LoadTranslations()
 {
-	g_pClientCvarValue = static_cast<IClientCvarValue *>(g_SMAPI->MetaFactory(CLIENTCVARVALUE_INTERFACE, nullptr, nullptr));
 	g_CS2ATranslations.Load(g_SMAPI->GetBaseDir(), "cs2admin");
 	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.defaultLanguage);
 }
@@ -122,6 +115,9 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	GET_V_IFACE_CURRENT(GetFileSystemFactory, g_pFullFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 
 	g_SMAPI->AddListener(this, this);
+
+	// Non fatal, translations fall back to the default language.
+	mmu::cvarquery::Init(g_pEngine);
 
 	m_bLateLoaded = late;
 	m_bSkipLevelInitReload = !late;
@@ -195,8 +191,11 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	m_DispatchConCommand.Remove(g_pICvar);
 	m_GameServerSteamAPIActivated.Remove(g_pServerGameDLL);
 
+	// Drops pending callbacks pointing into this binary.
+	mmu::cvarquery::Shutdown();
+
 	// Cancel any open external menus and drop the ICS2Menus pointer before our code unloads,
-	//  so mm-cs2menus never invokes a lambda inside this DLL.
+	// so mm-cs2menus never invokes a lambda inside this binary.
 	g_AdminMenus.Shutdown();
 
 	// Unregister and delete all dynamically created mm_* ConCommands.
@@ -561,6 +560,7 @@ KHook::Return<void> CS2APlugin::Hook_OnClientConnected(IServerGameClients *, CPl
 
 	// Track player - but defer ban/admin checks until authentication is confirmed (ClientPutInServer)
 	g_CS2APlayerManager.OnClientConnected(slotIdx, pszName, xuid, pszNetworkID, pszAddress, bFakePlayer);
+	mmu::cvarquery::OnClientConnected(slotIdx, bFakePlayer);
 
 	if (bFakePlayer)
 	{
@@ -661,6 +661,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientDisconnect(IServerGameClients *, CPla
 	g_CS2ACommManager.OnClientDisconnect(slotIdx);
 	g_CS2ATagManager.OnClientDisconnect(slotIdx);
 	g_CS2APlayerManager.OnClientDisconnect(slotIdx);
+	mmu::cvarquery::OnClientDisconnect(slotIdx);
 	return {KHook::Action::Ignore};
 }
 

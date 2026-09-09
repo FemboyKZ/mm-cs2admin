@@ -5,7 +5,6 @@
 
 void ShutdownConsoleCommands();
 #include "config/config.h"
-#include "config/gamedata.h"
 #include "db/database.h"
 #include "player/player_manager.h"
 #include "ban/ban_manager.h"
@@ -25,6 +24,7 @@ void ShutdownConsoleCommands();
 
 #include "mmu/chat_command.h"
 #include "mmu/cvarquery.h"
+#include "mmu/entity/entity_system.h"
 #include "mmu/gamesystem.h"
 #include "mmu/log.h"
 
@@ -42,14 +42,10 @@ void ShutdownConsoleCommands();
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
 CGameEntitySystem *g_pEntitySystem = nullptr;
 
+// Required by the SDK: entity2 calls this to reach the entity system.
 CGameEntitySystem *GameEntitySystem()
 {
-	if (!g_pGameResourceServiceServer)
-	{
-		return nullptr;
-	}
-
-	return *reinterpret_cast<CGameEntitySystem **>(reinterpret_cast<uintptr_t>(g_pGameResourceServiceServer) + gamedata::kGameEntitySystemOffset);
+	return mmu::EntitySystem();
 }
 
 CS2APlugin g_CS2APlugin;
@@ -126,8 +122,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	// Engine-native workshop map checks.
 	// On failure EnsureWorkshopMapReady silently falls back to the .vpk folder scan + ACF prune path.
-	if (!mmu::gamesystem::Resolve(reinterpret_cast<const void *>(g_pServerGameDLL), gamedata::kGameSystemFactorySig,
-								  gamedata::kGameSystemFactorySigLen))
+	if (!mmu::gamesystem::Resolve(reinterpret_cast<const void *>(g_pServerGameDLL)))
 	{
 		MMU_LOG_WARN("Game system list unresolved; workshop map checks fall back to ACF pruning.\n");
 	}

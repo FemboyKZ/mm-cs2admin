@@ -1173,7 +1173,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							snprintf(query, sizeof(query),
 									 "INSERT INTO %s_submissions (submitted, SteamId, name, email, reason, ip, server) "
 									 "VALUES (%lld, '%s', '%s', '%s', '%s', '', %d)",
-									 g_CS2AConfig.databasePrefix.c_str(), now, escAuth.c_str(), escName.c_str(), escTargetInfo.c_str(),
+									 g_CS2AConfig.database.prefix.c_str(), now, escAuth.c_str(), escName.c_str(), escTargetInfo.c_str(),
 									 escReason.c_str(), g_CS2ABanManager.GetServerID());
 
 							g_CS2ADatabase.Query(query, [](ISQLQuery *) {});

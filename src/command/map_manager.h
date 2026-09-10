@@ -1,6 +1,8 @@
 #ifndef _INCLUDE_ADMIN_MAP_MANAGER_H_
 #define _INCLUDE_ADMIN_MAP_MANAGER_H_
 
+#include "mmu/workshop.h"
+
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -33,7 +35,7 @@ public:
 	// True while a change is waiting on a workshop download.
 	bool IsChangePending() const
 	{
-		return m_pendingChange;
+		return m_pending.Active();
 	}
 
 	// Drops a deferred change. The map already moved, so honouring it would be a surprise.
@@ -67,12 +69,9 @@ private:
 	std::vector<MapEntry> m_maps;
 	std::vector<std::string> m_localMaps;
 
-	bool m_pendingChange = false;
-	uint64_t m_pendingFileId = 0;
+	mmu::workshop::PendingDownload m_pending;
 	std::string m_pendingWorkshopId;
 	std::string m_pendingLabel;
-	float m_pendingDeadline = 0.0f;
-	float m_pendingNextAnnounce = 0.0f;
 };
 
 extern CS2AMapManager g_CS2AMapManager;

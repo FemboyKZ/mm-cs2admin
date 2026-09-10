@@ -27,7 +27,8 @@ static bool SlotIsAdmin(int slot)
 
 static mmu::ChatPrinter &Printer()
 {
-	static mmu::ChatPrinter printer = [] {
+	static mmu::ChatPrinter printer = []
+	{
 		mmu::ChatPrinter p;
 		mmu::ChatPrinter::Setup s;
 		s.translations = &g_CS2ATranslations;
@@ -42,21 +43,18 @@ static mmu::ChatPrinter &Printer()
 	return printer;
 }
 
-void ADMIN_PrintToClient(int slot, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	Printer().ClientConsoleV(slot, fmt, args);
-	va_end(args);
-}
-
-void ADMIN_PrintToAll(const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	Printer().ConsoleToAllV(fmt, args);
-	va_end(args);
-}
+MMU_PRINT_SLOT_FN(ADMIN_PrintToClient, Printer().ClientConsoleV(slot, fmt, args))
+MMU_PRINT_GLOBAL_FN(ADMIN_PrintToAll, Printer().ConsoleToAllV(fmt, args))
+MMU_PRINT_SLOT_FN(ADMIN_PrintToChat, Printer().ChatToSlotV(slot, fmt, args))
+// Callers embed the prefix themselves.
+MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAll, Printer().ChatToAllV(fmt, args, false))
+MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAdmins, Printer().ChatToPredV(&SlotIsAdmin, fmt, args))
+MMU_PRINT_SLOT_FN(ADMIN_ReplyToCommand, Printer().ReplyV(slot, fmt, args))
+MMU_PRINT_SLOT_FN(ADMIN_PrintToClientT, Printer().ClientConsoleTV(slot, fmt, args))
+MMU_PRINT_SLOT_FN(ADMIN_PrintToChatT, Printer().ChatToSlotTV(slot, fmt, args))
+MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAllT, Printer().ChatToAllTV(fmt, args))
+MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAdminsT, Printer().ChatToPredTV(&SlotIsAdmin, fmt, args))
+MMU_PRINT_SLOT_FN(ADMIN_ReplyToCommandT, Printer().ReplyTV(slot, fmt, args))
 
 void ADMIN_LogAction(int adminSlot, const char *message)
 {
@@ -66,7 +64,7 @@ void ADMIN_LogAction(int adminSlot, const char *message)
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	std::string escapedMsg = g_CS2ADatabase.Escape(message ? message : "");
 
 	int aid = 0;
@@ -87,77 +85,4 @@ void ADMIN_LogAction(int adminSlot, const char *message)
 			 prefix.c_str(), escapedMsg.c_str(), aid, now);
 
 	g_CS2ADatabase.Query(query, nullptr);
-}
-
-void ADMIN_PrintToChat(int slot, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	Printer().ChatToSlotV(slot, fmt, args);
-	va_end(args);
-}
-
-void ADMIN_ChatToAll(const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	// Callers already include chatPrefix in the message.
-	Printer().ChatToAllV(fmt, args, false);
-	va_end(args);
-}
-
-void ADMIN_ChatToAdmins(const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	Printer().ChatToPredV(&SlotIsAdmin, fmt, args);
-	va_end(args);
-}
-
-void ADMIN_ReplyToCommand(int slot, const char *fmt, ...)
-{
-	va_list args;
-	va_start(args, fmt);
-	Printer().ReplyV(slot, fmt, args);
-	va_end(args);
-}
-
-void ADMIN_PrintToClientT(int slot, const char *phrase, ...)
-{
-	va_list args;
-	va_start(args, phrase);
-	Printer().ClientConsoleTV(slot, phrase, args);
-	va_end(args);
-}
-
-void ADMIN_PrintToChatT(int slot, const char *phrase, ...)
-{
-	va_list args;
-	va_start(args, phrase);
-	Printer().ChatToSlotTV(slot, phrase, args);
-	va_end(args);
-}
-
-void ADMIN_ChatToAllT(const char *phrase, ...)
-{
-	va_list args;
-	va_start(args, phrase);
-	Printer().ChatToAllTV(phrase, args);
-	va_end(args);
-}
-
-void ADMIN_ChatToAdminsT(const char *phrase, ...)
-{
-	va_list args;
-	va_start(args, phrase);
-	Printer().ChatToPredTV(&SlotIsAdmin, phrase, args);
-	va_end(args);
-}
-
-void ADMIN_ReplyToCommandT(int slot, const char *phrase, ...)
-{
-	va_list args;
-	va_start(args, phrase);
-	Printer().ReplyTV(slot, phrase, args);
-	va_end(args);
 }

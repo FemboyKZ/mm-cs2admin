@@ -28,7 +28,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 	}
 
 	std::string suffix = g_CS2ADatabase.Escape(SteamID64ToSuffix(steamid64).c_str());
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	long long now = (long long)std::time(nullptr);
 	std::string authCond = CS2ADatabase::AuthMatch("c.authid", suffix);
@@ -155,7 +155,7 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	std::string escapedAuth = g_CS2ADatabase.Escape(authid);
 	std::string escapedName = g_CS2ADatabase.Escape(name ? name : "");
 	std::string escapedReason = g_CS2ADatabase.Escape(reason ? reason : "");
@@ -205,7 +205,7 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	std::string suffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(std::string(authid)).c_str());
 

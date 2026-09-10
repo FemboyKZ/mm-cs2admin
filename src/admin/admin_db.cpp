@@ -20,7 +20,7 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	char query[512];
 	snprintf(query, sizeof(query), "SELECT id, name, flags, immunity FROM %s_srvgroups ORDER BY id", prefix.c_str());
 
@@ -105,7 +105,7 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	char query[512];
 	snprintf(query, sizeof(query),
 			 "SELECT so.group_id, so.type, so.name, so.access "
@@ -207,7 +207,7 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	char query[512];
 	snprintf(query, sizeof(query), "SELECT type, name, flags FROM %s_overrides ORDER BY id", prefix.c_str());
 
@@ -290,7 +290,7 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	char query[2048];
 
 	if (g_CS2ADatabase.IsSQLite())

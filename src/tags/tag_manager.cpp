@@ -438,7 +438,7 @@ void CS2ATagManager::EnsureSchema()
 		return;
 	}
 
-	const char *prefix = g_CS2AConfig.databasePrefix.c_str();
+	const char *prefix = g_CS2AConfig.database.prefix.c_str();
 	char query[1024];
 
 	// Ours rather than SBPP's, so it has to be created on both backends.
@@ -500,7 +500,7 @@ void CS2ATagManager::LoadPlayerPref(int slot, uint64_t steamid64)
 
 			g_CS2ATagManager.ApplyLoadedPref(slot, rs->GetString(0), rs->GetInt(1) != 0);
 		},
-		"SELECT tag_id, disabled FROM %s_cs2a_tagprefs WHERE steamid64 = %llu", g_CS2AConfig.databasePrefix.c_str(), (unsigned long long)steamid64);
+		"SELECT tag_id, disabled FROM %s_cs2a_tagprefs WHERE steamid64 = %llu", g_CS2AConfig.database.prefix.c_str(), (unsigned long long)steamid64);
 }
 
 void CS2ATagManager::ApplyLoadedPref(int slot, const char *tagId, bool disabled)
@@ -522,7 +522,7 @@ void CS2ATagManager::SavePlayerPref(int slot)
 		return;
 	}
 
-	const char *prefix = g_CS2AConfig.databasePrefix.c_str();
+	const char *prefix = g_CS2AConfig.database.prefix.c_str();
 	std::string escapedId = g_CS2ADatabase.Escape(m_selected[slot].c_str());
 
 	char query[1024];

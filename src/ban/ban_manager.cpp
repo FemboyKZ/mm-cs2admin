@@ -35,7 +35,7 @@ void CS2ABanManager::VerifyBan(int slot, uint64_t steamid64, const char *ip, std
 
 	std::string suffix = g_CS2ADatabase.Escape(SteamID64ToSuffix(steamid64).c_str());
 	std::string escapedIP = ip ? g_CS2ADatabase.Escape(ip) : "";
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	long long now = (long long)std::time(nullptr);
 	std::string authCond = CS2ADatabase::AuthMatch("authid", suffix);
@@ -138,8 +138,7 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	ADMIN_LogAction(adminSlot, logMsg);
 
 	g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
-	MMU_LOG_INFO("Banned player \"%s\" (%s) for %d min. Reason: %s\n", targetName.c_str(), targetAuth.c_str(), time,
-				   reason ? reason : "No reason");
+	MMU_LOG_INFO("Banned player \"%s\" (%s) for %d min. Reason: %s\n", targetName.c_str(), targetAuth.c_str(), time, reason ? reason : "No reason");
 }
 
 void CS2ABanManager::AddBan(const char *authid, int time, const char *reason, int adminSlot)
@@ -166,7 +165,7 @@ void CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
 	std::string adminIP = g_CS2ADatabase.Escape(GetAdminIP(adminSlot).c_str());
 	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	int lengthSec = (time > 0 && time <= INT_MAX / 60) ? time * 60 : 0;
 
 	long long now = (long long)std::time(nullptr);
@@ -204,7 +203,7 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 		return;
 	}
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	std::string escapedIP = g_CS2ADatabase.Escape(ip ? ip : "");
 	std::string escapedAuthId = g_CS2ADatabase.Escape(authid ? authid : "");
 	std::string escapedName = g_CS2ADatabase.Escape(name ? name : "");
@@ -261,7 +260,7 @@ void CS2ABanManager::Unban(const char *authid, int adminSlot)
 	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
 	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
 	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	long long now = (long long)std::time(nullptr);
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminSuffix);
@@ -306,7 +305,7 @@ void CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
 	std::string rawAdminAuth = GetAdminAuthId(adminSlot);
 	std::string adminAuth = g_CS2ADatabase.Escape(rawAdminAuth.c_str());
 	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	long long now = (long long)std::time(nullptr);
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminSuffix);
@@ -353,7 +352,7 @@ void CS2ABanManager::CheckHistory(int slot, uint64_t steamid64, const char *ip,
 
 	std::string suffix = g_CS2ADatabase.Escape(SteamID64ToSuffix(steamid64).c_str());
 	std::string escapedIP = ip ? g_CS2ADatabase.Escape(ip) : "";
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	std::string authCond = CS2ADatabase::AuthMatch("authid", suffix);
 
@@ -420,7 +419,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 	}
 
 	std::string escapedIP = g_CS2ADatabase.Escape(ip);
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	long long now = (long long)std::time(nullptr);
 
@@ -527,7 +526,7 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 	}
 
 	std::string suffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(std::string(authid)).c_str());
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	std::string authCond = CS2ADatabase::AuthMatch("b.authid", suffix);
 
@@ -590,7 +589,7 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 	}
 
 	std::string suffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(std::string(authid)).c_str());
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 
 	std::string authCond = CS2ADatabase::AuthMatch("c.authid", suffix);
 

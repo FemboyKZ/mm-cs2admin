@@ -1,4 +1,5 @@
 #include "discord.h"
+#include "mmu/discord.h"
 #include "mmu/http_client.h"
 #include "mmu/json.h"
 #include "mmu/log.h"
@@ -38,8 +39,7 @@ void CS2ADiscord::SendTextMessage(const char *content)
 		return;
 	}
 
-	std::string json = "{\"content\":\"" + mmu::json::Escape(content) + "\"}";
-	SendPayload(json);
+	mmu::discord::SendText(g_CS2AConfig.discordWebhookUrl, content);
 }
 
 void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, int color, const char *footer)
@@ -49,17 +49,7 @@ void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, i
 		return;
 	}
 
-	std::string json = "{\"embeds\":[{";
-	json += "\"title\":\"" + mmu::json::Escape(title ? title : "") + "\",";
-	json += "\"description\":\"" + mmu::json::Escape(description ? description : "") + "\",";
-	json += "\"color\":" + std::to_string(color);
-	if (footer && *footer)
-	{
-		json += ",\"footer\":{\"text\":\"" + mmu::json::Escape(footer) + "\"}";
-	}
-	json += "}]}";
-
-	SendPayload(json);
+	mmu::discord::SendEmbed(g_CS2AConfig.discordWebhookUrl, title, description, color, footer);
 }
 
 void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, const char *targetName, const char *reason, int durationMinutes,
@@ -187,26 +177,5 @@ void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName,
 
 void CS2ADiscord::SendPayload(const std::string &json)
 {
-	if (!IsEnabled())
-	{
-		return;
-	}
-
-	const std::string &url = g_CS2AConfig.discordWebhookUrl;
-
-	// Validate URL starts with a Discord webhook URL
-	if (url.find("https://discord.com/api/webhooks/") != 0 && url.find("https://discordapp.com/api/webhooks/") != 0)
-	{
-		MMU_LOG_WARN("Discord: Invalid webhook URL (must be a Discord webhook URL).\n");
-		return;
-	}
-
-	mmu::http::Post(url, json,
-					[](bool success, std::string)
-					{
-						if (!success)
-						{
-							MMU_LOG_WARN("Discord: Failed to send webhook.\n");
-						}
-					});
+	mmu::discord::SendPayload(g_CS2AConfig.discordWebhookUrl, json);
 }

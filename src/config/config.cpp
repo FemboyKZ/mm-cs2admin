@@ -36,13 +36,9 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->defaultLanguage = value;
 		}
-		else if (k == "logtofile")
+		else if (mmu::config::ApplyLogKey(cfg->log, k, value))
 		{
-			cfg->logToFile = (value != "0");
-		}
-		else if (k == "logretentiondays")
-		{
-			cfg->logRetentionDays = std::atoi(value.c_str());
+			// consumed
 		}
 		else if (k == "commandprefix")
 		{
@@ -54,7 +50,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "databaseprefix")
 		{
-			cfg->databasePrefix = value;
+			cfg->database.prefix = value;
 		}
 		else if (k == "addban")
 		{
@@ -117,34 +113,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	}
 	else if (sec == "database")
 	{
-		if (k == "type")
-		{
-			cfg->dbType = value;
-		}
-		else if (k == "host")
-		{
-			cfg->dbHost = value;
-		}
-		else if (k == "user")
-		{
-			cfg->dbUser = value;
-		}
-		else if (k == "pass")
-		{
-			cfg->dbPass = value;
-		}
-		else if (k == "database" || k == "name")
-		{
-			cfg->dbName = value;
-		}
-		else if (k == "port")
-		{
-			cfg->dbPort = std::atoi(value.c_str());
-		}
-		else if (k == "path")
-		{
-			cfg->dbPath = value;
-		}
+		mmu::config::ApplyDatabaseKey(cfg->database, k, value);
 	}
 	else if (sec == "commsconfig")
 	{
@@ -285,9 +254,9 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	}
 	else if (sec == "menuconfig")
 	{
-		if (k == "type")
+		if (cfg->menu.ApplyKey(k, value))
 		{
-			cfg->menuType = str::ToLower(value);
+			// consumed
 		}
 		else if (k == "durations")
 		{
@@ -296,22 +265,6 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		else if (k == "reasons")
 		{
 			cfg->menuReasons = value;
-		}
-		else if (k == "navup")
-		{
-			cfg->menuNavUp = str::ToLower(value);
-		}
-		else if (k == "navdown")
-		{
-			cfg->menuNavDown = str::ToLower(value);
-		}
-		else if (k == "navselect")
-		{
-			cfg->menuNavSelect = str::ToLower(value);
-		}
-		else if (k == "navback")
-		{
-			cfg->menuNavBack = str::ToLower(value);
 		}
 	}
 }
@@ -340,7 +293,7 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	kv::ParseSection(file, root.value, ConfigHandler, &config);
 
 	// Validate databasePrefix: only alphanumeric and underscore allowed
-	for (char c : config.databasePrefix)
+	for (char c : config.database.prefix)
 	{
 		if (!isalnum(static_cast<unsigned char>(c)) && c != '_')
 		{
@@ -348,7 +301,7 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 			return false;
 		}
 	}
-	if (config.databasePrefix.empty())
+	if (config.database.prefix.empty())
 	{
 		MMU_LOG_ERROR("databasePrefix cannot be empty.\n");
 		return false;

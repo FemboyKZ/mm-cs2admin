@@ -2,6 +2,7 @@
 #define _INCLUDE_ADMIN_PLAYER_MANAGER_H_
 
 #include "../common.h"
+#include "mmu/player_table.h"
 #include <string>
 #include <vector>
 #include <tuple>
@@ -101,7 +102,7 @@ public:
 	}
 
 private:
-	PlayerInfo m_players[MAXPLAYERS + 1];
+	mmu::PlayerTable<PlayerInfo> m_players;
 
 	// Circular buffer of last 20 disconnected players
 	std::vector<DisconnectedPlayer> m_disconnected;

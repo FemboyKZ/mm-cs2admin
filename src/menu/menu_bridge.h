@@ -27,7 +27,7 @@ public:
 	// Fired when a player picks an item: (slot, itemIndex, item's info tag).
 	using SelectFn = std::function<void(int slot, int item, const std::string &info)>;
 
-	// Defined in the .cpp so this header stays free of the cs2menus API.
+	// In the .cpp to keep ics2menus.h out of this header.
 	AdminMenuBridge();
 
 	// Acquire the ICS2Menus interface. Call from AllPluginsLoaded().

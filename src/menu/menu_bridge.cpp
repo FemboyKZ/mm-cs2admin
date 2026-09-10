@@ -9,22 +9,6 @@ AdminMenuBridge g_AdminMenus;
 // How long an admin menu stays on screen before timing out (seconds).
 static constexpr float kMenuDuration = 30.0f;
 
-// Map the admin config's MenuType to the plugin enum.
-// "default" (and anything unknown) delegates the style choice to mm-cs2menus' own config.
-static MenuType ConfiguredMenuType()
-{
-	const std::string &type = g_CS2AConfig.menuType;
-	if (type == "chat")
-	{
-		return MenuType::Chat;
-	}
-	if (type == "html")
-	{
-		return MenuType::Html;
-	}
-	return MenuType::Default;
-}
-
 AdminMenuBridge::AdminMenuBridge() : m_menus(CS2MENUS_INTERFACE) {}
 
 void AdminMenuBridge::Init()
@@ -37,7 +21,7 @@ void AdminMenuBridge::Refresh()
 	switch (m_menus.Refresh())
 	{
 		case mmu::BridgeChange::Unloaded:
-			// The handles we were holding belong to a now-dead instance.
+			// Handles belonged to the unloaded instance.
 			for (int i = 0; i <= MAXPLAYERS; i++)
 			{
 				m_extHandle[i] = kInvalidMenuHandle;
@@ -111,7 +95,7 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 		infos.push_back(item.info);
 	}
 
-	MenuHandle h = m_menus->CreateMenu(ConfiguredMenuType(), title,
+	MenuHandle h = m_menus->CreateMenu(g_CS2AConfig.menu.Type(), title,
 									   [onSelect, infos](MenuHandle, int s, int item)
 									   {
 										   if (onSelect && item >= 0 && item < static_cast<int>(infos.size()))
@@ -131,12 +115,7 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 	m_menus->SetExitButton(h, true);
 	m_menus->SetCloseOnSelect(h, true);
 
-	// Apply configured HTML nav-key overrides.
-	// MenuButton::Default delegates back to the menu plugin's own binding.
-	m_menus->SetMenuKey(h, MenuNavAction::Up, ParseMenuButton(g_CS2AConfig.menuNavUp));
-	m_menus->SetMenuKey(h, MenuNavAction::Down, ParseMenuButton(g_CS2AConfig.menuNavDown));
-	m_menus->SetMenuKey(h, MenuNavAction::Select, ParseMenuButton(g_CS2AConfig.menuNavSelect));
-	m_menus->SetMenuKey(h, MenuNavAction::Back, ParseMenuButton(g_CS2AConfig.menuNavBack));
+	g_CS2AConfig.menu.ApplyKeys(m_menus.Get(), h);
 
 	// One-shot: free the menu when its display ends, and forget the handle.
 	m_menus->SetMenuEndCallback(h,

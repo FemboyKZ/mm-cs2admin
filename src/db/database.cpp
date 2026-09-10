@@ -12,19 +12,12 @@ CS2ADatabase g_CS2ADatabase;
 
 mmu::sql::ConnectParams CS2ADatabase::BuildParams() const
 {
-	mmu::sql::ConnectParams p;
-	p.path = g_CS2AConfig.dbPath;
-	p.host = g_CS2AConfig.dbHost;
-	p.user = g_CS2AConfig.dbUser;
-	p.pass = g_CS2AConfig.dbPass;
-	p.database = g_CS2AConfig.dbName;
-	p.port = g_CS2AConfig.dbPort;
-	return p;
+	return g_CS2AConfig.database.ToConnectParams();
 }
 
 bool CS2ADatabase::Init()
 {
-	mmu::sql::DbType type = (g_CS2AConfig.dbType == "sqlite") ? mmu::sql::DbType::SQLite : mmu::sql::DbType::MySQL;
+	mmu::sql::DbType type = g_CS2AConfig.database.DbType();
 	if (!m_conn.Init(type))
 	{
 		return false;
@@ -100,7 +93,7 @@ std::string CS2ADatabase::Escape(const char *str)
 
 void CS2ADatabase::CreateSchema()
 {
-	const char *prefix = g_CS2AConfig.databasePrefix.c_str();
+	const char *prefix = g_CS2AConfig.database.prefix.c_str();
 	char query[4096];
 
 	if (IsSQLite())

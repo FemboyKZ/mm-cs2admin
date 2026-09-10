@@ -17,73 +17,56 @@ CS2APlayerManager g_CS2APlayerManager;
 
 void CS2APlayerManager::OnClientConnected(int slot, const char *name, uint64_t xuid, const char *networkID, const char *address, bool fakePlayer)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	PlayerInfo *p = m_players.Get(slot);
+	if (!p)
 	{
 		return;
 	}
 
-	PlayerInfo &player = m_players[slot];
-	player.Reset();
-	player.connected = true;
-	player.steamid64 = xuid;
-	player.authid = SteamID64ToAuthId(xuid);
-	player.name = name ? name : "";
-	player.fakePlayer = fakePlayer;
-
-	// Extract IP from "ip:port" format
-	if (address)
-	{
-		std::string addr(address);
-		size_t colon = addr.find(':');
-		if (colon != std::string::npos)
-		{
-			player.ip = addr.substr(0, colon);
-		}
-		else
-		{
-			player.ip = addr;
-		}
-	}
+	p->Reset();
+	p->connected = true;
+	p->steamid64 = xuid;
+	p->authid = SteamID64ToAuthId(xuid);
+	p->name = name ? name : "";
+	p->fakePlayer = fakePlayer;
+	p->ip = str::StripPort(address);
 }
 
 void CS2APlayerManager::OnClientDisconnect(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	PlayerInfo *p = m_players.Get(slot);
+	if (!p)
 	{
 		return;
 	}
 
-	PlayerInfo &player = m_players[slot];
-	if (player.connected && !player.fakePlayer && player.steamid64 != 0)
+	if (p->connected && !p->fakePlayer && p->steamid64 != 0)
 	{
-		AddDisconnectedPlayer(player);
+		AddDisconnectedPlayer(*p);
 	}
 
-	player.Reset();
+	p->Reset();
 }
 
 PlayerInfo *CS2APlayerManager::GetPlayer(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	PlayerInfo *p = m_players.Get(slot);
+	if (!p || !p->connected)
 	{
 		return nullptr;
 	}
 
-	if (!m_players[slot].connected)
-	{
-		return nullptr;
-	}
-
-	return &m_players[slot];
+	return p;
 }
 
 PlayerInfo *CS2APlayerManager::FindPlayerBySteamID64(uint64_t steamid64)
 {
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
-		if (m_players[i].connected && m_players[i].steamid64 == steamid64)
+		PlayerInfo *p = m_players.Get(i);
+		if (p->connected && p->steamid64 == steamid64)
 		{
-			return &m_players[i];
+			return p;
 		}
 	}
 	return nullptr;
@@ -93,7 +76,8 @@ int CS2APlayerManager::FindSlotBySteamID64(uint64_t steamid64)
 {
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
-		if (m_players[i].connected && m_players[i].steamid64 == steamid64)
+		const PlayerInfo *p = m_players.Get(i);
+		if (p->connected && p->steamid64 == steamid64)
 		{
 			return i;
 		}

@@ -42,7 +42,7 @@ void ShutdownConsoleCommands();
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
 CGameEntitySystem *g_pEntitySystem = nullptr;
 
-// Required by the SDK: entity2 calls this to reach the entity system.
+// Called by the SDK's entity2 code.
 CGameEntitySystem *GameEntitySystem()
 {
 	return mmu::EntitySystem();
@@ -93,21 +93,12 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 {
 	PLUGIN_SAVEVARS();
 
-	mmu::log::Setup logSetup;
-	logSetup.channelName = "CS2Admin";
-	logSetup.addonName = "cs2admin";
-	logSetup.toFile = true;
-	mmu::log::Init(logSetup);
+	mmu::log::Init("CS2Admin", "cs2admin");
 
-	GET_V_IFACE_CURRENT(GetEngineFactory, g_pEngine, IVEngineServer, INTERFACEVERSION_VENGINESERVER);
-	GET_V_IFACE_CURRENT(GetEngineFactory, g_pICvar, ICvar, CVAR_INTERFACE_VERSION);
-	GET_V_IFACE_ANY(GetServerFactory, g_pServerGameDLL, IServerGameDLL, INTERFACEVERSION_SERVERGAMEDLL);
-	GET_V_IFACE_ANY(GetServerFactory, g_pGameClients, IServerGameClients, INTERFACEVERSION_SERVERGAMECLIENTS);
+	MMU_GET_CORE_INTERFACES();
 	GET_V_IFACE_ANY(GetEngineFactory, g_pNetworkServerService, INetworkServerService, NETWORKSERVERSERVICE_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, g_pSchemaSystem, ISchemaSystem, SCHEMASYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_ANY(GetEngineFactory, g_pGameResourceServiceServer, IGameResourceService, GAMERESOURCESERVICESERVER_INTERFACE_VERSION);
-	GET_V_IFACE_ANY(GetEngineFactory, g_pNetworkMessages, INetworkMessages, NETWORKMESSAGES_INTERFACE_VERSION);
-	GET_V_IFACE_ANY(GetEngineFactory, g_pGameEventSystem, IGameEventSystem, GAMEEVENTSYSTEM_INTERFACE_VERSION);
 	GET_V_IFACE_CURRENT(GetFileSystemFactory, g_pFullFileSystem, IFileSystem, FILESYSTEM_INTERFACE_VERSION);
 
 	g_SMAPI->AddListener(this, this);
@@ -140,10 +131,9 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	else
 	{
 		m_bConfigLoaded = true;
-		MMU_LOG_INFO("Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.dbUser.c_str(), g_CS2AConfig.dbHost.c_str(), g_CS2AConfig.dbPort,
-					 g_CS2AConfig.dbName.c_str(), g_CS2AConfig.databasePrefix.c_str());
-		mmu::log::SetToFile(g_CS2AConfig.logToFile);
-		mmu::log::SetRetentionDays(g_CS2AConfig.logRetentionDays);
+		MMU_LOG_INFO("Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.database.user.c_str(), g_CS2AConfig.database.host.c_str(),
+					 g_CS2AConfig.database.port, g_CS2AConfig.database.name.c_str(), g_CS2AConfig.database.prefix.c_str());
+		mmu::config::ApplyLogBlock(g_CS2AConfig.log);
 	}
 
 	ADMIN_LoadTranslations();
@@ -506,7 +496,7 @@ void CS2APlugin::LookupServerID()
 	char ipStr[32];
 	snprintf(ipStr, sizeof(ipStr), "%d.%d.%d.%d", (hostip >> 24) & 0xFF, (hostip >> 16) & 0xFF, (hostip >> 8) & 0xFF, hostip & 0xFF);
 
-	std::string prefix = g_CS2AConfig.databasePrefix;
+	std::string prefix = g_CS2AConfig.database.prefix;
 	char query[512];
 	snprintf(query, sizeof(query), "SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%d' LIMIT 1", prefix.c_str(),
 			 g_CS2ADatabase.Escape(ipStr).c_str(), hostport);

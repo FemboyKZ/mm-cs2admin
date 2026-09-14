@@ -49,11 +49,6 @@ public:
 	// Close whatever menu the slot has open.
 	void CancelMenu(int slot);
 
-	// True when cs2menus is consuming this player's say input to drive an open chat menu.
-	// Anything else hooking say has to leave those messages alone,
-	// since cs2menus suppresses them and they were never meant as chat.
-	bool EatsChatInput(int slot) const;
-
 private:
 	mmu::InterfaceBridge<ICS2Menus> m_menus;
 	// External menu handle currently displayed to each slot (0 = none).

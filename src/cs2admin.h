@@ -36,7 +36,13 @@ public: // Hooks
 	KHook::Return<void> Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
 	KHook::Return<void> Hook_ClientSettingsChanged(IServerGameClients *, CPlayerSlot slot);
 	KHook::Return<void> Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
+	KHook::Return<void> Hook_DispatchConCommandPost(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
 	KHook::Return<void> Hook_GameServerSteamAPIActivated(IServerGameDLL *);
+	// Both PostEventAbstract overloads, since nothing says which one the game sends its chat line through.
+	KHook::Return<void> Hook_PostEvent(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, int nClientCount, const uint64 *clients,
+									   INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize, NetChannelBufType_t bufType);
+	KHook::Return<void> Hook_PostEventFilter(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, IRecipientFilter *pFilter,
+											 INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize);
 
 public:
 	const char *GetAuthor()
@@ -104,6 +110,11 @@ private:
 	KHook::Virtual<IServerGameClients, bool, CPlayerSlot, const char *, uint64, const char *, bool, CBufferString *> m_ClientConnect;
 	KHook::Virtual<ICvar, void, ConCommandRef, const CCommandContext &, const CCommand &> m_DispatchConCommand;
 	KHook::Virtual<IServerGameDLL, void> m_GameServerSteamAPIActivated;
+	KHook::Virtual<IGameEventSystem, void, CSplitScreenSlot, bool, int, const uint64 *, INetworkMessageInternal *, const CNetMessage *, unsigned long,
+				   NetChannelBufType_t>
+		m_PostEvent;
+	KHook::Virtual<IGameEventSystem, void, CSplitScreenSlot, bool, IRecipientFilter *, INetworkMessageInternal *, const CNetMessage *, unsigned long>
+		m_PostEventFilter;
 };
 
 extern CS2APlugin g_CS2APlugin;

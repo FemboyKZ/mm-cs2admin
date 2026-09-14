@@ -84,8 +84,14 @@ CS2APlugin::CS2APlugin()
 	  m_ClientSettingsChanged(&IServerGameClients::ClientSettingsChanged, this, &CS2APlugin::Hook_ClientSettingsChanged, nullptr),
 	  m_OnClientConnected(&IServerGameClients::OnClientConnected, this, &CS2APlugin::Hook_OnClientConnected, nullptr),
 	  m_ClientConnect(&IServerGameClients::ClientConnect, this, &CS2APlugin::Hook_ClientConnect, nullptr),
-	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &CS2APlugin::Hook_DispatchConCommand, nullptr),
-	  m_GameServerSteamAPIActivated(&IServerGameDLL::GameServerSteamAPIActivated, this, nullptr, &CS2APlugin::Hook_GameServerSteamAPIActivated)
+	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &CS2APlugin::Hook_DispatchConCommand, &CS2APlugin::Hook_DispatchConCommandPost),
+	  m_GameServerSteamAPIActivated(&IServerGameDLL::GameServerSteamAPIActivated, this, nullptr, &CS2APlugin::Hook_GameServerSteamAPIActivated),
+	  m_PostEvent(static_cast<void (IGameEventSystem::*)(CSplitScreenSlot, bool, int, const uint64 *, INetworkMessageInternal *, const CNetMessage *,
+														 unsigned long, NetChannelBufType_t)>(&IGameEventSystem::PostEventAbstract),
+				  this, &CS2APlugin::Hook_PostEvent, nullptr),
+	  m_PostEventFilter(static_cast<void (IGameEventSystem::*)(CSplitScreenSlot, bool, IRecipientFilter *, INetworkMessageInternal *,
+															   const CNetMessage *, unsigned long)>(&IGameEventSystem::PostEventAbstract),
+						this, &CS2APlugin::Hook_PostEventFilter, nullptr)
 {
 }
 
@@ -147,6 +153,8 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	m_ClientConnect.Add(g_pGameClients);
 	m_DispatchConCommand.Add(g_pICvar);
 	m_GameServerSteamAPIActivated.Add(g_pServerGameDLL);
+	m_PostEvent.Add(g_pGameEventSystem);
+	m_PostEventFilter.Add(g_pGameEventSystem);
 
 	g_pCVar = g_pICvar;
 	META_CONVAR_REGISTER(FCVAR_RELEASE | FCVAR_GAMEDLL);
@@ -177,6 +185,8 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	m_ClientConnect.Remove(g_pGameClients);
 	m_DispatchConCommand.Remove(g_pICvar);
 	m_GameServerSteamAPIActivated.Remove(g_pServerGameDLL);
+	m_PostEvent.Remove(g_pGameEventSystem);
+	m_PostEventFilter.Remove(g_pGameEventSystem);
 
 	g_CS2AForeignPlugins.Shutdown();
 	g_CS2ATagManager.ReleaseClanTags();
@@ -754,19 +764,58 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 	}
 
 	// Render the line ourselves and stop the game from rendering its own.
+	// The line itself is swapped in Hook_PostEvent, and only if no plugin supersedes this say.
 	if (g_CS2AChatProcessor.ShouldRender(slotIdx))
 	{
-		std::string text = mmu::StripSayQuotes(message);
-		// KHook runs our hook even when another plugin already superseded its own silent command, and a void hook can't see that.
-		// So a silent prefix line is never rendered, even when no plugin handles it.
-		if (text.empty() || g_CS2AConfig.silentCommandPrefix.find(text[0]) == std::string::npos)
-		{
-			g_CS2AChatProcessor.RenderPlayerChat(slotIdx, text.c_str(), isSayTeam);
-		}
-		return {KHook::Action::Supersede};
+		g_CS2AChatProcessor.BeginSay(slotIdx, mmu::StripSayQuotes(message).c_str(), isSayTeam);
 	}
 
 	return {KHook::Action::Ignore};
+}
+
+KHook::Return<void> CS2APlugin::Hook_DispatchConCommandPost(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+{
+	const char *cmdName = cmd.IsValidRef() ? cmd.GetName() : nullptr;
+	if (cmdName && (strcmp(cmdName, "say") == 0 || strcmp(cmdName, "say_team") == 0))
+	{
+		g_CS2AChatProcessor.EndSay(ctx.GetPlayerSlot().Get());
+	}
+	return {KHook::Action::Ignore};
+}
+
+KHook::Return<void> CS2APlugin::Hook_PostEvent(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, int nClientCount, const uint64 *clients,
+											   INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize,
+											   NetChannelBufType_t bufType)
+{
+	int speaker = g_CS2AChatProcessor.MatchGameLine(pEvent, pData);
+	if (speaker < 0)
+	{
+		return {KHook::Action::Ignore};
+	}
+
+	// A null mask means every client. Otherwise bit N is slot N, and 64 slots fit in the first word.
+	CPlayerBitVec recipients;
+	for (int i = 0; i < 64; i++)
+	{
+		if (!clients || (clients[0] & (1ull << i)))
+		{
+			recipients.Set(i);
+		}
+	}
+	g_CS2AChatProcessor.RenderPending(speaker, recipients);
+	return {KHook::Action::Supersede};
+}
+
+KHook::Return<void> CS2APlugin::Hook_PostEventFilter(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, IRecipientFilter *pFilter,
+													 INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize)
+{
+	int speaker = g_CS2AChatProcessor.MatchGameLine(pEvent, pData);
+	if (speaker < 0 || !pFilter)
+	{
+		return {KHook::Action::Ignore};
+	}
+	g_CS2AChatProcessor.RenderPending(speaker, pFilter->GetRecipients());
+	return {KHook::Action::Supersede};
 }
 
 KHook::Return<void> CS2APlugin::Hook_ClientSettingsChanged(IServerGameClients *, CPlayerSlot slot)

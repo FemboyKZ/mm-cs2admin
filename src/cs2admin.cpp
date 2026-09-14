@@ -802,6 +802,8 @@ KHook::Return<void> CS2APlugin::Hook_PostEvent(IGameEventSystem *, CSplitScreenS
 			recipients.Set(i);
 		}
 	}
+	MMU_LOG_INFO("Replacing chat line from slot %d (mask overload, clientCount=%d, mask=%llx)\n", speaker, nClientCount,
+				 clients ? (unsigned long long)clients[0] : 0ull);
 	g_CS2AChatProcessor.RenderPending(speaker, recipients);
 	return {KHook::Action::Supersede};
 }
@@ -814,6 +816,7 @@ KHook::Return<void> CS2APlugin::Hook_PostEventFilter(IGameEventSystem *, CSplitS
 	{
 		return {KHook::Action::Ignore};
 	}
+	MMU_LOG_INFO("Replacing chat line from slot %d (filter overload)\n", speaker);
 	g_CS2AChatProcessor.RenderPending(speaker, pFilter->GetRecipients());
 	return {KHook::Action::Supersede};
 }

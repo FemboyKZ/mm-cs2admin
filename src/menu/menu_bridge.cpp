@@ -80,7 +80,7 @@ bool AdminMenuBridge::EatsChatInput(int slot) const
 	return m_menus->HasMenu(slot) && m_menus->GetActiveMenuType(slot) == MenuType::Chat;
 }
 
-bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect)
+bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList)
 {
 	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
 	{
@@ -114,6 +114,10 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 	}
 	m_menus->SetExitButton(h, true);
 	m_menus->SetCloseOnSelect(h, true);
+	if (mapList)
+	{
+		m_menus->SetMenuStyle(h, MenuStyle::PagePrefixDelimiter, "_");
+	}
 
 	g_CS2AConfig.menu.ApplyKeys(m_menus.Get(), h);
 

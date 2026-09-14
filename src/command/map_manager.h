@@ -52,6 +52,9 @@ public:
 		return m_maps;
 	}
 
+	// GetMaps in menu order, see mmu::MapNameLess. The pointers go stale on the next LoadMapList.
+	std::vector<const MapEntry *> GetSortedMaps() const;
+
 private:
 	// Scan <gamedir>/maps for local map files populating m_localMaps.
 	// Used as a fallback when the maplist misses.

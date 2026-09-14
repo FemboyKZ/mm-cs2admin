@@ -43,7 +43,8 @@ public:
 	// Display a one-shot menu to slot.
 	// No-op (returns false) when menus are unavailable.
 	// Chain another ShowMenu from onSelect to build multi-step flows.
-	bool ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect);
+	// mapList makes panorama page labels skip map prefixes like "kz_", to match CS2AMapManager::GetSortedMaps.
+	bool ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList = false);
 
 	// Close whatever menu the slot has open.
 	void CancelMenu(int slot);

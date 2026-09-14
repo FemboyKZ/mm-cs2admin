@@ -129,6 +129,19 @@ std::string CS2AMapManager::MatchLocalMap(const std::string &input, std::string 
 	return "";
 }
 
+std::vector<const MapEntry *> CS2AMapManager::GetSortedMaps() const
+{
+	std::vector<const MapEntry *> sorted;
+	sorted.reserve(m_maps.size());
+	for (const MapEntry &map : m_maps)
+	{
+		sorted.push_back(&map);
+	}
+	auto name = [](const MapEntry *e) -> const std::string & { return e->displayName.empty() ? e->mapName : e->displayName; };
+	std::stable_sort(sorted.begin(), sorted.end(), [&](const MapEntry *a, const MapEntry *b) { return mmu::MapNameLess(name(a), name(b)); });
+	return sorted;
+}
+
 bool CS2AMapManager::LoadMapList()
 {
 	m_maps.clear();

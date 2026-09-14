@@ -461,20 +461,22 @@ namespace
 
 		std::vector<AdminMenuItem> items;
 		items.reserve(maps.size());
-		for (const auto &m : maps)
+		for (const MapEntry *m : g_CS2AMapManager.GetSortedMaps())
 		{
 			AdminMenuItem item;
-			item.text = m.displayName.empty() ? m.mapName : m.displayName;
-			item.info = (m.isWorkshop && !m.workshopId.empty()) ? m.workshopId : m.mapName;
+			item.text = m->displayName.empty() ? m->mapName : m->displayName;
+			item.info = (m->isWorkshop && !m->workshopId.empty()) ? m->workshopId : m->mapName;
 			items.push_back(std::move(item));
 		}
 
-		g_AdminMenus.ShowMenu(slot, "Change Map", items,
-							  [](int s, int, const std::string &mapArg)
-							  {
-								  std::vector<std::string> args = {mapArg};
-								  g_CS2ACommandSystem.DispatchConsoleCommand("map", args, s);
-							  });
+		g_AdminMenus.ShowMenu(
+			slot, "Change Map", items,
+			[](int s, int, const std::string &mapArg)
+			{
+				std::vector<std::string> args = {mapArg};
+				g_CS2ACommandSystem.DispatchConsoleCommand("map", args, s);
+			},
+			true);
 	}
 
 	// Giveable items grouped by category for the !give picker.
@@ -1849,7 +1851,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						const auto &maps = g_CS2AMapManager.GetMaps();
+						const std::vector<const MapEntry *> maps = g_CS2AMapManager.GetSortedMaps();
 						if (maps.empty())
 						{
 							ADMIN_ReplyToCommandT(slot, "No maps loaded. Check cfg/maplist.txt\n");
@@ -1883,13 +1885,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						ADMIN_ReplyToCommandT(slot, "Maps (page %d/%d):\n", page, totalPages);
 						for (int i = startIdx; i < endIdx; i++)
 						{
-							if (maps[i].isWorkshop)
+							if (maps[i]->isWorkshop)
 							{
-								ADMIN_ReplyToCommandT(slot, "  %s [ws:%s]\n", maps[i].displayName.c_str(), maps[i].workshopId.c_str());
+								ADMIN_ReplyToCommandT(slot, "  %s [ws:%s]\n", maps[i]->displayName.c_str(), maps[i]->workshopId.c_str());
 							}
 							else
 							{
-								ADMIN_ReplyToCommandT(slot, "  %s\n", maps[i].mapName.c_str());
+								ADMIN_ReplyToCommandT(slot, "  %s\n", maps[i]->mapName.c_str());
 							}
 						}
 						if (page < totalPages)

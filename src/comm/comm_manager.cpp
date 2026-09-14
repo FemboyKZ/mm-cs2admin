@@ -68,6 +68,8 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 				return;
 			}
 
+			bool foundMute = false;
+			bool foundGag = false;
 			while (rs->MoreRows())
 			{
 				ISQLRow *row = rs->FetchRow();
@@ -87,16 +89,17 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 
 				if (type == COMM_MUTE)
 				{
+					foundMute = true;
+					// A reload re-verifies everyone, so only announce a block the player didn't already have.
+					bool announce = !player->isMuted;
 					player->isMuted = true;
+					player->isSessionMuted = false;
 					player->muteRemaining = (length == 0) ? 0 : remaining;
 					player->muteReason = reason ? reason : "";
-					if (length != 0 && remaining > 0)
+					player->muteExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
+					if (!announce)
 					{
-						CGlobalVars *globals = GetGameGlobals();
-						if (globals)
-						{
-							player->muteExpireTime = globals->curtime + remaining;
-						}
+						continue;
 					}
 					if (length == 0)
 					{
@@ -110,16 +113,16 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 				}
 				else if (type == COMM_GAG)
 				{
+					foundGag = true;
+					bool announce = !player->isGagged;
 					player->isGagged = true;
+					player->isSessionGagged = false;
 					player->gagRemaining = (length == 0) ? 0 : remaining;
 					player->gagReason = reason ? reason : "";
-					if (length != 0 && remaining > 0)
+					player->gagExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
+					if (!announce)
 					{
-						CGlobalVars *globals = GetGameGlobals();
-						if (globals)
-						{
-							player->gagExpireTime = globals->curtime + remaining;
-						}
+						continue;
 					}
 					if (length == 0)
 					{
@@ -131,6 +134,25 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					}
 					MMU_LOG_INFO("Player \"%s\" has active gag. Reason: %s\n", player->name.c_str(), player->gagReason.c_str());
 				}
+			}
+
+			// A block lifted elsewhere (web panel, another server) has no row any more.
+			// Session blocks never had one, so they stay.
+			if (!foundMute && player->isMuted && !player->isSessionMuted)
+			{
+				player->isMuted = false;
+				player->muteExpireTime = 0.0;
+				player->muteReason.clear();
+				ADMIN_PrintToChatT(slot, "You have been unmuted.\n");
+				MMU_LOG_INFO("Mute for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
+			}
+			if (!foundGag && player->isGagged && !player->isSessionGagged)
+			{
+				player->isGagged = false;
+				player->gagExpireTime = 0.0;
+				player->gagReason.clear();
+				ADMIN_PrintToChatT(slot, "You have been ungagged.\n");
+				MMU_LOG_INFO("Gag for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
 			}
 		});
 }
@@ -149,9 +171,9 @@ bool CS2ACommManager::IsMuted(int slot)
 
 void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot, int type)
 {
-	if (!g_CS2ADatabase.IsConnected())
+	if (!g_CS2ADatabase.IsInitialized())
 	{
-		MMU_LOG_WARN("Cannot insert comm: database not connected.\n");
+		MMU_LOG_WARN("Cannot insert comm: no database configured.\n");
 		return;
 	}
 
@@ -178,6 +200,13 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 			 prefix.c_str(), escapedAuth.c_str(), escapedName.c_str(), now, now + lengthSec, lengthSec, escapedReason.c_str(), prefix.c_str(),
 			 adminAuth.c_str(), adminMatch.c_str(), adminIP.c_str(), sid, type);
 
+	// Otherwise the block only lives until the player reconnects.
+	if (!g_CS2ADatabase.IsConnected())
+	{
+		g_CS2AOfflineQueue.Enqueue(query);
+		return;
+	}
+
 	g_CS2ADatabase.Query(query,
 						 [type, queryStr = std::string(query)](ISQLQuery *result)
 						 {
@@ -200,7 +229,7 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 
 void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 {
-	if (!g_CS2ADatabase.IsConnected() || !authid)
+	if (!g_CS2ADatabase.IsInitialized() || !authid)
 	{
 		return;
 	}
@@ -227,11 +256,23 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 			 "AND RemoveType IS NULL",
 			 prefix.c_str(), prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(), now, targetMatch.c_str(), type, now);
 
+	// Otherwise the next reload or reconnect reads the row back and puts the block on again.
+	if (!g_CS2ADatabase.IsConnected())
+	{
+		g_CS2AOfflineQueue.Enqueue(query);
+		return;
+	}
+
 	g_CS2ADatabase.Query(query,
-						 [type](ISQLQuery *result)
+						 [type, queryStr = std::string(query)](ISQLQuery *result)
 						 {
 							 const char *typeName = (type == COMM_MUTE) ? "mute" : "gag";
-							 if (result && result->GetAffectedRows() > 0)
+							 if (!result)
+							 {
+								 g_CS2AOfflineQueue.Enqueue(queryStr);
+								 return;
+							 }
+							 if (result->GetAffectedRows() > 0)
 							 {
 								 MMU_LOG_INFO("Removed %s successfully.\n", typeName);
 							 }
@@ -260,11 +301,7 @@ void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 	target->muteReason = reason ? reason : "";
 	if (timeMinutes > 0)
 	{
-		CGlobalVars *globals = GetGameGlobals();
-		if (globals)
-		{
-			target->muteExpireTime = globals->curtime + ((double)timeMinutes * 60.0);
-		}
+		target->muteExpireTime = Plat_FloatTime() + ((double)timeMinutes * 60.0);
 	}
 	else
 	{
@@ -311,11 +348,7 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 	target->gagReason = reason ? reason : "";
 	if (timeMinutes > 0)
 	{
-		CGlobalVars *globals = GetGameGlobals();
-		if (globals)
-		{
-			target->gagExpireTime = globals->curtime + ((double)timeMinutes * 60.0);
-		}
+		target->gagExpireTime = Plat_FloatTime() + ((double)timeMinutes * 60.0);
 	}
 	else
 	{
@@ -464,13 +497,7 @@ void CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 
 void CS2ACommManager::CheckExpiredComms()
 {
-	CGlobalVars *globals = GetGameGlobals();
-	if (!globals)
-	{
-		return;
-	}
-
-	double curtime = globals->curtime;
+	double curtime = Plat_FloatTime();
 
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
@@ -542,8 +569,7 @@ void CS2ACommManager::PrintCommsStatus(int targetSlot, int callerSlot)
 		}
 		else if (target->muteExpireTime > 0.0)
 		{
-			CGlobalVars *globals = GetGameGlobals();
-			int remaining = globals ? (int)(target->muteExpireTime - globals->curtime) : 0;
+			int remaining = (int)(target->muteExpireTime - Plat_FloatTime());
 			if (remaining < 0)
 			{
 				remaining = 0;
@@ -568,8 +594,7 @@ void CS2ACommManager::PrintCommsStatus(int targetSlot, int callerSlot)
 		}
 		else if (target->gagExpireTime > 0.0)
 		{
-			CGlobalVars *globals = GetGameGlobals();
-			int remaining = globals ? (int)(target->gagExpireTime - globals->curtime) : 0;
+			int remaining = (int)(target->gagExpireTime - Plat_FloatTime());
 			if (remaining < 0)
 			{
 				remaining = 0;

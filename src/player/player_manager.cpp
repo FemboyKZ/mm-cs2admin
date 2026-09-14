@@ -92,8 +92,7 @@ void CS2APlayerManager::AddDisconnectedPlayer(const PlayerInfo &player)
 	dc.steamid64 = player.steamid64;
 	dc.ip = player.ip;
 
-	CGlobalVars *globals = GetGameGlobals();
-	dc.disconnectTime = globals ? globals->curtime : 0.0;
+	dc.disconnectTime = Plat_FloatTime();
 
 	for (auto &existing : m_disconnected)
 	{

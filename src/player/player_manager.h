@@ -29,7 +29,7 @@ struct PlayerInfo
 	bool isSessionGagged = false;
 	int muteRemaining = 0; // Seconds remaining, 0 = permanent
 	int gagRemaining = 0;
-	double muteExpireTime = 0.0; // Game time when mute expires (0 = permanent/session)
+	double muteExpireTime = 0.0; // Plat_FloatTime when mute expires (0 = permanent/session)
 	double gagExpireTime = 0.0;
 	std::string muteReason;
 	std::string gagReason;

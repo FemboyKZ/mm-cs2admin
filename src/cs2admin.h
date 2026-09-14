@@ -95,9 +95,10 @@ private:
 	// On a normal load the startup path already reloads admins, and the first level init lands right on top of it.
 	// Only later level inits are real map changes.
 	bool m_bSkipLevelInitReload = false;
-	float m_flNextExpiryCheck = 0.0f;
-	float m_flNextQueueProcess = 0.0f;
-	float m_flNextReconnect = 0.0f;
+	// Plat_FloatTime, not curtime, which restarts every map.
+	double m_flNextExpiryCheck = 0.0;
+	double m_flNextQueueProcess = 0.0;
+	double m_flNextReconnect = 0.0;
 	int m_iReconnectAttempts = 0;
 	bool m_bReconnectGaveUp = false;
 

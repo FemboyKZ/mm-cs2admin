@@ -1108,10 +1108,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 
 						// Cooldown check
-						CGlobalVars *globals = GetGameGlobals();
-						if (globals && reporter->lastReportTime > 0.0 && (globals->curtime - reporter->lastReportTime) < g_CS2AConfig.reportCooldown)
+						double now = Plat_FloatTime();
+						if (reporter->lastReportTime > 0.0 && (now - reporter->lastReportTime) < g_CS2AConfig.reportCooldown)
 						{
-							int remaining = (int)(g_CS2AConfig.reportCooldown - (globals->curtime - reporter->lastReportTime));
+							int remaining = (int)(g_CS2AConfig.reportCooldown - (now - reporter->lastReportTime));
 							ADMIN_ReplyToCommandT(slot, "You must wait %d seconds before reporting again.\n", remaining);
 							return;
 						}
@@ -1159,10 +1159,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						g_CS2AForwards.FireOnReportPlayer(slot, target, reason.c_str());
 
-						if (globals)
-						{
-							reporter->lastReportTime = globals->curtime;
-						}
+						reporter->lastReportTime = now;
 
 						if (g_CS2ADatabase.IsConnected())
 						{
@@ -1499,8 +1496,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						CGlobalVars *globals = GetGameGlobals();
-						double curtime = globals ? globals->curtime : 0.0;
+						double curtime = Plat_FloatTime();
 
 						ADMIN_ReplyToCommandT(slot, "Recently Disconnected Players:\n");
 

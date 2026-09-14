@@ -615,12 +615,11 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 										   g_pEngine->DisconnectClient(CPlayerSlot(slotIdx), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 									   }
 								   }
-								   else
-								   {
-									   // Not banned, check comms
-									   g_CS2ACommManager.VerifyComms(slotIdx, steamid64);
-								   }
 							   });
+
+	// Not chained behind the ban result, so a gag lands as early as the DB allows.
+	// If the player turns out banned, the comm result is dropped once their slot is gone.
+	g_CS2ACommManager.VerifyComms(slotIdx, steamid64);
 
 	// Assign admin permissions (merges DB + flat file entries)
 	g_CS2AAdminManager.AssignAdminToPlayer(slotIdx);
@@ -705,45 +704,40 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slotIdx);
 		if (player && player->connected && !player->fakePlayer)
 		{
-			CGlobalVars *globals = GetGameGlobals();
-			double curtime = globals ? globals->curtime : 0.0;
+			// Not curtime, which restarts every map and would make every message after a map change look like flooding.
+			double now = Plat_FloatTime();
+			double timeSince = now - player->lastChatTime;
 
-			if (curtime > 0.0)
+			if (timeSince < g_CS2AConfig.chatFloodCooldown)
 			{
-				double timeSince = curtime - player->lastChatTime;
+				player->chatMessageCount++;
 
-				if (timeSince < g_CS2AConfig.chatFloodCooldown)
+				if (player->chatMessageCount >= g_CS2AConfig.chatFloodMaxMessages)
 				{
-					player->chatMessageCount++;
-
-					if (player->chatMessageCount >= g_CS2AConfig.chatFloodMaxMessages)
+					if (g_CS2AConfig.chatFloodMuteDuration > 0 && !player->isGagged)
 					{
-						if (g_CS2AConfig.chatFloodMuteDuration > 0 && !player->isGagged)
-						{
-							// Auto gag the player
-							g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteDuration, "Chat flood", -1);
-							ADMIN_PrintToChatT(slotIdx, "You have been gagged for %d minute(s) for chat flooding.\n",
-											   g_CS2AConfig.chatFloodMuteDuration);
-							ADMIN_ChatToAdminsT("%s was auto-gagged for chat flooding.\n", player->name.c_str());
-						}
-						else
-						{
-							ADMIN_PrintToChatT(slotIdx, "Slow down! You are sending messages too fast.\n");
-						}
-
-						player->chatMessageCount = 0;
-						player->lastChatTime = curtime;
-						return {KHook::Action::Supersede};
+						// Auto gag the player
+						g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteDuration, "Chat flood", -1);
+						ADMIN_PrintToChatT(slotIdx, "You have been gagged for %d minute(s) for chat flooding.\n", g_CS2AConfig.chatFloodMuteDuration);
+						ADMIN_ChatToAdminsT("%s was auto-gagged for chat flooding.\n", player->name.c_str());
 					}
-				}
-				else
-				{
-					// Reset counter if enough time passed
-					player->chatMessageCount = 0;
-				}
+					else
+					{
+						ADMIN_PrintToChatT(slotIdx, "Slow down! You are sending messages too fast.\n");
+					}
 
-				player->lastChatTime = curtime;
+					player->chatMessageCount = 0;
+					player->lastChatTime = now;
+					return {KHook::Action::Supersede};
+				}
 			}
+			else
+			{
+				// Reset counter if enough time passed
+				player->chatMessageCount = 0;
+			}
+
+			player->lastChatTime = now;
 		}
 	}
 
@@ -872,17 +866,19 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 
 	g_CS2AMapManager.Tick(curtime);
 
+	const double now = Plat_FloatTime();
+
 	// Check for expired timed comm blocks (every 1 second)
-	if (curtime >= m_flNextExpiryCheck)
+	if (now >= m_flNextExpiryCheck)
 	{
-		m_flNextExpiryCheck = curtime + 1.0f;
+		m_flNextExpiryCheck = now + 1.0;
 		g_CS2ACommManager.CheckExpiredComms();
 	}
 
 	// Process offline queue (every processQueueTime minutes)
-	if (curtime >= m_flNextQueueProcess)
+	if (now >= m_flNextQueueProcess)
 	{
-		m_flNextQueueProcess = curtime + (g_CS2AConfig.processQueueTime * 60.0f);
+		m_flNextQueueProcess = now + (g_CS2AConfig.processQueueTime * 60.0);
 		if (g_CS2ADatabase.IsConnected() && g_CS2AOfflineQueue.HasItems())
 		{
 			g_CS2AOfflineQueue.ProcessQueue();
@@ -892,9 +888,9 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	// DB reconnection timer.
 	// IsConnecting() must be checked.
 	if (m_bConfigLoaded && g_CS2ADatabase.IsInitialized() && !g_CS2ADatabase.IsConnected() && !g_CS2ADatabase.IsConnecting() && !m_bReconnectGaveUp
-		&& curtime >= m_flNextReconnect)
+		&& now >= m_flNextReconnect)
 	{
-		m_flNextReconnect = curtime + g_CS2AConfig.retryTime;
+		m_flNextReconnect = now + g_CS2AConfig.retryTime;
 		m_iReconnectAttempts++;
 
 		const int maxAttempts = g_CS2AConfig.maxReconnectAttempts;

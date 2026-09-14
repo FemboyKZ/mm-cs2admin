@@ -756,7 +756,13 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 	// Render the line ourselves and stop the game from rendering its own.
 	if (g_CS2AChatProcessor.ShouldRender(slotIdx))
 	{
-		g_CS2AChatProcessor.RenderPlayerChat(slotIdx, mmu::StripSayQuotes(message).c_str(), isSayTeam);
+		std::string text = mmu::StripSayQuotes(message);
+		// KHook runs our hook even when another plugin already superseded its own silent command, and a void hook can't see that.
+		// So a silent prefix line is never rendered, even when no plugin handles it.
+		if (text.empty() || g_CS2AConfig.silentCommandPrefix.find(text[0]) == std::string::npos)
+		{
+			g_CS2AChatProcessor.RenderPlayerChat(slotIdx, text.c_str(), isSayTeam);
+		}
 		return {KHook::Action::Supersede};
 	}
 

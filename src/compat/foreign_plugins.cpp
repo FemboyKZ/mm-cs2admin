@@ -5,10 +5,13 @@
 
 #include "src/common.h"
 #include "src/config/config.h"
+#include "src/tags/tag_manager.h"
 
+#include <ics2kz.h>
 #include <tier1/convar.h>
 
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 CS2AForeignPlugins g_CS2AForeignPlugins;
@@ -17,9 +20,10 @@ namespace
 {
 	const char *const kCs2kz = "cs2kz-metamod";
 
-	// cs2kz registers no interface to ask, so probe a convar it always creates.
+	// Older cs2kz builds register no interface to ask, so probe a convar it always creates.
 	// This one is unrelated to chat on purpose, it only answers "is cs2kz here".
 	const char *const kCs2kzProbeConVar = "kz_profile_rating_badge_enabled";
+	const char *const kCs2kzClantagConVar = "kz_profile_clantag_enabled";
 
 	bool Cs2kzLoaded()
 	{
@@ -67,22 +71,46 @@ namespace
 		{
 			return true;
 		}
-		ConVarRefAbstract ref("kz_profile_clantag_enabled");
+		ConVarRefAbstract ref(kCs2kzClantagConVar);
 		if (!ref.IsValidRef())
 		{
 			return true;
 		}
 		return ref.GetBool();
 	}
+
+	void OnConVarChanged(ConVarRefAbstract *ref, CSplitScreenSlot, const char *, const char *, void *)
+	{
+		if (ref && strcmp(ref->GetName(), kCs2kzClantagConVar) == 0)
+		{
+			g_CS2AForeignPlugins.Refresh();
+		}
+	}
 } // namespace
 
-void CS2AForeignPlugins::Refresh()
+void CS2AForeignPlugins::Init()
+{
+	g_pICvar->InstallGlobalChangeCallback(OnConVarChanged);
+}
+
+void CS2AForeignPlugins::Shutdown()
+{
+	g_pICvar->RemoveGlobalChangeCallback(OnConVarChanged);
+}
+
+void CS2AForeignPlugins::Refresh(PluginId unloading)
 {
 	const char *previousChat = m_chatOwner;
 	const char *previousClanTag = m_clanTagOwner;
 
 	m_chatOwner = nullptr;
 	m_clanTagOwner = nullptr;
+
+	int ret = META_IFACE_FAILED;
+	PluginId id = 0;
+	void *iface = g_SMAPI->MetaFactory(CS2KZ_INTERFACE, &ret, &id);
+	bool usable = iface && ret == META_IFACE_OK && (unloading == 0 || id != unloading);
+	m_cs2kz = usable ? static_cast<ICS2KZ *>(iface) : nullptr;
 
 	if (Cs2kzLoaded())
 	{
@@ -120,5 +148,7 @@ void CS2AForeignPlugins::Refresh()
 		{
 			MMU_LOG_INFO("%s no longer writes the clan tag. Leaderboard tags follow TagsConfig again.\n", previousClanTag);
 		}
+		// Either put our tags up or hand the scoreboard back, without waiting for players to reconnect.
+		g_CS2ATagManager.UpdateAllClanTags();
 	}
 }

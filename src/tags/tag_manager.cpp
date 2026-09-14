@@ -11,6 +11,7 @@
 #include "src/player/player_manager.h"
 #include "src/queue/offline_queue.h"
 
+#include <ics2kz.h>
 #include <sql_mm.h>
 
 #include <algorithm>
@@ -385,9 +386,22 @@ bool CS2ATagManager::SelectTag(int slot, const char *id)
 
 void CS2ATagManager::UpdateClanTag(int slot)
 {
-	// ADMIN_BoardTagsActive is false when another plugin owns the clan tag.
-	if (!ADMIN_BoardTagsActive() || slot < 0 || slot > MAXPLAYERS)
+	if (slot < 0 || slot > MAXPLAYERS)
 	{
+		return;
+	}
+
+	ICS2KZ *cs2kz = g_CS2AForeignPlugins.CS2KZ();
+
+	// ADMIN_BoardTagsActive is false when another plugin owns the clan tag.
+	if (!ADMIN_BoardTagsActive())
+	{
+		// A leftover override would hide cs2kz's own rank tag.
+		if (cs2kz && m_clanTag[slot][0])
+		{
+			cs2kz->SetClanTagOverride(slot, "");
+			m_clanTag[slot][0] = '\0';
+		}
 		return;
 	}
 
@@ -397,14 +411,23 @@ void CS2ATagManager::UpdateClanTag(int slot)
 		return;
 	}
 
+	const TagDef *tag = Resolve(slot);
+	const char *text = (tag && !tag->boardTag.empty()) ? tag->boardTag.c_str() : "";
+
+	// cs2kz rewrites m_szClan on its own schedule even with its clan tag convar off, so only its override sticks.
+	// It ignores slots that are not in game yet, which is why ClientActive calls this again.
+	if (cs2kz)
+	{
+		snprintf(m_clanTag[slot], sizeof(m_clanTag[slot]), "%s", text);
+		cs2kz->SetClanTagOverride(slot, text);
+		return;
+	}
+
 	CCSPlayerController *controller = CCSPlayerController::FromSlot(slot);
 	if (!controller)
 	{
 		return;
 	}
-
-	const TagDef *tag = Resolve(slot);
-	const char *text = (tag && !tag->boardTag.empty()) ? tag->boardTag.c_str() : "";
 
 	// m_clanTag is what the engine ends up holding a pointer to,
 	// so the string has to live here rather than in the TagDef, which a reload would free.
@@ -417,6 +440,23 @@ void CS2ATagManager::UpdateAllClanTags()
 	for (int slot = 0; slot <= MAXPLAYERS; slot++)
 	{
 		UpdateClanTag(slot);
+	}
+}
+
+void CS2ATagManager::ReleaseClanTags()
+{
+	ICS2KZ *cs2kz = g_CS2AForeignPlugins.CS2KZ();
+	if (!cs2kz)
+	{
+		return;
+	}
+	for (int slot = 0; slot <= MAXPLAYERS; slot++)
+	{
+		if (m_clanTag[slot][0])
+		{
+			cs2kz->SetClanTagOverride(slot, "");
+			m_clanTag[slot][0] = '\0';
+		}
 	}
 }
 

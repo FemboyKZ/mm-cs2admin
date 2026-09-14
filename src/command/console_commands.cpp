@@ -39,8 +39,8 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	// Tags first, then clan tags: a reload can drop a tag someone was wearing,
 	// and UpdateAllClanTags is what walks that back off the scoreboard.
 	g_CS2ATagManager.LoadTags();
-	g_CS2ATagManager.UpdateAllClanTags();
 	g_CS2AForeignPlugins.Refresh();
+	g_CS2ATagManager.UpdateAllClanTags();
 
 	// Re-verify bans and comms for all connected players
 	for (int i = 0; i <= MAXPLAYERS; i++)

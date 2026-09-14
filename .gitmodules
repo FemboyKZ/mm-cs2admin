@@ -11,3 +11,6 @@
 [submodule "vendor/mm-utils"]
 	path = vendor/mm-utils
 	url = https://github.com/FemboyKZ/mm-utils
+[submodule "vendor/cs2kz-metamod"]
+	path = vendor/cs2kz-metamod
+	url = https://github.com/KZGlobalTeam/cs2kz-metamod

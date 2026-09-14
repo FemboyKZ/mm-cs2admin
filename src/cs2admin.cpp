@@ -151,6 +151,8 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	g_pCVar = g_pICvar;
 	META_CONVAR_REGISTER(FCVAR_RELEASE | FCVAR_GAMEDLL);
 
+	g_CS2AForeignPlugins.Init();
+
 	g_CS2ACommandSystem.RegisterBuiltinCommands();
 
 	g_CS2ACommandSystem.RegisterConsoleCommands();
@@ -175,6 +177,9 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	m_ClientConnect.Remove(g_pGameClients);
 	m_DispatchConCommand.Remove(g_pICvar);
 	m_GameServerSteamAPIActivated.Remove(g_pServerGameDLL);
+
+	g_CS2AForeignPlugins.Shutdown();
+	g_CS2ATagManager.ReleaseClanTags();
 
 	// Drops pending callbacks pointing into this binary.
 	mmu::cvarquery::Shutdown();
@@ -471,12 +476,12 @@ void CS2APlugin::OnPluginLoad(PluginId /*id*/)
 	g_CS2AForeignPlugins.Refresh();
 }
 
-void CS2APlugin::OnPluginUnload(PluginId /*id*/)
+void CS2APlugin::OnPluginUnload(PluginId id)
 {
 	// Drop our cached pointer if mm-cs2menus is the one going away.
 	g_AdminMenus.Refresh();
-	// The departing plugin's convars may still be registered at this point.
-	g_CS2AForeignPlugins.Refresh();
+	// The departing plugin's convars and interface may still be registered at this point.
+	g_CS2AForeignPlugins.Refresh(id);
 }
 
 void CS2APlugin::LookupServerID()
@@ -560,7 +565,9 @@ KHook::Return<void> CS2APlugin::Hook_OnClientConnected(IServerGameClients *, CPl
 
 KHook::Return<void> CS2APlugin::Hook_ClientActive(IServerGameClients *, CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid)
 {
-	// Player is fully in-game
+	// Player is fully in-game.
+	// cs2kz drops clan tag overrides for slots that are not in game, so the one sent from ClientPutInServer may not have landed.
+	g_CS2ATagManager.UpdateClanTag(slot.Get());
 	return {KHook::Action::Ignore};
 }
 
@@ -946,6 +953,9 @@ void CS2APlugin::OnLateLoad()
 
 		// Assign admin
 		g_CS2AAdminManager.AssignAdminToPlayer(i);
+
+		g_CS2ATagManager.LoadPlayerPref(i, steamid64);
+		g_CS2ATagManager.UpdateClanTag(i);
 	}
 }
 

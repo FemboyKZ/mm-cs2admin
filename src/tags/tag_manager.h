@@ -69,6 +69,9 @@ public:
 	// Re-apply every connected player's clan tag, e.g. after a reload.
 	void UpdateAllClanTags();
 
+	// Drop every cs2kz clan tag override we set, so its rank tags come back once we unload.
+	void ReleaseClanTags();
+
 	void OnClientDisconnect(int slot);
 
 	// Create the prefs table when missing. Call once the DB is connected.

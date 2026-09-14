@@ -88,7 +88,30 @@ void CS2ADatabase::QueryFmt(std::function<void(ISQLQuery *)> callback, const cha
 
 std::string CS2ADatabase::Escape(const char *str)
 {
-	return m_conn.Escape(str);
+	if (m_conn.IsConnected())
+	{
+		return m_conn.Escape(str);
+	}
+
+	// A query built while disconnected goes to the offline queue, and the driver's escaper needs a live connection.
+	// A doubled quote reads as a literal quote on both backends. MySQL also treats backslash as an escape, so it gets doubled there.
+	std::string out;
+	for (const char *p = str ? str : ""; *p; p++)
+	{
+		if (*p == '\'')
+		{
+			out += "''";
+		}
+		else if (*p == '\\' && IsMySQL())
+		{
+			out += "\\\\";
+		}
+		else
+		{
+			out += *p;
+		}
+	}
+	return out;
 }
 
 void CS2ADatabase::CreateSchema()

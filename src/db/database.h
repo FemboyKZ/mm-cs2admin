@@ -62,7 +62,7 @@ public:
 	// Convenience: run a formatted query with a callback.
 	void QueryFmt(std::function<void(ISQLQuery *)> callback, const char *fmt, ...);
 
-	// Escape a string for safe SQL insertion.
+	// Escape a string for safe SQL insertion. Also works while disconnected, for queries headed to the offline queue.
 	std::string Escape(const char *str);
 
 	// Generate SQL fragment matching a Steam authid by suffix (works in both MySQL and SQLite).

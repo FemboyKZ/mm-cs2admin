@@ -687,12 +687,13 @@ static bool IsTrackedSay(ConCommandRef cmd, const CCommandContext &ctx, bool *is
 	{
 		return false;
 	}
-	bool team = strcmp(cmdName, "say_team") == 0;
+	// The registered name, not what the client typed, but compared loosely anyway since "SAY" dispatches to say too.
+	bool team = V_stricmp(cmdName, "say_team") == 0;
 	if (isSayTeam)
 	{
 		*isSayTeam = team;
 	}
-	return team || strcmp(cmdName, "say") == 0;
+	return team || V_stricmp(cmdName, "say") == 0;
 }
 
 KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
@@ -706,6 +707,14 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 	// Before any early return, the post hook pops this no matter how the pre hooks end.
 	g_CS2AChatProcessor.PushSay(slotIdx);
+
+	// A client that isn't put in server yet can't legitimately chat, and the game can print its line as a console message.
+	PlayerInfo *speaker = g_CS2APlayerManager.GetPlayer(slotIdx);
+	if (!speaker || (!speaker->fakePlayer && !speaker->authenticated))
+	{
+		MMU_LOG_INFO("Blocked chat from slot %d, not fully in game.\n", slotIdx);
+		return {KHook::Action::Supersede};
+	}
 
 	const char *message = args.ArgC() > 1 ? args.Arg(1) : "";
 

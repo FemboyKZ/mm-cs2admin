@@ -167,11 +167,6 @@ void CS2AChatProcessor::EndSay(int slot)
 	{
 		ADMIN_PrintToClient(-1, "%s\n", m_strippedLine.c_str());
 	}
-	else
-	{
-		// Expected when a plugin superseded the say. For plain chat it means the game no longer posts a chat line we recognize.
-		MMU_LOG_INFO("Say from slot %d finished with no game chat line replaced: \"%s\"\n", slot, m_message.c_str());
-	}
 	m_slot = -1;
 }
 
@@ -188,8 +183,6 @@ int CS2AChatProcessor::MatchGameLine(INetworkMessageInternal *event, const CNetM
 	if (id == UM_SayText2)
 	{
 		auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText2>();
-		MMU_LOG_INFO("SayText2 during say from slot %d: entityindex=%d chat=%d messagename=\"%s\" param1=\"%s\" param2=\"%s\"\n", m_slot,
-					 sayText->entityindex(), sayText->chat(), sayText->messagename().c_str(), sayText->param1().c_str(), sayText->param2().c_str());
 		if (sayText->entityindex() != -1 && (!sayText->param1().empty() || !sayText->param2().empty()))
 		{
 			return m_slot;
@@ -198,8 +191,6 @@ int CS2AChatProcessor::MatchGameLine(INetworkMessageInternal *event, const CNetM
 	else if (id == UM_SayText)
 	{
 		auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText>();
-		MMU_LOG_INFO("SayText during say from slot %d: playerindex=%d chat=%d text=\"%s\"\n", m_slot, sayText->playerindex(), sayText->chat(),
-					 sayText->text().c_str());
 		if (sayText->playerindex() != -1)
 		{
 			return m_slot;

@@ -130,7 +130,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	if (!ADMIN_LoadConfig(configPath, g_CS2AConfig))
 	{
 		MMU_LOG_ERROR("Could not load config from %s\n", configPath);
-		MMU_LOG_INFO("Make sure the file exists at: <game_root>/cfg/cs2admin/core.cfg\n");
+		MMU_LOG_WARN("Make sure the file exists at: <game_root>/cfg/cs2admin/core.cfg\n");
 		MMU_LOG_WARN("Database features will be disabled. Only flat-file admins will be loaded.\n");
 		m_bConfigLoaded = false;
 	}
@@ -802,8 +802,6 @@ KHook::Return<void> CS2APlugin::Hook_PostEvent(IGameEventSystem *, CSplitScreenS
 			recipients.Set(i);
 		}
 	}
-	MMU_LOG_INFO("Replacing chat line from slot %d (mask overload, clientCount=%d, mask=%llx)\n", speaker, nClientCount,
-				 clients ? (unsigned long long)clients[0] : 0ull);
 	g_CS2AChatProcessor.RenderPending(speaker, recipients);
 	return {KHook::Action::Supersede};
 }
@@ -816,7 +814,6 @@ KHook::Return<void> CS2APlugin::Hook_PostEventFilter(IGameEventSystem *, CSplitS
 	{
 		return {KHook::Action::Ignore};
 	}
-	MMU_LOG_INFO("Replacing chat line from slot %d (filter overload)\n", speaker);
 	g_CS2AChatProcessor.RenderPending(speaker, pFilter->GetRecipients());
 	return {KHook::Action::Supersede};
 }

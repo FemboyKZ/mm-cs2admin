@@ -418,6 +418,11 @@ void CS2ATagManager::UpdateClanTag(int slot)
 	// It ignores slots that are not in game yet, which is why ClientActive calls this again.
 	if (cs2kz)
 	{
+		// Clearing an override we never set could wipe one another plugin put there.
+		if (!*text && !m_clanTag[slot][0])
+		{
+			return;
+		}
 		snprintf(m_clanTag[slot], sizeof(m_clanTag[slot]), "%s", text);
 		cs2kz->SetClanTagOverride(slot, text);
 		return;

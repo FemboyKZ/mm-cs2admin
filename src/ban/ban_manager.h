@@ -17,7 +17,8 @@ public:
 	// Ban a player by SteamID.
 	// time = ban duration in minutes (0 = permanent).
 	// adminSlot = slot of admin issuing ban (-1 for console/rcon).
-	void BanPlayer(int targetSlot, int time, const char *reason, int adminSlot);
+	// Returns false when the target is gone or a forward blocked the ban.
+	bool BanPlayer(int targetSlot, int time, const char *reason, int adminSlot);
 
 	// Ban by SteamID string (for offline bans / addban).
 	void AddBan(const char *authid, int time, const char *reason, int adminSlot);

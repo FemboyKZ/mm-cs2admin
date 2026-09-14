@@ -235,18 +235,51 @@ static bool CheckImmunity(int callerSlot, int targetSlot)
 	return true;
 }
 
-// Discord notice for an action on a connected player. durationMinutes -1 leaves the duration line out.
-static void NotifyDiscordOnPlayer(int adminSlot, const char *action, int targetSlot, const char *reason = nullptr, int durationMinutes = -1)
+// Who a Discord notice is about. Read before the action runs, since a ban's kick resets the target's PlayerInfo.
+struct DiscordTarget
 {
-	PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
-	if (!targetPlayer)
+	std::string name;
+	uint64_t steamid64 = 0;
+};
+
+static DiscordTarget CaptureDiscordTarget(int targetSlot)
+{
+	DiscordTarget target;
+	if (PlayerInfo *player = g_CS2APlayerManager.GetPlayer(targetSlot))
 	{
-		return;
+		target.name = player->name;
+		target.steamid64 = player->steamid64;
 	}
+	return target;
+}
+
+// Sent only once the action went through, so a forward that blocks it doesn't leave a notice for something that never happened.
+// durationMinutes -1 leaves the duration line out.
+static void NotifyDiscordOnPlayer(int adminSlot, const char *action, const DiscordTarget &target, const char *reason = nullptr,
+								  int durationMinutes = -1)
+{
 	PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(adminSlot);
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), action, targetPlayer->name.c_str(), reason, durationMinutes,
-									adminPlayer ? adminPlayer->steamid64 : 0, targetPlayer->steamid64);
+	g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), action, target.name.c_str(), reason, durationMinutes, adminPlayer ? adminPlayer->steamid64 : 0,
+									target.steamid64);
+}
+
+// Names what a silence or unsilence actually did, given the COMM_MUTE/COMM_GAG bits it returned. Null when it did nothing.
+static const char *CommActionName(int applied, const char *both, const char *mute, const char *gag)
+{
+	if (applied == (COMM_MUTE | COMM_GAG))
+	{
+		return both;
+	}
+	if (applied == COMM_MUTE)
+	{
+		return mute;
+	}
+	if (applied == COMM_GAG)
+	{
+		return gag;
+	}
+	return nullptr;
 }
 
 CS2ACommandSystem g_CS2ACommandSystem;
@@ -673,16 +706,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 						std::string reason = JoinArgs(args, 2, "Banned");
 
-						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
-						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
-						PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-						if (targetPlayer)
+						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						if (g_CS2ABanManager.BanPlayer(target, time, reason.c_str(), slot))
 						{
-							g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Ban", targetPlayer->name.c_str(), reason.c_str(), time,
-															adminPlayer ? adminPlayer->steamid64 : 0, targetPlayer->steamid64);
+							NotifyDiscordOnPlayer(slot, "Ban", discordTarget, reason.c_str(), time);
 						}
-
-						g_CS2ABanManager.BanPlayer(target, time, reason.c_str(), slot);
 					});
 
 	// !unban <steamid>
@@ -784,16 +812,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 						std::string reason = JoinArgs(args, 2, "Muted");
 
-						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
-						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
-						PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
-						if (targetPlayer)
+						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						if (g_CS2ACommManager.MutePlayer(target, time, reason.c_str(), slot))
 						{
-							g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Mute", targetPlayer->name.c_str(), reason.c_str(), time,
-															adminPlayer ? adminPlayer->steamid64 : 0, targetPlayer->steamid64);
+							NotifyDiscordOnPlayer(slot, "Mute", discordTarget, reason.c_str(), time);
 						}
-
-						g_CS2ACommManager.MutePlayer(target, time, reason.c_str(), slot);
 					});
 
 	// !unmute <target>
@@ -828,8 +851,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						NotifyDiscordOnPlayer(slot, "Unmute", target);
-						g_CS2ACommManager.UnmutePlayer(target, slot);
+						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						if (!g_CS2ACommManager.UnmutePlayer(target, slot))
+						{
+							ADMIN_ReplyToCommandT(slot, "%s is not muted.\n", discordTarget.name.c_str());
+							return;
+						}
+						NotifyDiscordOnPlayer(slot, "Unmute", discordTarget);
 					});
 
 	// !gag <target> <time> [reason]
@@ -873,8 +901,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 						std::string reason = JoinArgs(args, 2, "Gagged");
-						NotifyDiscordOnPlayer(slot, "Gag", target, reason.c_str(), time);
-						g_CS2ACommManager.GagPlayer(target, time, reason.c_str(), slot);
+						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						if (g_CS2ACommManager.GagPlayer(target, time, reason.c_str(), slot))
+						{
+							NotifyDiscordOnPlayer(slot, "Gag", discordTarget, reason.c_str(), time);
+						}
 					});
 
 	// !ungag <target>
@@ -909,8 +940,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						NotifyDiscordOnPlayer(slot, "Ungag", target);
-						g_CS2ACommManager.UngagPlayer(target, slot);
+						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						if (!g_CS2ACommManager.UngagPlayer(target, slot))
+						{
+							ADMIN_ReplyToCommandT(slot, "%s is not gagged.\n", discordTarget.name.c_str());
+							return;
+						}
+						NotifyDiscordOnPlayer(slot, "Ungag", discordTarget);
 					});
 
 	// !silence <target> <time> [reason]
@@ -954,8 +990,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 						std::string reason = JoinArgs(args, 2, "Silenced");
-						NotifyDiscordOnPlayer(slot, "Silence", target, reason.c_str(), time);
-						g_CS2ACommManager.SilencePlayer(target, time, reason.c_str(), slot);
+						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						int applied = g_CS2ACommManager.SilencePlayer(target, time, reason.c_str(), slot);
+						if (const char *action = CommActionName(applied, "Silence", "Mute", "Gag"))
+						{
+							NotifyDiscordOnPlayer(slot, action, discordTarget, reason.c_str(), time);
+						}
 					});
 
 	// !unsilence <target>
@@ -990,8 +1030,15 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						NotifyDiscordOnPlayer(slot, "Unsilence", target);
-						g_CS2ACommManager.UnsilencePlayer(target, slot);
+						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						int lifted = g_CS2ACommManager.UnsilencePlayer(target, slot);
+						const char *action = CommActionName(lifted, "Unsilence", "Unmute", "Ungag");
+						if (!action)
+						{
+							ADMIN_ReplyToCommandT(slot, "%s is not muted or gagged.\n", discordTarget.name.c_str());
+							return;
+						}
+						NotifyDiscordOnPlayer(slot, action, discordTarget);
 					});
 
 	// !banip <ip> <time> [reason]

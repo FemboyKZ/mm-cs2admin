@@ -91,18 +91,18 @@ void CS2ABanManager::VerifyBan(int slot, uint64_t steamid64, const char *ip, std
 						 });
 }
 
-void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int adminSlot)
+bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int adminSlot)
 {
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
 		MMU_LOG_WARN("BanPlayer: invalid target slot %d\n", targetSlot);
-		return;
+		return false;
 	}
 
 	if (g_CS2AForwards.FireOnBanPlayer(targetSlot, adminSlot, time, reason))
 	{
-		return;
+		return false;
 	}
 
 	// Capture player info before the kick, DisconnectClient triggers
@@ -140,6 +140,7 @@ void CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 
 	g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 	MMU_LOG_INFO("Banned player \"%s\" (%s) for %d min. Reason: %s\n", targetName.c_str(), targetAuth.c_str(), time, reason ? reason : "No reason");
+	return true;
 }
 
 void CS2ABanManager::AddBan(const char *authid, int time, const char *reason, int adminSlot)

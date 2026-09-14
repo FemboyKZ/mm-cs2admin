@@ -283,24 +283,26 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 						 });
 }
 
-void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+bool CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
 {
 	if (!ApplyMute(targetSlot, timeMinutes, reason, adminSlot))
 	{
-		return;
+		return false;
 	}
 	AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently muted. Reason: %s\n",
 				  "You have been muted for %d minutes. Reason: %s\n", "%s muted %s (%d min). Reason: %s\n");
+	return true;
 }
 
-void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+bool CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
 {
 	if (!ApplyGag(targetSlot, timeMinutes, reason, adminSlot))
 	{
-		return;
+		return false;
 	}
 	AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently gagged. Reason: %s\n",
 				  "You have been gagged for %d minutes. Reason: %s\n", "%s gagged %s (%d min). Reason: %s\n");
+	return true;
 }
 
 void CS2ACommManager::AnnounceBlock(int targetSlot, int adminSlot, int timeMinutes, const char *reason, const char *permanentPhrase,
@@ -408,11 +410,11 @@ bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reas
 	return true;
 }
 
-void CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+int CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
 {
 	if (g_CS2AForwards.FireOnSilencePlayer(targetSlot, adminSlot, timeMinutes, reason))
 	{
-		return;
+		return 0;
 	}
 
 	// The mute and gag forwards still fire, so one of them can block its half.
@@ -434,25 +436,30 @@ void CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char 
 		AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently gagged. Reason: %s\n",
 					  "You have been gagged for %d minutes. Reason: %s\n", "%s gagged %s (%d min). Reason: %s\n");
 	}
+	return (muted ? COMM_MUTE : 0) | (gagged ? COMM_GAG : 0);
 }
 
-void CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
+bool CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
 {
-	if (LiftMute(targetSlot, adminSlot))
+	if (!LiftMute(targetSlot, adminSlot))
 	{
-		AnnounceLift(targetSlot, adminSlot, "You have been unmuted.\n", "%s unmuted %s.\n");
+		return false;
 	}
+	AnnounceLift(targetSlot, adminSlot, "You have been unmuted.\n", "%s unmuted %s.\n");
+	return true;
 }
 
-void CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
+bool CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
 {
-	if (LiftGag(targetSlot, adminSlot))
+	if (!LiftGag(targetSlot, adminSlot))
 	{
-		AnnounceLift(targetSlot, adminSlot, "You have been ungagged.\n", "%s ungagged %s.\n");
+		return false;
 	}
+	AnnounceLift(targetSlot, adminSlot, "You have been ungagged.\n", "%s ungagged %s.\n");
+	return true;
 }
 
-void CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
+int CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
 {
 	g_CS2AForwards.FireOnUnsilencePlayer(targetSlot, adminSlot);
 	bool unmuted = LiftMute(targetSlot, adminSlot);
@@ -461,6 +468,15 @@ void CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
 	{
 		AnnounceLift(targetSlot, adminSlot, "You have been unsilenced.\n", "%s unsilenced %s.\n");
 	}
+	else if (unmuted)
+	{
+		AnnounceLift(targetSlot, adminSlot, "You have been unmuted.\n", "%s unmuted %s.\n");
+	}
+	else if (ungagged)
+	{
+		AnnounceLift(targetSlot, adminSlot, "You have been ungagged.\n", "%s ungagged %s.\n");
+	}
+	return (unmuted ? COMM_MUTE : 0) | (ungagged ? COMM_GAG : 0);
 }
 
 bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
@@ -468,6 +484,13 @@ bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
+		return false;
+	}
+
+	// Nothing to lift here, but the DB can still hold a row this server never loaded (added elsewhere while the player was on), so clear it quietly.
+	if (!target->isMuted)
+	{
+		RemoveComm(target->authid.c_str(), adminSlot, COMM_MUTE);
 		return false;
 	}
 
@@ -491,6 +514,12 @@ bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot)
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
+		return false;
+	}
+
+	if (!target->isGagged)
+	{
+		RemoveComm(target->authid.c_str(), adminSlot, COMM_GAG);
 		return false;
 	}
 

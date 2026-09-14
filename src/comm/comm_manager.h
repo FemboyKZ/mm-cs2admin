@@ -24,23 +24,23 @@ public:
 	// Called after player is connected and DB is available.
 	void VerifyComms(int slot, uint64_t steamid64);
 
-	// Mute a player (voice).
-	void MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	// Mute a player (voice). False when the target is gone or a forward blocked it.
+	bool MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
 
-	// Gag a player (chat).
-	void GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	// Gag a player (chat). False when the target is gone or a forward blocked it.
+	bool GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
 
-	// Silence a player (both mute + gag).
-	void SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	// Silence a player (both mute + gag). Returns the COMM_MUTE/COMM_GAG bits that actually applied, since a forward can block either half.
+	int SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
 
-	// Remove mute.
-	void UnmutePlayer(int targetSlot, int adminSlot);
+	// Remove mute. False when the player wasn't muted, in which case nothing is announced.
+	bool UnmutePlayer(int targetSlot, int adminSlot);
 
-	// Remove gag.
-	void UngagPlayer(int targetSlot, int adminSlot);
+	// Remove gag. False when the player wasn't gagged, in which case nothing is announced.
+	bool UngagPlayer(int targetSlot, int adminSlot);
 
-	// Remove silence (both).
-	void UnsilencePlayer(int targetSlot, int adminSlot);
+	// Remove silence (both). Returns the COMM_MUTE/COMM_GAG bits that were actually lifted.
+	int UnsilencePlayer(int targetSlot, int adminSlot);
 
 	// Session-only mute (no DB record, clears on disconnect)
 	void SessionMutePlayer(int targetSlot, int adminSlot);
@@ -62,6 +62,7 @@ public:
 
 	// Check if a player is currently muted.
 	bool IsMuted(int slot);
+
 private:
 	// Apply or lift without announcing, so silence can announce once for both halves. Apply returns false when a forward blocked it.
 	bool ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot);

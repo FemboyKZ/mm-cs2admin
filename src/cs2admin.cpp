@@ -673,35 +673,39 @@ KHook::Return<void> CS2APlugin::Hook_ClientDisconnect(IServerGameClients *, CPla
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+// A player's say or say_team. The pre and post hooks must agree on this exactly, since each tracked say pushes in one and pops in the other.
+static bool IsTrackedSay(ConCommandRef cmd, const CCommandContext &ctx, bool *isSayTeam = nullptr)
 {
-	if (!cmd.IsValidRef())
+	// Server console commands have slot -1.
+	int slotIdx = ctx.GetPlayerSlot().Get();
+	if (!cmd.IsValidRef() || slotIdx < 0 || slotIdx > MAXPLAYERS)
 	{
-		return {KHook::Action::Ignore};
+		return false;
 	}
-
-	CPlayerSlot slot = ctx.GetPlayerSlot();
-	int slotIdx = slot.Get();
-
-	// Ignore server console commands (slot -1)
-	if (slotIdx < 0 || slotIdx > MAXPLAYERS)
-	{
-		return {KHook::Action::Ignore};
-	}
-
 	const char *cmdName = cmd.GetName();
 	if (!cmdName)
 	{
-		return {KHook::Action::Ignore};
+		return false;
 	}
+	bool team = strcmp(cmdName, "say_team") == 0;
+	if (isSayTeam)
+	{
+		*isSayTeam = team;
+	}
+	return team || strcmp(cmdName, "say") == 0;
+}
 
-	bool isSay = (strcmp(cmdName, "say") == 0);
-	bool isSayTeam = (strcmp(cmdName, "say_team") == 0);
-
-	if (!isSay && !isSayTeam)
+KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
+{
+	bool isSayTeam = false;
+	if (!IsTrackedSay(cmd, ctx, &isSayTeam))
 	{
 		return {KHook::Action::Ignore};
 	}
+	int slotIdx = ctx.GetPlayerSlot().Get();
+
+	// Before any early return, the post hook pops this no matter how the pre hooks end.
+	g_CS2AChatProcessor.PushSay(slotIdx);
 
 	const char *message = args.ArgC() > 1 ? args.Arg(1) : "";
 
@@ -768,7 +772,7 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 	// The line itself is swapped in Hook_PostEvent, and only if no plugin supersedes this say.
 	if (g_CS2AChatProcessor.ShouldRender(slotIdx))
 	{
-		g_CS2AChatProcessor.BeginSay(slotIdx, mmu::StripSayQuotes(message).c_str(), isSayTeam);
+		g_CS2AChatProcessor.RenderSay(mmu::StripSayQuotes(message).c_str(), isSayTeam);
 	}
 
 	return {KHook::Action::Ignore};
@@ -776,10 +780,9 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 KHook::Return<void> CS2APlugin::Hook_DispatchConCommandPost(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
-	const char *cmdName = cmd.IsValidRef() ? cmd.GetName() : nullptr;
-	if (cmdName && (strcmp(cmdName, "say") == 0 || strcmp(cmdName, "say_team") == 0))
+	if (IsTrackedSay(cmd, ctx))
 	{
-		g_CS2AChatProcessor.EndSay(ctx.GetPlayerSlot().Get());
+		g_CS2AChatProcessor.PopSay();
 	}
 	return {KHook::Action::Ignore};
 }

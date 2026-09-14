@@ -6,6 +6,7 @@
 #include <irecipientfilter.h>
 
 #include <string>
+#include <vector>
 
 class INetworkMessageInternal;
 class CNetMessage;
@@ -24,14 +25,18 @@ public:
 	// True when we should render this player's chat instead of the game.
 	bool ShouldRender(int slot) const;
 
-	// Say dispatch pre-hook, once nothing of ours blocks the line.
-	void BeginSay(int slot, const char *message, bool teamOnly);
+	// Say dispatch pre-hook, first thing for every say we track, including ones we then supersede.
+	// A plugin can dispatch another say from inside one, so says stack and each post-hook pops its own.
+	void PushSay(int slot);
 
-	// Say dispatch post-hook. Runs whether or not anyone superseded.
-	void EndSay(int slot);
+	// Mark the innermost say for rendering, once nothing of ours blocks the line.
+	void RenderSay(const char *message, bool teamOnly);
 
-	// The speaker slot when this posted event is the game's chat line for the say being dispatched, otherwise -1.
-	// Say runs synchronously, so any game chat line posted between BeginSay and EndSay belongs to that say.
+	// Say dispatch post-hook, for exactly the says PushSay saw. Runs whether or not anyone superseded.
+	void PopSay();
+
+	// The speaker slot when this posted event is the game's chat line for the innermost say, otherwise -1.
+	// Say runs synchronously, so the game posts a say's line while that say is on top.
 	int MatchGameLine(INetworkMessageInternal *event, const CNetMessage *data) const;
 
 	// Send our line to the recipients the game picked for its own.
@@ -39,12 +44,18 @@ public:
 	void RenderPending(int slot, const CPlayerBitVec &recipients);
 
 private:
+	struct PendingSay
+	{
+		int slot = -1;
+		bool render = false;
+		bool teamOnly = false;
+		std::string message;
+		CPlayerBitVec sentTo;
+	};
+
 	std::string ComposeLine(int slot, const char *message, bool teamOnly) const;
 
-	int m_slot = -1;
-	bool m_teamOnly = false;
-	std::string m_message;
-	CPlayerBitVec m_sentTo;
+	std::vector<PendingSay> m_says;
 };
 
 extern CS2AChatProcessor g_CS2AChatProcessor;

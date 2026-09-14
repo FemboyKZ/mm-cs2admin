@@ -192,6 +192,18 @@
 	{
 		"en"	"%s unsilenced %s.\n"
 	}
+	"%s is not muted.\n"
+	{
+		"en"	"%s is not muted.\n"
+	}
+	"%s is not gagged.\n"
+	{
+		"en"	"%s is not gagged.\n"
+	}
+	"%s is not muted or gagged.\n"
+	{
+		"en"	"%s is not muted or gagged.\n"
+	}
 	"You have been muted for this session.\n"
 	{
 		"en"	"You have been muted for this session.\n"

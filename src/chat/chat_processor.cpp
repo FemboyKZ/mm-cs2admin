@@ -148,68 +148,85 @@ void CS2AChatProcessor::BeginSay(int slot, const char *message, bool teamOnly)
 	{
 		return;
 	}
-	PendingSay &say = m_pending[slot];
-	say.active = true;
-	say.teamOnly = teamOnly;
-	say.rendered = false;
-	say.message = message ? message : "";
-	say.strippedLine.clear();
+	m_slot = slot;
+	m_teamOnly = teamOnly;
+	m_message = message ? message : "";
+	m_rendered = false;
+	m_strippedLine.clear();
+	m_sentTo.ClearAll();
 }
 
 void CS2AChatProcessor::EndSay(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (slot < 0 || slot != m_slot)
 	{
 		return;
 	}
-	PendingSay &say = m_pending[slot];
 	// Server console copy, for admins watching and for logs. Once per say, however many events the game split it into.
-	if (say.rendered)
+	if (m_rendered)
 	{
-		ADMIN_PrintToClient(-1, "%s\n", say.strippedLine.c_str());
+		ADMIN_PrintToClient(-1, "%s\n", m_strippedLine.c_str());
 	}
-	else if (say.active)
+	else
 	{
-		// Expected when a plugin superseded the say. For plain chat it means the game no longer posts a SayText2 we recognize.
-		MMU_LOG_INFO("Say from slot %d finished with no game chat line replaced: \"%s\"\n", slot, say.message.c_str());
+		// Expected when a plugin superseded the say. For plain chat it means the game no longer posts a chat line we recognize.
+		MMU_LOG_INFO("Say from slot %d finished with no game chat line replaced: \"%s\"\n", slot, m_message.c_str());
 	}
-	say.active = false;
+	m_slot = -1;
 }
 
 int CS2AChatProcessor::MatchGameLine(INetworkMessageInternal *event, const CNetMessage *data) const
 {
-	if (!event || !data || event->GetNetMessageInfo()->m_MessageId != UM_SayText2)
+	if (m_slot < 0 || !event || !data)
 	{
 		return -1;
 	}
 
-	auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText2>();
-	int slot = sayText->entityindex() - 1;
-	bool pending = slot >= 0 && slot <= MAXPLAYERS && m_pending[slot].active;
-	MMU_LOG_INFO("SayText2 entityindex=%d chat=%d messagename=\"%s\" param1=\"%s\" param2=\"%s\" pending=%d\n", sayText->entityindex(),
-				 sayText->chat(), sayText->messagename().c_str(), sayText->param1().c_str(), sayText->param2().c_str(), pending);
-
-	// mmu's own SayText2 lines are sent with chat off, so they never match.
-	if (!sayText->chat() || !pending)
+	// Plugin lines carry the whole text in messagename or text with no sender, the game's carry the sender and message as params.
+	// Same test cs2kz uses to block the game's line.
+	NetworkMessageId id = event->GetNetMessageInfo()->m_MessageId;
+	if (id == UM_SayText2)
 	{
-		return -1;
+		auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText2>();
+		MMU_LOG_INFO("SayText2 during say from slot %d: entityindex=%d chat=%d messagename=\"%s\" param1=\"%s\" param2=\"%s\"\n", m_slot,
+					 sayText->entityindex(), sayText->chat(), sayText->messagename().c_str(), sayText->param1().c_str(), sayText->param2().c_str());
+		if (sayText->entityindex() != -1 && (!sayText->param1().empty() || !sayText->param2().empty()))
+		{
+			return m_slot;
+		}
 	}
-	return slot;
+	else if (id == UM_SayText)
+	{
+		auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText>();
+		MMU_LOG_INFO("SayText during say from slot %d: playerindex=%d chat=%d text=\"%s\"\n", m_slot, sayText->playerindex(), sayText->chat(),
+					 sayText->text().c_str());
+		if (sayText->playerindex() != -1)
+		{
+			return m_slot;
+		}
+	}
+	return -1;
 }
 
 void CS2AChatProcessor::RenderPending(int slot, const CPlayerBitVec &recipients)
 {
-	PendingSay &say = m_pending[slot];
-	const std::string line = ComposeLine(slot, say.message.c_str(), say.teamOnly);
-
 	CMultiRecipientFilter filter;
-	for (int i = 0; i < recipients.GetNumBits() && i <= MAXPLAYERS; i++)
+	std::vector<int> fresh;
+	for (int i = 0; i < recipients.GetNumBits() && i < m_sentTo.GetNumBits(); i++)
 	{
-		if (recipients.IsBitSet(i))
+		if (recipients.IsBitSet(i) && !m_sentTo.IsBitSet(i))
 		{
 			filter.AddRecipient(i);
+			m_sentTo.Set(i);
+			fresh.push_back(i);
 		}
 	}
+	if (fresh.empty())
+	{
+		return;
+	}
+
+	const std::string line = ComposeLine(slot, m_message.c_str(), m_teamOnly);
 
 	// The whole line is composed already, colors and all, so it just prints as-is.
 	// SayText2 would attribute the line to a player entity, which turns CHAT_COLOR_PURPLE into that player's team color.
@@ -217,19 +234,19 @@ void CS2AChatProcessor::RenderPending(int slot, const CPlayerBitVec &recipients)
 	chatLine += line;
 	mmu::SendChatToFilter(&filter, chatLine.c_str());
 
-	// The game's SayText2 would have echoed into each recipient's console, and TextMsg does not.
+	// The game's line would have echoed into each recipient's console, and TextMsg does not.
 	char stripped[512];
 	mmu::StripChatColors(line.c_str(), stripped, sizeof(stripped));
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i : fresh)
 	{
-		if (filter.GetRecipients().IsBitSet(i) && g_pEngine && g_pEngine->GetPlayerNetInfo(CPlayerSlot(i)))
+		if (g_pEngine && g_pEngine->GetPlayerNetInfo(CPlayerSlot(i)))
 		{
 			ADMIN_PrintToClient(i, "%s\n", stripped);
 		}
 	}
 
-	say.strippedLine = stripped;
-	say.rendered = true;
+	m_strippedLine = stripped;
+	m_rendered = true;
 }
 
 std::string CS2AChatProcessor::ComposeLine(int slot, const char *message, bool teamOnly) const

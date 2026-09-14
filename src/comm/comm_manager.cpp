@@ -285,15 +285,68 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 
 void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
 {
+	if (!ApplyMute(targetSlot, timeMinutes, reason, adminSlot))
+	{
+		return;
+	}
+	AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently muted. Reason: %s\n",
+				  "You have been muted for %d minutes. Reason: %s\n", "%s muted %s (%d min). Reason: %s\n");
+}
+
+void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+{
+	if (!ApplyGag(targetSlot, timeMinutes, reason, adminSlot))
+	{
+		return;
+	}
+	AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently gagged. Reason: %s\n",
+				  "You have been gagged for %d minutes. Reason: %s\n", "%s gagged %s (%d min). Reason: %s\n");
+}
+
+void CS2ACommManager::AnnounceBlock(int targetSlot, int adminSlot, int timeMinutes, const char *reason, const char *permanentPhrase,
+									const char *timedPhrase, const char *allPhrase)
+{
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
 		return;
 	}
+	const char *why = reason ? reason : "No reason";
+	if (timeMinutes == 0)
+	{
+		ADMIN_PrintToChatT(targetSlot, permanentPhrase, why);
+	}
+	else
+	{
+		ADMIN_PrintToChatT(targetSlot, timedPhrase, timeMinutes, why);
+	}
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
+	ADMIN_ChatToAllT(allPhrase, adminName.c_str(), target->name.c_str(), timeMinutes, why);
+}
+
+void CS2ACommManager::AnnounceLift(int targetSlot, int adminSlot, const char *selfPhrase, const char *allPhrase)
+{
+	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	if (!target)
+	{
+		return;
+	}
+	ADMIN_PrintToChatT(targetSlot, selfPhrase);
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
+	ADMIN_ChatToAllT(allPhrase, adminName.c_str(), target->name.c_str());
+}
+
+bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+{
+	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	if (!target)
+	{
+		return false;
+	}
 
 	if (g_CS2AForwards.FireOnMutePlayer(targetSlot, adminSlot, timeMinutes, reason))
 	{
-		return;
+		return false;
 	}
 
 	target->isMuted = true;
@@ -310,37 +363,26 @@ void CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 
 	InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_MUTE);
 
-	if (timeMinutes == 0)
-	{
-		ADMIN_PrintToChatT(targetSlot, "You have been permanently muted. Reason: %s\n", reason ? reason : "No reason");
-	}
-	else
-	{
-		ADMIN_PrintToChatT(targetSlot, "You have been muted for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
-	}
-
-	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_ChatToAllT("%s muted %s (%d min). Reason: %s\n", adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
-
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Muted \"%s\" (%s) for %d min. Reason: %s", target->name.c_str(), target->authid.c_str(), timeMinutes,
 			 reason ? reason : "No reason");
 	ADMIN_LogAction(adminSlot, logMsg);
 
 	MMU_LOG_INFO("Muted \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
+	return true;
 }
 
-void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
 {
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
-		return;
+		return false;
 	}
 
 	if (g_CS2AForwards.FireOnGagPlayer(targetSlot, adminSlot, timeMinutes, reason))
 	{
-		return;
+		return false;
 	}
 
 	target->isGagged = true;
@@ -357,24 +399,13 @@ void CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 
 	InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_GAG);
 
-	if (timeMinutes == 0)
-	{
-		ADMIN_PrintToChatT(targetSlot, "You have been permanently gagged. Reason: %s\n", reason ? reason : "No reason");
-	}
-	else
-	{
-		ADMIN_PrintToChatT(targetSlot, "You have been gagged for %d minutes. Reason: %s\n", timeMinutes, reason ? reason : "No reason");
-	}
-
-	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_ChatToAllT("%s gagged %s (%d min). Reason: %s\n", adminName.c_str(), target->name.c_str(), timeMinutes, reason ? reason : "No reason");
-
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Gagged \"%s\" (%s) for %d min. Reason: %s", target->name.c_str(), target->authid.c_str(), timeMinutes,
 			 reason ? reason : "No reason");
 	ADMIN_LogAction(adminSlot, logMsg);
 
 	MMU_LOG_INFO("Gagged \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
+	return true;
 }
 
 void CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
@@ -384,16 +415,60 @@ void CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char 
 		return;
 	}
 
-	MutePlayer(targetSlot, timeMinutes, reason, adminSlot);
-	GagPlayer(targetSlot, timeMinutes, reason, adminSlot);
+	// The mute and gag forwards still fire, so one of them can block its half.
+	// The announcement then names whatever actually applied instead of claiming a full silence.
+	bool muted = ApplyMute(targetSlot, timeMinutes, reason, adminSlot);
+	bool gagged = ApplyGag(targetSlot, timeMinutes, reason, adminSlot);
+	if (muted && gagged)
+	{
+		AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently silenced. Reason: %s\n",
+					  "You have been silenced for %d minutes. Reason: %s\n", "%s silenced %s (%d min). Reason: %s\n");
+	}
+	else if (muted)
+	{
+		AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently muted. Reason: %s\n",
+					  "You have been muted for %d minutes. Reason: %s\n", "%s muted %s (%d min). Reason: %s\n");
+	}
+	else if (gagged)
+	{
+		AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently gagged. Reason: %s\n",
+					  "You have been gagged for %d minutes. Reason: %s\n", "%s gagged %s (%d min). Reason: %s\n");
+	}
 }
 
 void CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
 {
+	if (LiftMute(targetSlot, adminSlot))
+	{
+		AnnounceLift(targetSlot, adminSlot, "You have been unmuted.\n", "%s unmuted %s.\n");
+	}
+}
+
+void CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
+{
+	if (LiftGag(targetSlot, adminSlot))
+	{
+		AnnounceLift(targetSlot, adminSlot, "You have been ungagged.\n", "%s ungagged %s.\n");
+	}
+}
+
+void CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
+{
+	g_CS2AForwards.FireOnUnsilencePlayer(targetSlot, adminSlot);
+	bool unmuted = LiftMute(targetSlot, adminSlot);
+	bool ungagged = LiftGag(targetSlot, adminSlot);
+	if (unmuted && ungagged)
+	{
+		AnnounceLift(targetSlot, adminSlot, "You have been unsilenced.\n", "%s unsilenced %s.\n");
+	}
+}
+
+bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
+{
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
-		return;
+		return false;
 	}
 
 	g_CS2AForwards.FireOnUnmutePlayer(targetSlot, adminSlot);
@@ -405,22 +480,18 @@ void CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
 
 	RemoveComm(target->authid.c_str(), adminSlot, COMM_MUTE);
 
-	ADMIN_PrintToChatT(targetSlot, "You have been unmuted.\n");
-
-	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_ChatToAllT("%s unmuted %s.\n", adminName.c_str(), target->name.c_str());
-
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Unmuted \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
 	ADMIN_LogAction(adminSlot, logMsg);
+	return true;
 }
 
-void CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
+bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot)
 {
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
-		return;
+		return false;
 	}
 
 	g_CS2AForwards.FireOnUngagPlayer(targetSlot, adminSlot);
@@ -432,21 +503,10 @@ void CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
 
 	RemoveComm(target->authid.c_str(), adminSlot, COMM_GAG);
 
-	ADMIN_PrintToChatT(targetSlot, "You have been ungagged.\n");
-
-	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_ChatToAllT("%s ungagged %s.\n", adminName.c_str(), target->name.c_str());
-
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Ungagged \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
 	ADMIN_LogAction(adminSlot, logMsg);
-}
-
-void CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
-{
-	g_CS2AForwards.FireOnUnsilencePlayer(targetSlot, adminSlot);
-	UnmutePlayer(targetSlot, adminSlot);
-	UngagPlayer(targetSlot, adminSlot);
+	return true;
 }
 
 void CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)

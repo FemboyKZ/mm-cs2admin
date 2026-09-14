@@ -172,6 +172,26 @@
 		"en"	"%s ungagged %s.\n"
 		"chi"	"%s 解除了 %s 的禁言。\n"
 	}
+	"You have been permanently silenced. Reason: %s\n"
+	{
+		"en"	"You have been permanently silenced. Reason: %s\n"
+	}
+	"You have been silenced for %d minutes. Reason: %s\n"
+	{
+		"en"	"You have been silenced for %d minutes. Reason: %s\n"
+	}
+	"%s silenced %s (%d min). Reason: %s\n"
+	{
+		"en"	"%s silenced %s (%d min). Reason: %s\n"
+	}
+	"You have been unsilenced.\n"
+	{
+		"en"	"You have been unsilenced.\n"
+	}
+	"%s unsilenced %s.\n"
+	{
+		"en"	"%s unsilenced %s.\n"
+	}
 	"You have been muted for this session.\n"
 	{
 		"en"	"You have been muted for this session.\n"

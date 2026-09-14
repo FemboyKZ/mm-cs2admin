@@ -62,8 +62,16 @@ public:
 
 	// Check if a player is currently muted.
 	bool IsMuted(int slot);
-
 private:
+	// Apply or lift without announcing, so silence can announce once for both halves. Apply returns false when a forward blocked it.
+	bool ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	bool ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	bool LiftMute(int targetSlot, int adminSlot);
+	bool LiftGag(int targetSlot, int adminSlot);
+	void AnnounceBlock(int targetSlot, int adminSlot, int timeMinutes, const char *reason, const char *permanentPhrase, const char *timedPhrase,
+					   const char *allPhrase);
+	void AnnounceLift(int targetSlot, int adminSlot, const char *selfPhrase, const char *allPhrase);
+
 	void InsertComm(const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot, int type);
 	void RemoveComm(const char *authid, int adminSlot, int type);
 };

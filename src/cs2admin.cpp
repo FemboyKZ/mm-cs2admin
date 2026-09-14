@@ -27,6 +27,7 @@ void ShutdownConsoleCommands();
 #include "mmu/entity/entity_system.h"
 #include "mmu/gamesystem.h"
 #include "mmu/log.h"
+#include "mmu/voice_block.h"
 
 #include <sql_mm.h>
 
@@ -111,6 +112,8 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	// Non fatal, translations fall back to the default language.
 	mmu::cvarquery::Init(g_pEngine);
+	// Non fatal too, it logs and leaves voice mutes unenforced.
+	mmu::voiceblock::Init(g_pEngine, [](int slot) { return g_CS2ACommManager.IsMuted(slot); });
 
 	m_bLateLoaded = late;
 	m_bSkipLevelInitReload = !late;
@@ -190,6 +193,8 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 
 	g_CS2AForeignPlugins.Shutdown();
 	g_CS2ATagManager.ReleaseClanTags();
+
+	mmu::voiceblock::Shutdown();
 
 	// Drops pending callbacks pointing into this binary.
 	mmu::cvarquery::Shutdown();
@@ -837,32 +842,6 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	}
 
 	float curtime = globals->curtime;
-
-	// Enforce voice muting every tick.
-	// SetClientListening must be called repeatedly because the engine resets the listen matrix each frame.
-	for (int i = 0; i < globals->maxClients; i++)
-	{
-		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
-		if (!player || !player->isMuted)
-		{
-			continue;
-		}
-
-		// Block all other players from hearing this muted player
-		for (int j = 0; j < globals->maxClients; j++)
-		{
-			if (i == j)
-			{
-				continue;
-			}
-
-			PlayerInfo *listener = g_CS2APlayerManager.GetPlayer(j);
-			if (listener && listener->connected)
-			{
-				g_pEngine->SetClientListening(CPlayerSlot(j), CPlayerSlot(i), false);
-			}
-		}
-	}
 
 	g_CS2AMapManager.Tick(curtime);
 

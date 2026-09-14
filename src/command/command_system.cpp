@@ -235,6 +235,20 @@ static bool CheckImmunity(int callerSlot, int targetSlot)
 	return true;
 }
 
+// Discord notice for an action on a connected player. durationMinutes -1 leaves the duration line out.
+static void NotifyDiscordOnPlayer(int adminSlot, const char *action, int targetSlot, const char *reason = nullptr, int durationMinutes = -1)
+{
+	PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(targetSlot);
+	if (!targetPlayer)
+	{
+		return;
+	}
+	PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(adminSlot);
+	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
+	g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), action, targetPlayer->name.c_str(), reason, durationMinutes,
+									adminPlayer ? adminPlayer->steamid64 : 0, targetPlayer->steamid64);
+}
+
 CS2ACommandSystem g_CS2ACommandSystem;
 
 void CS2ACommandSystem::RegisterCommand(const char *name, ChatCommandCallback callback)
@@ -687,6 +701,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Unban", args[0].c_str(), nullptr, -1,
+														adminPlayer ? adminPlayer->steamid64 : 0);
+
 						g_CS2ABanManager.Unban(args[0].c_str(), slot);
 					});
 
@@ -804,6 +823,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						if (!CheckImmunity(slot, target))
+						{
+							return;
+						}
+
+						NotifyDiscordOnPlayer(slot, "Unmute", target);
 						g_CS2ACommManager.UnmutePlayer(target, slot);
 					});
 
@@ -848,6 +873,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 						std::string reason = JoinArgs(args, 2, "Gagged");
+						NotifyDiscordOnPlayer(slot, "Gag", target, reason.c_str(), time);
 						g_CS2ACommManager.GagPlayer(target, time, reason.c_str(), slot);
 					});
 
@@ -878,6 +904,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						if (!CheckImmunity(slot, target))
+						{
+							return;
+						}
+
+						NotifyDiscordOnPlayer(slot, "Ungag", target);
 						g_CS2ACommManager.UngagPlayer(target, slot);
 					});
 
@@ -922,6 +954,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 						std::string reason = JoinArgs(args, 2, "Silenced");
+						NotifyDiscordOnPlayer(slot, "Silence", target, reason.c_str(), time);
 						g_CS2ACommManager.SilencePlayer(target, time, reason.c_str(), slot);
 					});
 
@@ -952,43 +985,53 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						if (!CheckImmunity(slot, target))
+						{
+							return;
+						}
+
+						NotifyDiscordOnPlayer(slot, "Unsilence", target);
 						g_CS2ACommManager.UnsilencePlayer(target, slot);
 					});
 
 	// !banip <ip> <time> [reason]
-	RegisterCommand("banip",
-					[](int slot, const std::vector<std::string> &args, bool silent)
-					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "banip", "banning", ADMFLAG_BAN))
-						{
-							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
-							return;
-						}
+	RegisterCommand(
+		"banip",
+		[](int slot, const std::vector<std::string> &args, bool silent)
+		{
+			if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "banip", "banning", ADMFLAG_BAN))
+			{
+				ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+				return;
+			}
 
-						if (args.size() < 2)
-						{
-							ADMIN_ReplyToCommandT(slot, "Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
-							return;
-						}
+			if (args.size() < 2)
+			{
+				ADMIN_ReplyToCommandT(slot, "Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
+				return;
+			}
 
-						const char *ip = args[0].c_str();
-						if (!IsValidIPv4(ip))
-						{
-							ADMIN_ReplyToCommandT(slot, "Invalid IP address format.\n");
-							return;
-						}
+			const char *ip = args[0].c_str();
+			if (!IsValidIPv4(ip))
+			{
+				ADMIN_ReplyToCommandT(slot, "Invalid IP address format.\n");
+				return;
+			}
 
-						int time = ADMIN_ParseDuration(args[1].c_str());
-						if (time < 0)
-						{
-							ADMIN_ReplyToCommandT(
-								slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
-							return;
-						}
-						std::string reason = JoinArgs(args, 2, "Banned");
+			int time = ADMIN_ParseDuration(args[1].c_str());
+			if (time < 0)
+			{
+				ADMIN_ReplyToCommandT(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
+				return;
+			}
+			std::string reason = JoinArgs(args, 2, "Banned");
 
-						g_CS2ABanManager.BanIP(ip, time, reason.c_str(), slot);
-					});
+			PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+			std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+			g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "BanIP", ip, reason.c_str(), time, adminPlayer ? adminPlayer->steamid64 : 0);
+
+			g_CS2ABanManager.BanIP(ip, time, reason.c_str(), slot);
+		});
 
 	// !comms [target] - check comm status
 	RegisterCommand("comms",

@@ -46,6 +46,7 @@ for sdk_target in MMSPlugin.sdk_targets:
         "vendor/mm-utils/mmu/sigscan.cpp",
         "vendor/mm-utils/mmu/sql.cpp",
         "vendor/mm-utils/mmu/translations.cpp",
+        "vendor/mm-utils/mmu/voice_block.cpp",
         "vendor/mm-utils/mmu/workshop.cpp",
     ]
 

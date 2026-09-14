@@ -439,6 +439,10 @@ void CS2APlugin::AllPluginsLoaded()
 		return;
 	}
 
+	// Read once, before anything can be queued.
+	// Enqueue rewrites the file from memory, so a later read would either come too late to save the old entries or load duplicates of new ones.
+	g_CS2AOfflineQueue.LoadFromFile();
+
 	g_CS2ADatabase.Connect(
 		[this](bool success)
 		{
@@ -456,8 +460,6 @@ void CS2APlugin::AllPluginsLoaded()
 					g_CS2AConfig.serverID = 0;
 				}
 
-				// Load and process offline queue
-				g_CS2AOfflineQueue.LoadFromFile();
 				if (g_CS2AOfflineQueue.HasItems())
 				{
 					g_CS2AOfflineQueue.ProcessQueue();

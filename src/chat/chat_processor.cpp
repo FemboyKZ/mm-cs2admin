@@ -151,23 +151,16 @@ void CS2AChatProcessor::BeginSay(int slot, const char *message, bool teamOnly)
 	m_slot = slot;
 	m_teamOnly = teamOnly;
 	m_message = message ? message : "";
-	m_rendered = false;
-	m_strippedLine.clear();
 	m_sentTo.ClearAll();
 }
 
 void CS2AChatProcessor::EndSay(int slot)
 {
-	if (slot < 0 || slot != m_slot)
+	// No server console copy here, the game still prints its own "[All Chat]" line since say is no longer superseded.
+	if (slot >= 0 && slot == m_slot)
 	{
-		return;
+		m_slot = -1;
 	}
-	// Server console copy, for admins watching and for logs. Once per say, however many events the game split it into.
-	if (m_rendered)
-	{
-		ADMIN_PrintToClient(-1, "%s\n", m_strippedLine.c_str());
-	}
-	m_slot = -1;
 }
 
 int CS2AChatProcessor::MatchGameLine(INetworkMessageInternal *event, const CNetMessage *data) const
@@ -178,20 +171,22 @@ int CS2AChatProcessor::MatchGameLine(INetworkMessageInternal *event, const CNetM
 	}
 
 	// Plugin lines carry the whole text in messagename or text with no sender, the game's carry the sender and message as params.
-	// Same test cs2kz uses to block the game's line.
+	// Same test cs2kz uses to block the game's line, plus the sender, so a line some other plugin triggers mid-say is left alone.
+	// The game's chat SayText2 was seen carrying entityindex = slot + 1.
 	NetworkMessageId id = event->GetNetMessageInfo()->m_MessageId;
 	if (id == UM_SayText2)
 	{
 		auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText2>();
-		if (sayText->entityindex() != -1 && (!sayText->param1().empty() || !sayText->param2().empty()))
+		if (sayText->entityindex() == m_slot + 1 && (!sayText->param1().empty() || !sayText->param2().empty()))
 		{
 			return m_slot;
 		}
 	}
 	else if (id == UM_SayText)
 	{
+		// Never seen for player chat, so how playerindex numbers players is unknown. Either convention counts.
 		auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText>();
-		if (sayText->playerindex() != -1)
+		if (sayText->playerindex() == m_slot + 1 || sayText->playerindex() == m_slot)
 		{
 			return m_slot;
 		}
@@ -235,9 +230,6 @@ void CS2AChatProcessor::RenderPending(int slot, const CPlayerBitVec &recipients)
 			ADMIN_PrintToClient(i, "%s\n", stripped);
 		}
 	}
-
-	m_strippedLine = stripped;
-	m_rendered = true;
 }
 
 std::string CS2AChatProcessor::ComposeLine(int slot, const char *message, bool teamOnly) const

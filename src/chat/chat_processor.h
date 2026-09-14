@@ -43,9 +43,7 @@ private:
 
 	int m_slot = -1;
 	bool m_teamOnly = false;
-	bool m_rendered = false;
 	std::string m_message;
-	std::string m_strippedLine;
 	CPlayerBitVec m_sentTo;
 };
 

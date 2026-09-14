@@ -739,9 +739,10 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 	// Process chat commands (! and / prefixed) BEFORE checking gag.
 	// This allows gagged players to still run commands like !ungag requests.
-	if (g_CS2ACommandSystem.ProcessChatMessage(slotIdx, message, isSayTeam))
+	// A command with the normal prefix stays visible, so it falls through to the gag check and chat rendering below.
+	bool silent = false;
+	if (g_CS2ACommandSystem.ProcessChatMessage(slotIdx, message, isSayTeam, silent) && silent)
 	{
-		// Command was handled - suppress the chat message from appearing in chat
 		return {KHook::Action::Supersede};
 	}
 

@@ -249,7 +249,7 @@ bool CS2ACommandSystem::ShouldBlockChat(int slot)
 	return g_CS2ACommManager.IsGagged(slot);
 }
 
-bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool teamOnly)
+bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool teamOnly, bool &silent)
 {
 	std::string msg = mmu::StripSayQuotes(message);
 	if (msg.empty())
@@ -269,6 +269,7 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 		return false;
 	}
 
+	silent = cmd.silent;
 	it->second(slot, cmd.args, cmd.silent);
 	return true;
 }

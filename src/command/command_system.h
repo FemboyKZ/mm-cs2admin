@@ -37,7 +37,8 @@ public:
 	// Process a chat message. Called from the say/say_team hook.
 	// Returns true if the message was a command (and was handled),
 	// false if it's a normal chat message.
-	bool ProcessChatMessage(int slot, const char *message, bool teamOnly);
+	// silent is set when the command used the silent prefix, so the chat line should be hidden.
+	bool ProcessChatMessage(int slot, const char *message, bool teamOnly, bool &silent);
 
 	// Dispatch a console command to the matching chat command handler.
 	// cmdName = command name without "mm_" prefix (e.g. "who").

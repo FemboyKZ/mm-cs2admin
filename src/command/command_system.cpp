@@ -235,16 +235,24 @@ static bool CheckImmunity(int callerSlot, int targetSlot)
 	return true;
 }
 
-// Who a Discord notice is about. Read before the action runs, since a ban's kick resets the target's PlayerInfo.
+// Who a Discord notice is about and who did it.
+// Read before the action runs, since a ban's kick resets the target's PlayerInfo, and the admin's too when they ban themselves.
 struct DiscordTarget
 {
+	std::string adminName;
+	uint64_t adminSteamid64 = 0;
 	std::string name;
 	uint64_t steamid64 = 0;
 };
 
-static DiscordTarget CaptureDiscordTarget(int targetSlot)
+static DiscordTarget CaptureDiscordTarget(int adminSlot, int targetSlot)
 {
 	DiscordTarget target;
+	target.adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
+	if (PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot))
+	{
+		target.adminSteamid64 = admin->steamid64;
+	}
 	if (PlayerInfo *player = g_CS2APlayerManager.GetPlayer(targetSlot))
 	{
 		target.name = player->name;
@@ -255,12 +263,9 @@ static DiscordTarget CaptureDiscordTarget(int targetSlot)
 
 // Sent only once the action went through, so a forward that blocks it doesn't leave a notice for something that never happened.
 // durationMinutes -1 leaves the duration line out.
-static void NotifyDiscordOnPlayer(int adminSlot, const char *action, const DiscordTarget &target, const char *reason = nullptr,
-								  int durationMinutes = -1)
+static void NotifyDiscordOnPlayer(const char *action, const DiscordTarget &target, const char *reason = nullptr, int durationMinutes = -1)
 {
-	PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(adminSlot);
-	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), action, target.name.c_str(), reason, durationMinutes, adminPlayer ? adminPlayer->steamid64 : 0,
+	g_CS2ADiscord.NotifyAdminAction(target.adminName.c_str(), action, target.name.c_str(), reason, durationMinutes, target.adminSteamid64,
 									target.steamid64);
 }
 
@@ -706,10 +711,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 						std::string reason = JoinArgs(args, 2, "Banned");
 
-						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						if (g_CS2ABanManager.BanPlayer(target, time, reason.c_str(), slot))
 						{
-							NotifyDiscordOnPlayer(slot, "Ban", discordTarget, reason.c_str(), time);
+							NotifyDiscordOnPlayer("Ban", discordTarget, reason.c_str(), time);
 						}
 					});
 
@@ -812,10 +817,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 						std::string reason = JoinArgs(args, 2, "Muted");
 
-						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						if (g_CS2ACommManager.MutePlayer(target, time, reason.c_str(), slot))
 						{
-							NotifyDiscordOnPlayer(slot, "Mute", discordTarget, reason.c_str(), time);
+							NotifyDiscordOnPlayer("Mute", discordTarget, reason.c_str(), time);
 						}
 					});
 
@@ -851,13 +856,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						if (!g_CS2ACommManager.UnmutePlayer(target, slot))
 						{
 							ADMIN_ReplyToCommandT(slot, "%s is not muted.\n", discordTarget.name.c_str());
 							return;
 						}
-						NotifyDiscordOnPlayer(slot, "Unmute", discordTarget);
+						NotifyDiscordOnPlayer("Unmute", discordTarget);
 					});
 
 	// !gag <target> <time> [reason]
@@ -901,10 +906,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 						std::string reason = JoinArgs(args, 2, "Gagged");
-						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						if (g_CS2ACommManager.GagPlayer(target, time, reason.c_str(), slot))
 						{
-							NotifyDiscordOnPlayer(slot, "Gag", discordTarget, reason.c_str(), time);
+							NotifyDiscordOnPlayer("Gag", discordTarget, reason.c_str(), time);
 						}
 					});
 
@@ -940,13 +945,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						if (!g_CS2ACommManager.UngagPlayer(target, slot))
 						{
 							ADMIN_ReplyToCommandT(slot, "%s is not gagged.\n", discordTarget.name.c_str());
 							return;
 						}
-						NotifyDiscordOnPlayer(slot, "Ungag", discordTarget);
+						NotifyDiscordOnPlayer("Ungag", discordTarget);
 					});
 
 	// !silence <target> <time> [reason]
@@ -990,11 +995,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 						std::string reason = JoinArgs(args, 2, "Silenced");
-						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						int applied = g_CS2ACommManager.SilencePlayer(target, time, reason.c_str(), slot);
 						if (const char *action = CommActionName(applied, "Silence", "Mute", "Gag"))
 						{
-							NotifyDiscordOnPlayer(slot, action, discordTarget, reason.c_str(), time);
+							NotifyDiscordOnPlayer(action, discordTarget, reason.c_str(), time);
 						}
 					});
 
@@ -1030,7 +1035,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						DiscordTarget discordTarget = CaptureDiscordTarget(target);
+						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						int lifted = g_CS2ACommManager.UnsilencePlayer(target, slot);
 						const char *action = CommActionName(lifted, "Unsilence", "Unmute", "Ungag");
 						if (!action)
@@ -1038,7 +1043,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							ADMIN_ReplyToCommandT(slot, "%s is not muted or gagged.\n", discordTarget.name.c_str());
 							return;
 						}
-						NotifyDiscordOnPlayer(slot, action, discordTarget);
+						NotifyDiscordOnPlayer(action, discordTarget);
 					});
 
 	// !banip <ip> <time> [reason]

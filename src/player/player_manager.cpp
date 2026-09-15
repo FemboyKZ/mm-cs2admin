@@ -574,7 +574,8 @@ std::string ADMIN_FormatDuration(int minutes)
 	}
 
 	int weeks = days / 7;
-	if (weeks < 4)
+	// By days, not weeks: 28 and 29 days are 4 weeks but still 0 whole months.
+	if (days < 30)
 	{
 		return std::to_string(weeks) + " week" + (weeks != 1 ? "s" : "");
 	}

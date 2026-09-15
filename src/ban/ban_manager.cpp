@@ -143,8 +143,14 @@ bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	return true;
 }
 
-void CS2ABanManager::AddBan(const char *authid, int time, const char *reason, int adminSlot)
+bool CS2ABanManager::AddBan(const char *authid, int time, const char *reason, int adminSlot)
 {
+	if (!g_CS2ADatabase.IsInitialized() || !authid)
+	{
+		MMU_LOG_WARN("Cannot insert ban: no database configured.\n");
+		return false;
+	}
+
 	InsertBan("", authid, "", time, reason, adminSlot);
 
 	char logMsg[512];
@@ -152,14 +158,15 @@ void CS2ABanManager::AddBan(const char *authid, int time, const char *reason, in
 	ADMIN_LogAction(adminSlot, logMsg);
 
 	MMU_LOG_INFO("Added ban for %s, %d min. Reason: %s\n", authid, time, reason ? reason : "No reason");
+	return true;
 }
 
-void CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adminSlot)
+bool CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adminSlot)
 {
 	if (!g_CS2ADatabase.IsInitialized())
 	{
 		MMU_LOG_WARN("Cannot insert IP ban: no database configured.\n");
-		return;
+		return false;
 	}
 
 	std::string escapedIP = g_CS2ADatabase.Escape(ip);
@@ -184,30 +191,7 @@ void CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 			 prefix.c_str(), escapedIP.c_str(), now, now + lengthSec, lengthSec, escapedReason.c_str(), prefix.c_str(), adminAuth.c_str(),
 			 adminMatch.c_str(), adminIP.c_str(), sid);
 
-	if (!g_CS2ADatabase.IsConnected())
-	{
-		g_CS2AOfflineQueue.Enqueue(query);
-	}
-	else
-	{
-		g_CS2ADatabase.Query(query,
-							 [queryStr = std::string(query)](ISQLQuery *result)
-							 {
-								 if (!result)
-								 {
-									 g_CS2AOfflineQueue.Enqueue(queryStr);
-									 return;
-								 }
-								 if (result->GetAffectedRows() > 0)
-								 {
-									 MMU_LOG_INFO("IP ban inserted successfully.\n");
-								 }
-								 else
-								 {
-									 MMU_LOG_WARN("Failed to insert IP ban.\n");
-								 }
-							 });
-	}
+	g_CS2AOfflineQueue.Submit(query);
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Banned IP %s for %d min. Reason: %s", ip, time, reason ? reason : "No reason");
@@ -235,6 +219,7 @@ void CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 		ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason ? reason : "Banned");
 		g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 	}
+	return true;
 }
 
 void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot)
@@ -271,36 +256,14 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 			 prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(), adminIP.c_str(), sid);
 
 	// Otherwise the kicked player walks straight back in.
-	if (!g_CS2ADatabase.IsConnected())
-	{
-		g_CS2AOfflineQueue.Enqueue(query);
-		return;
-	}
-
-	g_CS2ADatabase.Query(query,
-						 [queryStr = std::string(query)](ISQLQuery *result)
-						 {
-							 if (!result)
-							 {
-								 g_CS2AOfflineQueue.Enqueue(queryStr);
-								 return;
-							 }
-							 if (result->GetAffectedRows() > 0)
-							 {
-								 MMU_LOG_INFO("Ban inserted successfully.\n");
-							 }
-							 else
-							 {
-								 MMU_LOG_WARN("Failed to insert ban.\n");
-							 }
-						 });
+	g_CS2AOfflineQueue.Submit(query);
 }
 
-void CS2ABanManager::Unban(const char *authid, int adminSlot)
+bool CS2ABanManager::Unban(const char *authid, int adminSlot)
 {
 	if (!g_CS2ADatabase.IsInitialized() || !authid)
 	{
-		return;
+		return false;
 	}
 
 	g_CS2AForwards.FireOnUnbanPlayer(authid, adminSlot);
@@ -329,36 +292,15 @@ void CS2ABanManager::Unban(const char *authid, int adminSlot)
 	snprintf(logMsg, sizeof(logMsg), "Unbanned %s", authid);
 	ADMIN_LogAction(adminSlot, logMsg);
 
-	if (!g_CS2ADatabase.IsConnected())
-	{
-		g_CS2AOfflineQueue.Enqueue(query);
-		return;
-	}
-
-	g_CS2ADatabase.Query(query,
-						 [authid = std::string(authid), queryStr = std::string(query)](ISQLQuery *result)
-						 {
-							 if (!result)
-							 {
-								 g_CS2AOfflineQueue.Enqueue(queryStr);
-								 return;
-							 }
-							 if (result->GetAffectedRows() > 0)
-							 {
-								 MMU_LOG_INFO("Unbanned %s successfully.\n", authid.c_str());
-							 }
-							 else
-							 {
-								 MMU_LOG_INFO("No active ban found for %s.\n", authid.c_str());
-							 }
-						 });
+	g_CS2AOfflineQueue.Submit(query);
+	return true;
 }
 
-void CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
+bool CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
 {
 	if (!g_CS2ADatabase.IsInitialized() || !ip)
 	{
-		return;
+		return false;
 	}
 
 	std::string escapedIP = g_CS2ADatabase.Escape(ip);
@@ -384,29 +326,8 @@ void CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
 	snprintf(logMsg, sizeof(logMsg), "Unbanned IP %s", ip);
 	ADMIN_LogAction(adminSlot, logMsg);
 
-	if (!g_CS2ADatabase.IsConnected())
-	{
-		g_CS2AOfflineQueue.Enqueue(query);
-		return;
-	}
-
-	g_CS2ADatabase.Query(query,
-						 [ip = std::string(ip), queryStr = std::string(query)](ISQLQuery *result)
-						 {
-							 if (!result)
-							 {
-								 g_CS2AOfflineQueue.Enqueue(queryStr);
-								 return;
-							 }
-							 if (result->GetAffectedRows() > 0)
-							 {
-								 MMU_LOG_INFO("Unbanned IP %s successfully.\n", ip.c_str());
-							 }
-							 else
-							 {
-								 MMU_LOG_INFO("No active IP ban found for %s.\n", ip.c_str());
-							 }
-						 });
+	g_CS2AOfflineQueue.Submit(query);
+	return true;
 }
 
 void CS2ABanManager::CheckHistory(int slot, uint64_t steamid64, const char *ip,
@@ -510,7 +431,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 	char query[1024];
 	snprintf(query, sizeof(query),
-			 "SELECT COUNT(*), MAX(length) FROM %s_bans WHERE ip = '%s' AND RemoveType IS NULL "
+			 "SELECT COUNT(*), MAX(length), MIN(length) FROM %s_bans WHERE ip = '%s' AND RemoveType IS NULL "
 			 "AND (length = '0' OR ends > %lld)%s%s",
 			 prefix.c_str(), escapedIP.c_str(), now, typeFilter.c_str(), timeFilter.c_str());
 
@@ -537,6 +458,12 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 			int count = rs->GetInt(0);
 			int originalLength = rs->GetInt(1);
+
+			// A length of 0 means permanent, so one such row outranks any finite MAX(length).
+			if (rs->GetInt(2) == 0)
+			{
+				originalLength = 0;
+			}
 
 			if (count <= g_CS2AConfig.sleuthBansAllowed)
 			{
@@ -588,6 +515,24 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 		});
 }
 
+// The caller's slot can change hands while a list query is in flight, and the output would then go to whoever took it.
+// The server console (slot -1) always prints.
+static bool CallerStillThere(int callerSlot, uint64_t callerSteamid64)
+{
+	if (callerSlot < 0)
+	{
+		return true;
+	}
+	PlayerInfo *caller = g_CS2APlayerManager.GetPlayer(callerSlot);
+	return caller && caller->steamid64 == callerSteamid64;
+}
+
+static uint64_t CallerSteamID(int callerSlot)
+{
+	PlayerInfo *caller = g_CS2APlayerManager.GetPlayer(callerSlot);
+	return caller ? caller->steamid64 : 0;
+}
+
 void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 {
 	if (!g_CS2ADatabase.IsConnected())
@@ -610,8 +555,13 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 			 prefix.c_str(), prefix.c_str(), authCond.c_str());
 
 	g_CS2ADatabase.Query(query,
-						 [callerSlot, authid = std::string(authid)](ISQLQuery *result)
+						 [callerSlot, callerId = CallerSteamID(callerSlot), authid = std::string(authid)](ISQLQuery *result)
 						 {
+							 if (!CallerStillThere(callerSlot, callerId))
+							 {
+								 return;
+							 }
+
 							 if (!result)
 							 {
 								 ADMIN_ReplyToCommandT(callerSlot, "Query failed.\n");
@@ -673,8 +623,13 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 			 prefix.c_str(), prefix.c_str(), authCond.c_str());
 
 	g_CS2ADatabase.Query(query,
-						 [callerSlot, authid = std::string(authid)](ISQLQuery *result)
+						 [callerSlot, callerId = CallerSteamID(callerSlot), authid = std::string(authid)](ISQLQuery *result)
 						 {
+							 if (!CallerStillThere(callerSlot, callerId))
+							 {
+								 return;
+							 }
+
 							 if (!result)
 							 {
 								 ADMIN_ReplyToCommandT(callerSlot, "Query failed.\n");

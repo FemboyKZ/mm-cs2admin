@@ -63,7 +63,21 @@ public:
 	// Check if a player is currently muted.
 	bool IsMuted(int slot);
 
+	// Bumped whenever an admin applies or lifts a block, so an older VerifyComms answer can be dropped.
+	uint32_t Generation(int slot) const
+	{
+		return (slot >= 0 && slot <= MAXPLAYERS) ? m_commGeneration[slot] : 0;
+	}
+
 private:
+	void BumpGeneration(int slot)
+	{
+		if (slot >= 0 && slot <= MAXPLAYERS)
+		{
+			m_commGeneration[slot]++;
+		}
+	}
+
 	// Apply or lift without announcing, so silence can announce once for both halves. Apply returns false when a forward blocked it.
 	bool ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
 	bool ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
@@ -75,6 +89,8 @@ private:
 
 	void InsertComm(const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot, int type);
 	void RemoveComm(const char *authid, int adminSlot, int type);
+
+	uint32_t m_commGeneration[MAXPLAYERS + 1] = {};
 };
 
 extern CS2ACommManager g_CS2ACommManager;

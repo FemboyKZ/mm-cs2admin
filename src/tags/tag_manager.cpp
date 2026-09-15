@@ -396,11 +396,19 @@ void CS2ATagManager::UpdateClanTag(int slot)
 	// ADMIN_BoardTagsActive is false when another plugin owns the clan tag.
 	if (!ADMIN_BoardTagsActive())
 	{
-		// A leftover override would hide cs2kz's own rank tag.
-		if (cs2kz && m_clanTag[slot][0])
+		// A leftover tag would hide cs2kz's own rank tag, or just sit on the scoreboard until the player reconnects.
+		if (!m_clanTag[slot][0])
+		{
+			return;
+		}
+		m_clanTag[slot][0] = '\0';
+		if (cs2kz)
 		{
 			cs2kz->SetClanTagOverride(slot, "");
-			m_clanTag[slot][0] = '\0';
+		}
+		else
+		{
+			RestoreClan(slot);
 		}
 		return;
 	}
@@ -434,10 +442,37 @@ void CS2ATagManager::UpdateClanTag(int slot)
 		return;
 	}
 
+	if (!*text)
+	{
+		m_clanTag[slot][0] = '\0';
+		RestoreClan(slot);
+		return;
+	}
+
 	// m_clanTag is what the engine ends up holding a pointer to,
 	// so the string has to live here rather than in the TagDef, which a reload would free.
+	if (!m_clanCaptured[slot])
+	{
+		m_originalClan[slot] = controller->m_szClan();
+		m_clanCaptured[slot] = true;
+	}
 	snprintf(m_clanTag[slot], sizeof(m_clanTag[slot]), "%s", text);
 	controller->SetClan(m_clanTag[slot]);
+}
+
+// Puts back the symbol the controller carried before we first wrote to it.
+// Without cs2kz the engine holds our pointer directly, so it must not be left pointing into this plugin.
+void CS2ATagManager::RestoreClan(int slot)
+{
+	if (!m_clanCaptured[slot])
+	{
+		return;
+	}
+	if (CCSPlayerController *controller = CCSPlayerController::FromSlot(slot))
+	{
+		controller->Setm_szClan(m_originalClan[slot]);
+	}
+	m_clanCaptured[slot] = false;
 }
 
 void CS2ATagManager::UpdateAllClanTags()
@@ -451,16 +486,20 @@ void CS2ATagManager::UpdateAllClanTags()
 void CS2ATagManager::ReleaseClanTags()
 {
 	ICS2KZ *cs2kz = g_CS2AForeignPlugins.CS2KZ();
-	if (!cs2kz)
-	{
-		return;
-	}
 	for (int slot = 0; slot <= MAXPLAYERS; slot++)
 	{
-		if (m_clanTag[slot][0])
+		if (!m_clanTag[slot][0])
+		{
+			continue;
+		}
+		m_clanTag[slot][0] = '\0';
+		if (cs2kz)
 		{
 			cs2kz->SetClanTagOverride(slot, "");
-			m_clanTag[slot][0] = '\0';
+		}
+		else
+		{
+			RestoreClan(slot);
 		}
 	}
 }
@@ -474,6 +513,9 @@ void CS2ATagManager::OnClientDisconnect(int slot)
 	m_selected[slot].clear();
 	m_tagDisabled[slot] = false;
 	m_clanTag[slot][0] = '\0';
+	// The next player in this slot brings their own controller state, so ours must not carry over.
+	m_clanCaptured[slot] = false;
+	m_originalClan[slot] = CUtlSymbolLarge();
 }
 
 void CS2ATagManager::EnsureSchema()
@@ -586,10 +628,5 @@ void CS2ATagManager::SavePlayerPref(int slot)
 				 prefix, (unsigned long long)player->steamid64, escapedId.c_str(), m_tagDisabled[slot] ? 1 : 0);
 	}
 
-	if (!g_CS2ADatabase.IsConnected())
-	{
-		g_CS2AOfflineQueue.Enqueue(query);
-		return;
-	}
-	g_CS2ADatabase.Query(query, nullptr);
+	g_CS2AOfflineQueue.Submit(query);
 }

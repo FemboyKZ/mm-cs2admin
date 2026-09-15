@@ -4,6 +4,7 @@
 #include "src/config/config.h"
 #include "src/db/database.h"
 #include "src/player/player_manager.h"
+#include "src/tags/tag_manager.h"
 
 #include <cstring>
 #include <cstdio>
@@ -136,19 +137,23 @@ void CS2AAdminManager::ReloadAdmins()
 {
 	// Startup fires this from both the DB connect callback and the first level init,
 	// and a map change can land on top of an mm_reload. Run one chain at a time.
+	double now = Plat_FloatTime();
 	if (m_reloadInFlight)
 	{
-		m_reloadPending = true;
-		return;
+		if (now - m_reloadStartTime < RELOAD_TIMEOUT)
+		{
+			m_reloadPending = true;
+			return;
+		}
+		// A query that errors never calls its callback, so the chain died without releasing the lock.
+		MMU_LOG_WARN("Admin reload stuck for %.0f seconds, abandoning it and starting over.\n", now - m_reloadStartTime);
+		m_reloadGeneration++;
 	}
 	m_reloadInFlight = true;
+	m_reloadStartTime = now;
+	uint32_t generation = m_reloadGeneration;
 
-	// Clear per-player admin state
-	for (int i = 0; i <= MAXPLAYERS; i++)
-	{
-		m_playerHasAdmin[i] = false;
-		m_playerAdmins[i] = {};
-	}
+	// Per-player admin state is left alone until the commit below, so admins keep their rights for the duration.
 
 	m_loadingDbAdmins.clear();
 	m_loadingGroups.clear();
@@ -166,18 +171,19 @@ void CS2AAdminManager::ReloadAdmins()
 	// Then load from DB (async)
 	if (g_CS2AConfig.enableAdmins && g_CS2ADatabase.IsConnected())
 	{
-		LoadDatabaseAdmins(
-			[this]()
-			{
-				MMU_LOG_INFO("Admin reload complete.\n");
-				FinishReload();
-			});
+		LoadDatabaseAdmins(generation,
+						   [this]()
+						   {
+							   MMU_LOG_INFO("Admin reload complete.\n");
+							   FinishReload();
+						   });
 	}
 	else
 	{
 		// No DB, just apply flat file admins to connected players
 		CommitLoadedData();
 		MergeAndApplyAll();
+		g_CS2ATagManager.UpdateAllClanTags();
 		MMU_LOG_INFO("Admin reload complete (flat file only).\n");
 		FinishReload();
 	}
@@ -222,29 +228,17 @@ void CS2AAdminManager::MergeAndApplyAll()
 	}
 }
 
-void CS2AAdminManager::AssignAdminToPlayer(int slot)
+bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 {
-	if (slot < 0 || slot > MAXPLAYERS)
-	{
-		return;
-	}
-
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
-	if (!player || !player->connected)
-	{
-		return;
-	}
-
-	std::string normalized = SteamID64ToAuthId(player->steamid64);
+	std::string normalized = NormalizeSteamID(authid);
 	if (normalized.empty())
 	{
-		return;
+		return false;
 	}
 
-	AdminEntry merged;
+	merged = AdminEntry {};
 	merged.identity = normalized;
-	merged.steamid64 = player->steamid64;
-	merged.name = player->name;
+	merged.steamid64 = AuthIdToSteamID64(normalized.c_str());
 	bool found = false;
 
 	// Check flatfile admins
@@ -295,6 +289,32 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 		found = true;
 	}
 
+	return found;
+}
+
+void CS2AAdminManager::AssignAdminToPlayer(int slot)
+{
+	if (slot < 0 || slot > MAXPLAYERS)
+	{
+		return;
+	}
+
+	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	if (!player || !player->connected)
+	{
+		return;
+	}
+
+	std::string normalized = SteamID64ToAuthId(player->steamid64);
+	if (normalized.empty())
+	{
+		return;
+	}
+
+	AdminEntry merged;
+	bool found = LookupAdmin(normalized.c_str(), merged);
+	merged.name = player->name;
+
 	m_playerHasAdmin[slot] = found;
 	m_playerAdmins[slot] = merged;
 
@@ -303,6 +323,16 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 		MMU_LOG_INFO("Admin assigned: \"%s\" (%s) flags=%s immunity=%d\n", player->name.c_str(), normalized.c_str(),
 					 FlagsToString(merged.flags).c_str(), merged.immunity);
 	}
+}
+
+void CS2AAdminManager::ClearPlayerAdmin(int slot)
+{
+	if (slot < 0 || slot > MAXPLAYERS)
+	{
+		return;
+	}
+	m_playerHasAdmin[slot] = false;
+	m_playerAdmins[slot] = {};
 }
 
 bool CS2AAdminManager::PlayerHasFlag(int slot, uint32_t flag)

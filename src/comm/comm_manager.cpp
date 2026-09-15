@@ -44,12 +44,14 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 			 "LEFT JOIN %s_srvgroups AS g ON g.name = a.srv_group "
 			 "WHERE c.RemoveType IS NULL "
 			 "AND %s "
-			 "AND (c.length = '0' OR c.ends > %lld)",
+			 "AND (c.length = '0' OR c.ends > %lld) "
+			 // The loop below keeps the last row of each type, so order the strongest last: a permanent row wins, otherwise the one ending last.
+			 "ORDER BY CASE WHEN c.length = '0' THEN 1 ELSE 0 END ASC, c.ends ASC",
 			 now, prefix.c_str(), prefix.c_str(), prefix.c_str(), authCond.c_str(), now);
 
 	g_CS2ADatabase.Query(
 		query,
-		[slot, steamid64](ISQLQuery *result)
+		[slot, steamid64, generation = m_commGeneration[slot]](ISQLQuery *result)
 		{
 			if (!result)
 			{
@@ -58,6 +60,12 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 
 			PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
 			if (!player || !player->connected || player->steamid64 != steamid64)
+			{
+				return;
+			}
+
+			// An admin changed this player's blocks while the query was in flight, so this answer is already out of date.
+			if (generation != g_CS2ACommManager.Generation(slot))
 			{
 				return;
 			}
@@ -201,30 +209,7 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 			 adminAuth.c_str(), adminMatch.c_str(), adminIP.c_str(), sid, type);
 
 	// Otherwise the block only lives until the player reconnects.
-	if (!g_CS2ADatabase.IsConnected())
-	{
-		g_CS2AOfflineQueue.Enqueue(query);
-		return;
-	}
-
-	g_CS2ADatabase.Query(query,
-						 [type, queryStr = std::string(query)](ISQLQuery *result)
-						 {
-							 const char *typeName = (type == COMM_MUTE) ? "mute" : "gag";
-							 if (!result)
-							 {
-								 g_CS2AOfflineQueue.Enqueue(queryStr);
-								 return;
-							 }
-							 if (result->GetAffectedRows() > 0)
-							 {
-								 MMU_LOG_INFO("%s inserted successfully.\n", typeName);
-							 }
-							 else
-							 {
-								 MMU_LOG_WARN("Failed to insert %s.\n", typeName);
-							 }
-						 });
+	g_CS2AOfflineQueue.Submit(query);
 }
 
 void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
@@ -257,30 +242,7 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 			 prefix.c_str(), prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(), now, targetMatch.c_str(), type, now);
 
 	// Otherwise the next reload or reconnect reads the row back and puts the block on again.
-	if (!g_CS2ADatabase.IsConnected())
-	{
-		g_CS2AOfflineQueue.Enqueue(query);
-		return;
-	}
-
-	g_CS2ADatabase.Query(query,
-						 [type, queryStr = std::string(query)](ISQLQuery *result)
-						 {
-							 const char *typeName = (type == COMM_MUTE) ? "mute" : "gag";
-							 if (!result)
-							 {
-								 g_CS2AOfflineQueue.Enqueue(queryStr);
-								 return;
-							 }
-							 if (result->GetAffectedRows() > 0)
-							 {
-								 MMU_LOG_INFO("Removed %s successfully.\n", typeName);
-							 }
-							 else
-							 {
-								 MMU_LOG_INFO("No active %s found to remove.\n", typeName);
-							 }
-						 });
+	g_CS2AOfflineQueue.Submit(query);
 }
 
 bool CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
@@ -351,6 +313,7 @@ bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *rea
 		return false;
 	}
 
+	BumpGeneration(targetSlot);
 	target->isMuted = true;
 	target->isSessionMuted = false;
 	target->muteReason = reason ? reason : "";
@@ -387,6 +350,7 @@ bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reas
 		return false;
 	}
 
+	BumpGeneration(targetSlot);
 	target->isGagged = true;
 	target->isSessionGagged = false;
 	target->gagReason = reason ? reason : "";
@@ -496,6 +460,7 @@ bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
 
 	g_CS2AForwards.FireOnUnmutePlayer(targetSlot, adminSlot);
 
+	BumpGeneration(targetSlot);
 	target->isMuted = false;
 	target->isSessionMuted = false;
 	target->muteReason.clear();
@@ -525,6 +490,7 @@ bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot)
 
 	g_CS2AForwards.FireOnUngagPlayer(targetSlot, adminSlot);
 
+	BumpGeneration(targetSlot);
 	target->isGagged = false;
 	target->isSessionGagged = false;
 	target->gagReason.clear();
@@ -546,6 +512,7 @@ void CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 		return;
 	}
 
+	BumpGeneration(targetSlot);
 	target->isMuted = true;
 	target->isSessionMuted = true;
 	target->muteExpireTime = 0.0;
@@ -569,6 +536,7 @@ void CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 		return;
 	}
 
+	BumpGeneration(targetSlot);
 	target->isGagged = true;
 	target->isSessionGagged = true;
 	target->gagExpireTime = 0.0;

@@ -24,9 +24,11 @@ void ShutdownConsoleCommands();
 
 #include "mmu/chat_command.h"
 #include "mmu/cvarquery.h"
+#include "mmu/entity/ccsplayercontroller.h"
 #include "mmu/entity/entity_system.h"
 #include "mmu/gamesystem.h"
 #include "mmu/log.h"
+#include "mmu/str_utils.h"
 #include "mmu/voice_block.h"
 
 #include <sql_mm.h>
@@ -402,6 +404,40 @@ void *CS2APlugin::OnMetamodQuery(const char *iface, int *ret)
 	return nullptr;
 }
 
+void ADMIN_RecheckConnectedPlayers()
+{
+	for (int i = 0; i <= MAXPLAYERS; i++)
+	{
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+		if (!p || !p->connected || p->fakePlayer || !p->authenticated)
+		{
+			continue;
+		}
+
+		// A player who joined while the DB was down has no stored tag pick either.
+		g_CS2ATagManager.LoadPlayerPref(i, p->steamid64);
+
+		g_CS2ABanManager.VerifyBan(i, p->steamid64, p->ip.c_str(),
+								   [i, steamid64 = p->steamid64](bool banned, const std::string &reason)
+								   {
+									   PlayerInfo *pp = g_CS2APlayerManager.GetPlayer(i);
+									   if (!pp || !pp->connected || pp->steamid64 != steamid64)
+									   {
+										   return;
+									   }
+									   if (!banned)
+									   {
+										   g_CS2ACommManager.VerifyComms(i, steamid64);
+										   return;
+									   }
+									   ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
+									   MMU_LOG_INFO("Kicking banned player \"%s\" (%s). Reason: %s\n", pp->name.c_str(), pp->authid.c_str(),
+													reason.c_str());
+									   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
+								   });
+	}
+}
+
 void CS2APlugin::AllPluginsLoaded()
 {
 	// Resolve the optional mm-cs2menus interface now that all plugins are up.
@@ -412,21 +448,21 @@ void CS2APlugin::AllPluginsLoaded()
 	g_CS2ATagManager.LoadTags();
 
 	// Always load flat-file admins regardless of DB state.
-	// ReloadAdmins takes its flat-file-only path when the DB is not connected.
-	auto loadFlatFileOnly = [this]()
+	// ReloadAdmins takes its flat-file-only path when the DB is not connected,
+	// and its flat-file half is synchronous, so the late-load pass below already sees those admins.
+	g_CS2AAdminManager.ReloadAdmins();
+
+	// Registering existing players cannot wait for the DB: without a PlayerInfo they cannot chat or run commands at all.
+	// The ban and comm checks are picked up by the connect callback below.
+	if (m_bLateLoaded)
 	{
-		g_CS2AAdminManager.ReloadAdmins();
-		if (m_bLateLoaded)
-		{
-			OnLateLoad();
-		}
-	};
+		OnLateLoad();
+	}
 
 	// If config wasn't loaded, skip DB entirely
 	if (!m_bConfigLoaded)
 	{
 		MMU_LOG_WARN("No config loaded - skipping database. Only flat-file admins will be used.\n");
-		loadFlatFileOnly();
 		return;
 	}
 
@@ -435,7 +471,6 @@ void CS2APlugin::AllPluginsLoaded()
 	{
 		MMU_LOG_WARN("Failed to initialize database interface. Is sql_mm loaded?\n");
 		MMU_LOG_WARN("Ban checking disabled. Only flat-file admins will be used.\n");
-		loadFlatFileOnly();
 		return;
 	}
 
@@ -470,17 +505,12 @@ void CS2APlugin::AllPluginsLoaded()
 
 				g_CS2ATagManager.EnsureSchema();
 
-				// Handle late load after DB is ready
-				if (m_bLateLoaded)
-				{
-					OnLateLoad();
-				}
+				// Anyone who connected before this point was never ban or comm checked.
+				ADMIN_RecheckConnectedPlayers();
 			}
 			else
 			{
 				MMU_LOG_WARN("Database connection failed! Bans will not be enforced.\n");
-				// Load and apply flat-file admins only
-				g_CS2AAdminManager.ReloadAdmins();
 			}
 		});
 }
@@ -564,6 +594,9 @@ KHook::Return<void> CS2APlugin::Hook_OnClientConnected(IServerGameClients *, CPl
 													   const char *pszNetworkID, const char *pszAddress, bool bFakePlayer)
 {
 	int slotIdx = slot.Get();
+
+	// Whoever had this slot before may have been an admin, and their flags must not carry over.
+	g_CS2AAdminManager.ClearPlayerAdmin(slotIdx);
 
 	// Track player - but defer ban/admin checks until authentication is confirmed (ClientPutInServer)
 	g_CS2APlayerManager.OnClientConnected(slotIdx, pszName, xuid, pszNetworkID, pszAddress, bFakePlayer);
@@ -668,6 +701,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientDisconnect(IServerGameClients *, CPla
 	g_CS2AForwards.FireOnClientDisconnect(slotIdx);
 	g_CS2ACommManager.OnClientDisconnect(slotIdx);
 	g_CS2ATagManager.OnClientDisconnect(slotIdx);
+	g_CS2AAdminManager.ClearPlayerAdmin(slotIdx);
 	g_CS2APlayerManager.OnClientDisconnect(slotIdx);
 	mmu::cvarquery::OnClientDisconnect(slotIdx);
 	return {KHook::Action::Ignore};
@@ -734,14 +768,10 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 				if (player->chatMessageCount >= g_CS2AConfig.chatFloodMaxMessages)
 				{
-					if (g_CS2AConfig.chatFloodMuteDuration > 0 && !player->isGagged)
-					{
-						// Auto gag the player
-						g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteDuration, "Chat flood", -1);
-						ADMIN_PrintToChatT(slotIdx, "You have been gagged for %d minute(s) for chat flooding.\n", g_CS2AConfig.chatFloodMuteDuration);
-						ADMIN_ChatToAdminsT("%s was auto-gagged for chat flooding.\n", player->name.c_str());
-					}
-					else
+					// GagPlayer announces the gag itself, and returns false when a forward blocked it.
+					bool autoGagged = g_CS2AConfig.chatFloodMuteDuration > 0 && !player->isGagged
+									  && g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteDuration, "Chat flood", -1);
+					if (!autoGagged)
 					{
 						ADMIN_PrintToChatT(slotIdx, "Slow down! You are sending messages too fast.\n");
 					}
@@ -904,6 +934,14 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 					MMU_LOG_INFO("Database reconnected!\n");
 					m_iReconnectAttempts = 0;
 					m_bReconnectGaveUp = false;
+
+					// The first connect ran these too, and without them every row written from here on carries sid 0.
+					if (g_CS2AConfig.serverID == -1 && g_CS2ADatabase.IsMySQL())
+					{
+						LookupServerID();
+					}
+					g_CS2ATagManager.EnsureSchema();
+
 					if (g_CS2AOfflineQueue.HasItems())
 					{
 						g_CS2AOfflineQueue.ProcessQueue();
@@ -911,6 +949,9 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 
 					// Admin data is whatever the last reload could reach. Pick up the DB side now.
 					g_CS2AAdminManager.ReloadAdmins();
+
+					// Anyone who connected while the DB was down was never ban or comm checked.
+					ADMIN_RecheckConnectedPlayers();
 				}
 			});
 
@@ -973,33 +1014,29 @@ void CS2APlugin::OnLateLoad()
 			player->authid = SteamID64ToAuthId(player->steamid64);
 		}
 
+		// Neither was ever handed to us, and an empty one breaks rendered chat, ban and comm log rows, IP bans and sleuth.
+		if (player->name.empty())
+		{
+			if (CCSPlayerController *controller = CCSPlayerController::FromSlot(i))
+			{
+				player->name = controller->GetPlayerName();
+			}
+		}
+		if (player->ip.empty())
+		{
+			INetChannelInfo *netinfo = g_pEngine->GetPlayerNetInfo(slot);
+			if (netinfo)
+			{
+				player->ip = str::StripPort(netinfo->GetAddress());
+			}
+		}
+
 		MMU_LOG_INFO("Late load: processing player (%s) in slot %d\n", player->authid.c_str(), i);
 
-		std::string ip = player->ip;
-		uint64_t steamid64 = player->steamid64;
-		g_CS2ABanManager.VerifyBan(i, steamid64, ip.c_str(),
-								   [i, steamid64](bool banned, const std::string &reason)
-								   {
-									   if (banned)
-									   {
-										   PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-										   if (p && p->connected && p->steamid64 == steamid64)
-										   {
-											   ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
-											   MMU_LOG_INFO("Late load: kicking banned player (%s). Reason: %s\n", p->authid.c_str(), reason.c_str());
-											   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
-										   }
-									   }
-									   else
-									   {
-										   g_CS2ACommManager.VerifyComms(i, steamid64);
-									   }
-								   });
-
-		// Assign admin
+		// The ban and comm checks need the DB, so they run from ADMIN_RecheckConnectedPlayers once it is ready.
 		g_CS2AAdminManager.AssignAdminToPlayer(i);
 
-		g_CS2ATagManager.LoadPlayerPref(i, steamid64);
+		g_CS2ATagManager.LoadPlayerPref(i, player->steamid64);
 		g_CS2ATagManager.UpdateClanTag(i);
 	}
 }

@@ -102,6 +102,7 @@ void CS2AForeignPlugins::Refresh(PluginId unloading)
 {
 	const char *previousChat = m_chatOwner;
 	const char *previousClanTag = m_clanTagOwner;
+	ICS2KZ *previousCs2kz = m_cs2kz;
 
 	m_chatOwner = nullptr;
 	m_clanTagOwner = nullptr;
@@ -148,7 +149,12 @@ void CS2AForeignPlugins::Refresh(PluginId unloading)
 		{
 			MMU_LOG_INFO("%s no longer writes the clan tag. Leaderboard tags follow TagsConfig again.\n", previousClanTag);
 		}
-		// Either put our tags up or hand the scoreboard back, without waiting for players to reconnect.
+	}
+
+	// Either put our tags up or hand the scoreboard back, without waiting for players to reconnect.
+	// A cs2kz that came back knows nothing of the overrides we gave the old instance, so those need re-pushing too.
+	if (m_clanTagOwner != previousClanTag || m_cs2kz != previousCs2kz)
+	{
 		g_CS2ATagManager.UpdateAllClanTags();
 	}
 }

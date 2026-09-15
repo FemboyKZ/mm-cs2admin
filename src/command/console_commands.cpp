@@ -21,14 +21,23 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	char path[512];
 	snprintf(path, sizeof(path), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
 
-	if (ADMIN_LoadConfig(path, g_CS2AConfig))
+	// Parsed into a temporary, so a file that fails validation leaves the live config untouched.
+	// Starting from defaults also means a key removed from the file goes back to its default rather than keeping the old value.
+	CS2AConfig fresh;
+	if (ADMIN_LoadConfig(path, fresh))
 	{
+		// The server ID lookup only runs on connect, so an auto-detected one would otherwise be lost.
+		if (fresh.serverID == -1 && g_CS2AConfig.serverID != -1)
+		{
+			fresh.serverID = g_CS2AConfig.serverID;
+		}
+		g_CS2AConfig = fresh;
 		MMU_LOG_INFO("Config reloaded from %s\n", path);
 		mmu::config::ApplyLogBlock(g_CS2AConfig.log);
 	}
 	else
 	{
-		MMU_LOG_WARN("Failed to reload config from %s\n", path);
+		MMU_LOG_WARN("Failed to reload config from %s, keeping the loaded one.\n", path);
 	}
 
 	ADMIN_LoadTranslations();
@@ -42,31 +51,7 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	g_CS2AForeignPlugins.Refresh();
 	g_CS2ATagManager.UpdateAllClanTags();
 
-	// Re-verify bans and comms for all connected players
-	for (int i = 0; i <= MAXPLAYERS; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (p && p->connected && !p->fakePlayer && p->authenticated)
-		{
-			g_CS2ABanManager.VerifyBan(i, p->steamid64, p->ip.c_str(),
-									   [i, steamid64 = p->steamid64](bool banned, const std::string &reason)
-									   {
-										   if (banned)
-										   {
-											   PlayerInfo *pp = g_CS2APlayerManager.GetPlayer(i);
-											   if (pp && pp->connected && pp->steamid64 == steamid64)
-											   {
-												   MMU_LOG_INFO("Reload: kicking banned player \"%s\" (%s).\n", pp->name.c_str(), pp->authid.c_str());
-												   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
-											   }
-										   }
-										   else
-										   {
-											   g_CS2ACommManager.VerifyComms(i, steamid64);
-										   }
-									   });
-		}
-	}
+	ADMIN_RecheckConnectedPlayers();
 }
 
 CON_COMMAND_F(mm_rehash, "Rebuild admin cache from database and flat files", FCVAR_NONE)

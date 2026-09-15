@@ -255,7 +255,8 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 	}
 
 	std::string inputStr(input);
-	bool isRawWorkshopId = inputStr.length() >= 6 && std::all_of(inputStr.begin(), inputStr.end(), ::isdigit);
+	bool isRawWorkshopId =
+		inputStr.length() >= 6 && std::all_of(inputStr.begin(), inputStr.end(), [](unsigned char c) { return std::isdigit(c) != 0; });
 
 	if (isRawWorkshopId)
 	{

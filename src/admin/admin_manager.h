@@ -114,7 +114,7 @@ public:
 
 	// Load groups from the SBPP database, then load admins.
 	// Calls the callback when all DB loading is done.
-	void LoadDatabaseAdmins(std::function<void()> onComplete = nullptr);
+	void LoadDatabaseAdmins(uint32_t generation, std::function<void()> onComplete = nullptr);
 
 	// Reload everything (flatfile + DB). Called on mm_reload, map change, etc.
 	void ReloadAdmins();
@@ -126,6 +126,13 @@ public:
 	// Apply loaded admin data to a connected player by slot.
 	// Merges DB + flat-file entries for the same SteamID.
 	void AssignAdminToPlayer(int slot);
+
+	// Forget a slot's admin state, so the next player to take it does not inherit it.
+	void ClearPlayerAdmin(int slot);
+
+	// Merge the flat-file, DB and group data for a SteamID that need not be connected.
+	// False when it is not an admin, in which case `out` still carries the normalized identity.
+	bool LookupAdmin(const char *authid, AdminEntry &out) const;
 
 	// Check if a connected player has a specific admin flag.
 	bool PlayerHasFlag(int slot, uint32_t flag);
@@ -149,10 +156,12 @@ public:
 	void Clear();
 
 private:
-	void LoadGroups(std::function<void()> onComplete);
-	void LoadGroupOverrides(std::function<void()> onComplete);
-	void LoadGlobalOverrides(std::function<void()> onComplete);
-	void LoadAdminsFromDB(std::function<void()> onComplete);
+	// Each stage drops out without calling onComplete when `generation` is stale,
+	// so an abandoned chain cannot write into the staging set a newer reload is filling.
+	void LoadGroups(uint32_t generation, std::function<void()> onComplete);
+	void LoadGroupOverrides(uint32_t generation, std::function<void()> onComplete);
+	void LoadGlobalOverrides(uint32_t generation, std::function<void()> onComplete);
+	void LoadAdminsFromDB(uint32_t generation, std::function<void()> onComplete);
 
 	// Swap the staging set into the live set once a reload has all its data.
 	void CommitLoadedData();
@@ -186,6 +195,13 @@ private:
 	// A reload spans several async queries. Overlapping requests coalesce into one re-run.
 	bool m_reloadInFlight = false;
 	bool m_reloadPending = false;
+	// Plat_FloatTime when the in-flight chain started. A failed query never calls its callback,
+	// so a chain that has been running longer than RELOAD_TIMEOUT is abandoned rather than waited on.
+	double m_reloadStartTime = 0.0;
+	// Bumped when a chain is abandoned, so its late callbacks cannot commit their staging data.
+	uint32_t m_reloadGeneration = 0;
+
+	static constexpr double RELOAD_TIMEOUT = 30.0;
 
 	// Merged admin entries per connected player slot
 	AdminEntry m_playerAdmins[MAXPLAYERS + 1];

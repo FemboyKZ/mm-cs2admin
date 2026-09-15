@@ -74,6 +74,9 @@ public:
 
 	void OnClientDisconnect(int slot);
 
+	// Put the pre-override clan symbol back, see m_originalClan.
+	void RestoreClan(int slot);
+
 	// Create the prefs table when missing. Call once the DB is connected.
 	void EnsureSchema();
 
@@ -90,6 +93,12 @@ private:
 
 	// Backing storage for the clan tag. See CCSPlayerController::SetClan.
 	char m_clanTag[MAXPLAYERS + 1][64] = {};
+
+	// The clan symbol the controller carried before our first override.
+	// m_szClan keeps the bare pointer it is handed, so clearing a tag has to restore this engine-owned one.
+	// Anything of ours, an empty literal included, would dangle the moment this plugin unloads.
+	CUtlSymbolLarge m_originalClan[MAXPLAYERS + 1] = {};
+	bool m_clanCaptured[MAXPLAYERS + 1] = {};
 };
 
 extern CS2ATagManager g_CS2ATagManager;

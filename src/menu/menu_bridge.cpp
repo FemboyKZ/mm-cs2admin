@@ -38,7 +38,8 @@ void AdminMenuBridge::Refresh()
 
 void AdminMenuBridge::Shutdown()
 {
-	if (m_menus)
+	// meta clear unloads plugins without firing OnPluginUnload, so the cached pointer can already be a freed library.
+	if (m_menus.Revalidate())
 	{
 		for (int i = 0; i <= MAXPLAYERS; i++)
 		{

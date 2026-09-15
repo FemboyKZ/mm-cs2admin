@@ -21,16 +21,17 @@ public:
 	bool BanPlayer(int targetSlot, int time, const char *reason, int adminSlot);
 
 	// Ban by SteamID string (for offline bans / addban).
-	void AddBan(const char *authid, int time, const char *reason, int adminSlot);
+	// Returns false when there is no database to write to.
+	bool AddBan(const char *authid, int time, const char *reason, int adminSlot);
 
-	// Ban by IP address.
-	void BanIP(const char *ip, int time, const char *reason, int adminSlot);
+	// Ban by IP address. Returns false when there is no database to write to.
+	bool BanIP(const char *ip, int time, const char *reason, int adminSlot);
 
-	// Unban by SteamID.
-	void Unban(const char *authid, int adminSlot);
+	// Unban by SteamID. Returns false when there is no database to write to.
+	bool Unban(const char *authid, int adminSlot);
 
-	// Unban by IP.
-	void UnbanIP(const char *ip, int adminSlot);
+	// Unban by IP. Returns false when there is no database to write to.
+	bool UnbanIP(const char *ip, int adminSlot);
 
 	// Get the server ID for ban insertions.
 	int GetServerID() const;

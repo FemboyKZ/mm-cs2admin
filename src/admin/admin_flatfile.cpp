@@ -165,9 +165,11 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 
 // Load SM-compatible admins_simple.ini
 // Format (one admin per line):
-//   "STEAM_0:1:12345" "abcde" "99"          // flags + immunity
 //   "STEAM_0:1:12345" "abcde"               // flags only
-//   "STEAM_0:1:12345" "99:group"            // immunity:group (inherit flags from group)
+//   "STEAM_0:1:12345" "99:abcde"            // immunity:flags, the form SourceMod uses
+//   "STEAM_0:1:12345" "99:@group"           // immunity:group (inherit flags from group)
+//   "STEAM_0:1:12345" "abcde" "secret"      // third token is the password, as in SourceMod
+//   "STEAM_0:1:12345" "abcde" "99"          // a numeric third token is read as immunity instead
 void CS2AAdminManager::LoadSimpleAdmins()
 {
 	char path[512];
@@ -308,16 +310,31 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			}
 		}
 
-		// Token 2: immunity (if present and not already set via group format)
-		if (tokens.size() >= 3 && entry.group.empty())
+		// Token 2 is the password in SourceMod's own format, where immunity rides along in the flags token.
+		// A numeric one is taken as immunity instead, so our documented three-token form still works.
+		if (tokens.size() >= 3)
 		{
-			entry.immunity = std::atoi(tokens[2].c_str());
-		}
+			bool allDigits = !tokens[2].empty();
+			for (char c : tokens[2])
+			{
+				if (!std::isdigit(static_cast<unsigned char>(c)))
+				{
+					allDigits = false;
+					break;
+				}
+			}
 
-		// Token 3: password (if present)
-		if (tokens.size() >= 4)
-		{
-			entry.password = tokens[3];
+			if (allDigits)
+			{
+				if (entry.group.empty())
+				{
+					entry.immunity = std::atoi(tokens[2].c_str());
+				}
+			}
+			else
+			{
+				entry.password = tokens[2];
+			}
 		}
 
 		// Merge with existing flat-file entry (additive)

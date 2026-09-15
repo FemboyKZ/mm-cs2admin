@@ -235,6 +235,43 @@ static bool CheckImmunity(int callerSlot, int targetSlot)
 	return true;
 }
 
+// Same check against an admin record rather than a live slot, for a target who is not connected.
+static bool CheckImmunityAgainst(int callerSlot, int targetImmunity)
+{
+	if (callerSlot < 0 || g_CS2AAdminManager.PlayerHasFlag(callerSlot, ADMFLAG_ROOT))
+	{
+		return true;
+	}
+
+	const AdminEntry *callerAdmin = g_CS2AAdminManager.GetPlayerAdmin(callerSlot);
+	int callerImm = callerAdmin ? callerAdmin->immunity : 0;
+
+	if (targetImmunity > 0 && callerImm <= targetImmunity)
+	{
+		ADMIN_ReplyToCommandT(callerSlot, "Cannot target this player (higher immunity).\n");
+		return false;
+	}
+	return true;
+}
+
+// Read an argument as a SteamID in any accepted format and hand back the normalized STEAM_0:Y:Z form.
+// Anything else is rejected, since the unban and addban queries match on the suffix and a LIKE wildcard would match every row.
+static bool ParseSteamIDArg(const std::string &arg, std::string &out)
+{
+	std::string normalized = CS2AAdminManager::NormalizeSteamID(arg.c_str());
+
+	unsigned int y = 0;
+	unsigned int z = 0;
+	int consumed = 0;
+	if (sscanf(normalized.c_str(), "STEAM_0:%u:%u%n", &y, &z, &consumed) != 2 || consumed != (int)normalized.size())
+	{
+		return false;
+	}
+
+	out = std::move(normalized);
+	return true;
+}
+
 // Who a Discord notice is about and who did it.
 // Read before the action runs, since a ban's kick resets the target's PlayerInfo, and the admin's too when they ban themselves.
 struct DiscordTarget
@@ -728,52 +765,94 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (args.empty())
+						std::string authid;
+						if (args.empty() || !ParseSteamIDArg(args[0], authid))
 						{
-							ADMIN_ReplyToCommandT(slot, "Usage: !unban <steamid>\n");
+							ADMIN_ReplyToCommandT(slot, "Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n");
+							return;
+						}
+
+						if (!g_CS2ABanManager.Unban(authid.c_str(), slot))
+						{
+							ADMIN_ReplyToCommandT(slot, "Database not available.\n");
 							return;
 						}
 
 						PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
-						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Unban", args[0].c_str(), nullptr, -1,
+						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "Unban", authid.c_str(), nullptr, -1,
 														adminPlayer ? adminPlayer->steamid64 : 0);
-
-						g_CS2ABanManager.Unban(args[0].c_str(), slot);
 					});
 
 	// !addban <time> <steamid> [reason] - offline ban by SteamID
-	RegisterCommand(
-		"addban",
-		[](int slot, const std::vector<std::string> &args, bool silent)
-		{
-			if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "addban", "banning", ADMFLAG_BAN))
-			{
-				ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
-				return;
-			}
+	RegisterCommand("addban",
+					[](int slot, const std::vector<std::string> &args, bool silent)
+					{
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "addban", "banning", ADMFLAG_BAN))
+						{
+							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+							return;
+						}
 
-			if (args.size() < 2)
-			{
-				ADMIN_ReplyToCommandT(slot, "Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
-				return;
-			}
+						if (args.size() < 2)
+						{
+							ADMIN_ReplyToCommandT(slot, "Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
+							return;
+						}
 
-			int time = ADMIN_ParseDuration(args[0].c_str());
-			if (time < 0)
-			{
-				ADMIN_ReplyToCommandT(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
-				return;
-			}
+						int time = ADMIN_ParseDuration(args[0].c_str());
+						if (time < 0)
+						{
+							ADMIN_ReplyToCommandT(
+								slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
+							return;
+						}
 
-			const char *authid = args[1].c_str();
-			std::string reason = JoinArgs(args, 2, "Banned");
-			std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
-			PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+						std::string authid;
+						if (!ParseSteamIDArg(args[1], authid))
+						{
+							ADMIN_ReplyToCommandT(slot, "Usage: !addban <time> <steamid> [reason] (STEAM_0:X:Y, SteamID64 or [U:1:X])\n");
+							return;
+						}
 
-			g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "AddBan", authid, reason.c_str(), time, adminPlayer ? adminPlayer->steamid64 : 0);
-			g_CS2ABanManager.AddBan(authid, time, reason.c_str(), slot);
-		});
+						// An offline target still has an admin record to respect, so check whichever of the two we can see.
+						int online = g_CS2APlayerManager.FindSlotBySteamID64(CS2AAdminManager::AuthIdToSteamID64(authid.c_str()));
+						if (online >= 0)
+						{
+							if (!CheckImmunity(slot, online))
+							{
+								return;
+							}
+						}
+						else
+						{
+							AdminEntry target;
+							if (g_CS2AAdminManager.LookupAdmin(authid.c_str(), target) && !CheckImmunityAgainst(slot, target.immunity))
+							{
+								return;
+							}
+						}
+
+						std::string reason = JoinArgs(args, 2, "Banned");
+						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
+						PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
+
+						if (!g_CS2ABanManager.AddBan(authid.c_str(), time, reason.c_str(), slot))
+						{
+							ADMIN_ReplyToCommandT(slot, "Database not available.\n");
+							return;
+						}
+
+						g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "AddBan", authid.c_str(), reason.c_str(), time,
+														adminPlayer ? adminPlayer->steamid64 : 0);
+
+						// The ban row alone would not touch them until they reconnect.
+						if (online >= 0)
+						{
+							ADMIN_PrintToClientT(online, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
+							g_pEngine->DisconnectClient(CPlayerSlot(online), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
+						}
+					});
 
 	// !mute <target> <time> [reason]
 	RegisterCommand("mute",
@@ -1078,11 +1157,30 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 			}
 			std::string reason = JoinArgs(args, 2, "Banned");
 
+			// The reconnect ban check runs before admin rights are assigned, so an IP ban locks a higher-immunity admin out permanently.
+			// One protected player on that address refuses the whole command.
+			for (int i = 0; i <= MAXPLAYERS; i++)
+			{
+				PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
+				if (!player || player->fakePlayer || player->ip != ip)
+				{
+					continue;
+				}
+				if (!CheckImmunity(slot, i))
+				{
+					return;
+				}
+			}
+
+			if (!g_CS2ABanManager.BanIP(ip, time, reason.c_str(), slot))
+			{
+				ADMIN_ReplyToCommandT(slot, "Database not available.\n");
+				return;
+			}
+
 			PlayerInfo *adminPlayer = g_CS2APlayerManager.GetPlayer(slot);
 			std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 			g_CS2ADiscord.NotifyAdminAction(adminName.c_str(), "BanIP", ip, reason.c_str(), time, adminPlayer ? adminPlayer->steamid64 : 0);
-
-			g_CS2ABanManager.BanIP(ip, time, reason.c_str(), slot);
 		});
 
 	// !comms [target] - check comm status
@@ -1258,18 +1356,25 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (g_CS2ADatabase.IsConnected())
 						{
-							std::string escAuth = g_CS2ADatabase.Escape(reporter->authid.c_str());
-							std::string escName = g_CS2ADatabase.Escape(reporter->name.c_str());
+							// SteamId/name are the suspect and subname/ip the submitter, the way the SourceBans panel writes them.
+							// ModID is NOT NULL in both schemas, so leaving it out makes strict mode reject the row.
+							std::string submitter = reporter->name + " (" + reporter->authid + ")";
+							ADMIN_TruncateUtf8(submitter, 128);
+
+							std::string escTargetAuth = g_CS2ADatabase.Escape(targetPlayer->authid.c_str());
+							std::string escTargetName = g_CS2ADatabase.Escape(targetPlayer->name.c_str());
+							std::string escTargetIP = g_CS2ADatabase.Escape(targetPlayer->ip.c_str());
+							std::string escSubmitter = g_CS2ADatabase.Escape(submitter.c_str());
+							std::string escSubmitterIP = g_CS2ADatabase.Escape(reporter->ip.c_str());
 							std::string escReason = g_CS2ADatabase.Escape(reason.c_str());
-							std::string escTargetInfo = g_CS2ADatabase.Escape((targetPlayer->authid + ":" + targetPlayer->name).c_str());
 
 							long long now = (long long)std::time(nullptr);
 							char query[4096];
 							snprintf(query, sizeof(query),
-									 "INSERT INTO %s_submissions (submitted, SteamId, name, email, reason, ip, server) "
-									 "VALUES (%lld, '%s', '%s', '%s', '%s', '', %d)",
-									 g_CS2AConfig.database.prefix.c_str(), now, escAuth.c_str(), escName.c_str(), escTargetInfo.c_str(),
-									 escReason.c_str(), g_CS2ABanManager.GetServerID());
+									 "INSERT INTO %s_submissions (submitted, ModID, SteamId, name, email, reason, ip, subname, sip, server) "
+									 "VALUES (%lld, 0, '%s', '%s', '', '%s', '%s', '%s', '%s', %d)",
+									 g_CS2AConfig.database.prefix.c_str(), now, escTargetAuth.c_str(), escTargetName.c_str(), escReason.c_str(),
+									 escSubmitterIP.c_str(), escSubmitter.c_str(), escTargetIP.c_str(), g_CS2ABanManager.GetServerID());
 
 							g_CS2ADatabase.Query(query, [](ISQLQuery *) {});
 						}

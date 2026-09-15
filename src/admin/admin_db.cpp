@@ -3,13 +3,14 @@
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
+#include "src/tags/tag_manager.h"
 
 #include <sql_mm.h>
 
 #include <cstring>
 #include <cstdio>
 
-void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
+void CS2AAdminManager::LoadGroups(uint32_t generation, std::function<void()> onComplete)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
@@ -25,8 +26,14 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 	snprintf(query, sizeof(query), "SELECT id, name, flags, immunity FROM %s_srvgroups ORDER BY id", prefix.c_str());
 
 	g_CS2ADatabase.Query(query,
-						 [this, onComplete](ISQLQuery *result)
+						 [this, generation, onComplete](ISQLQuery *result)
 						 {
+							 // An abandoned reload chain must not write into the staging set a newer one is filling.
+							 if (generation != m_reloadGeneration)
+							 {
+								 return;
+							 }
+
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load admin groups from database.\n");
@@ -94,7 +101,7 @@ void CS2AAdminManager::LoadGroups(std::function<void()> onComplete)
 						 });
 }
 
-void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
+void CS2AAdminManager::LoadGroupOverrides(uint32_t generation, std::function<void()> onComplete)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
@@ -114,8 +121,14 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 			 prefix.c_str());
 
 	g_CS2ADatabase.Query(query,
-						 [this, onComplete](ISQLQuery *result)
+						 [this, generation, onComplete](ISQLQuery *result)
 						 {
+							 // An abandoned reload chain must not write into the staging set a newer one is filling.
+							 if (generation != m_reloadGeneration)
+							 {
+								 return;
+							 }
+
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load group overrides from database.\n");
@@ -196,7 +209,7 @@ void CS2AAdminManager::LoadGroupOverrides(std::function<void()> onComplete)
 						 });
 }
 
-void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
+void CS2AAdminManager::LoadGlobalOverrides(uint32_t generation, std::function<void()> onComplete)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
@@ -212,8 +225,14 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 	snprintf(query, sizeof(query), "SELECT type, name, flags FROM %s_overrides ORDER BY id", prefix.c_str());
 
 	g_CS2ADatabase.Query(query,
-						 [this, onComplete](ISQLQuery *result)
+						 [this, generation, onComplete](ISQLQuery *result)
 						 {
+							 // An abandoned reload chain must not write into the staging set a newer one is filling.
+							 if (generation != m_reloadGeneration)
+							 {
+								 return;
+							 }
+
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load global overrides from database.\n");
@@ -279,7 +298,7 @@ void CS2AAdminManager::LoadGlobalOverrides(std::function<void()> onComplete)
 						 });
 }
 
-void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
+void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void()> onComplete)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{
@@ -350,8 +369,14 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 	}
 
 	g_CS2ADatabase.Query(query,
-						 [this, onComplete](ISQLQuery *result)
+						 [this, generation, onComplete](ISQLQuery *result)
 						 {
+							 // An abandoned reload chain must not write into the staging set a newer one is filling.
+							 if (generation != m_reloadGeneration)
+							 {
+								 return;
+							 }
+
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load admins from database.\n");
@@ -445,28 +470,29 @@ void CS2AAdminManager::LoadAdminsFromDB(std::function<void()> onComplete)
 						 });
 }
 
-void CS2AAdminManager::LoadDatabaseAdmins(std::function<void()> onComplete)
+void CS2AAdminManager::LoadDatabaseAdmins(uint32_t generation, std::function<void()> onComplete)
 {
-	LoadGroups(
-		[this, onComplete]()
-		{
-			LoadGroupOverrides(
-				[this, onComplete]()
-				{
-					LoadGlobalOverrides(
-						[this, onComplete]()
-						{
-							LoadAdminsFromDB(
-								[this, onComplete]()
-								{
-									CommitLoadedData();
-									MergeAndApplyAll();
-									if (onComplete)
-									{
-										onComplete();
-									}
-								});
-						});
-				});
-		});
+	LoadGroups(generation,
+			   [this, generation, onComplete]()
+			   {
+				   LoadGroupOverrides(generation,
+									  [this, generation, onComplete]()
+									  {
+										  LoadGlobalOverrides(generation,
+															  [this, generation, onComplete]()
+															  {
+																  LoadAdminsFromDB(generation,
+																				   [this, onComplete]()
+																				   {
+																					   CommitLoadedData();
+																					   MergeAndApplyAll();
+																					   g_CS2ATagManager.UpdateAllClanTags();
+																					   if (onComplete)
+																					   {
+																						   onComplete();
+																					   }
+																				   });
+															  });
+									  });
+			   });
 }

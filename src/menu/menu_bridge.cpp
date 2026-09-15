@@ -127,6 +127,13 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 	// Record before DisplayMenu: a chained ShowMenu replaces the current menu for
 	// the slot and fires its end callback, which must not clear the handle we just set.
 	m_extHandle[slot] = h;
-	m_menus->DisplayMenu(h, slot, kMenuDuration);
+	if (!m_menus->DisplayMenu(h, slot, kMenuDuration))
+	{
+		// Refused (a host menu owns the slot), so no end callback will ever free it
+		// and its lambdas would outlive this plugin.
+		m_extHandle[slot] = kInvalidMenuHandle;
+		m_menus->DestroyMenu(h);
+		return false;
+	}
 	return true;
 }

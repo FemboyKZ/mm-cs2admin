@@ -85,7 +85,12 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		else if (k == "processqueuetime")
 		{
 			// Zero or less would rescan the queue every frame.
-			cfg->processQueueTime = std::max(1, std::atoi(value.c_str()));
+			int v = std::atoi(value.c_str());
+			if (v < 1)
+			{
+				v = 1;
+			}
+			cfg->processQueueTime = v;
 		}
 		else if (k == "workshopdownloadtimeout")
 		{

@@ -2,7 +2,6 @@
 #include "mmu/log.h"
 #include "src/common.h"
 
-#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <fstream>
@@ -126,7 +125,11 @@ bool CS2AAdminManager::LoadBackup()
 			group.name = fields[1];
 			group.id = std::atoi(fields[2].c_str());
 			group.flags |= FlagsFromString(fields[3].c_str());
-			group.immunity = std::max(group.immunity, std::atoi(fields[4].c_str()));
+			int immunity = std::atoi(fields[4].c_str());
+			if (immunity > group.immunity)
+			{
+				group.immunity = immunity;
+			}
 			m_loadingGroupIdToName[group.id] = group.name;
 		}
 		else if (kind == "gover" && fields.size() >= 4)

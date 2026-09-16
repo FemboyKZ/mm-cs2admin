@@ -1,4 +1,5 @@
 #include "src/common.h"
+#include "mmu/chat_command.h"
 #include "mmu/log.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -70,31 +71,6 @@ CON_COMMAND_F(cs2admin_version, "Display CS2Admin version", FCVAR_NONE)
 // SourceBans++ web panel commands, sent over RCON.
 // The panel already wrote the DB row, so these only update the game.
 
-// The tokenizer splits on ':', which breaks SteamIDs like [U:1:X].
-static std::vector<std::string> RawArgs(const CCommand &args)
-{
-	std::vector<std::string> out;
-	std::string current;
-	for (const char *p = args.ArgS(); *p; p++)
-	{
-		if (*p == ' ' || *p == '\t' || *p == '"')
-		{
-			if (!current.empty())
-			{
-				out.push_back(std::move(current));
-				current.clear();
-			}
-			continue;
-		}
-		current += *p;
-	}
-	if (!current.empty())
-	{
-		out.push_back(std::move(current));
-	}
-	return out;
-}
-
 // Human player slot for a SteamID in any format, or -1.
 static int FindWebTarget(const std::string &steamid)
 {
@@ -111,7 +87,7 @@ static int FindWebTarget(const std::string &steamid)
 CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag/silence a player (RCON)", FCVAR_NONE)
 {
 	// type 1 = mute, 2 = gag, 3 = silence. length in seconds, 0 = permanent, negative = session.
-	std::vector<std::string> raw = RawArgs(args);
+	std::vector<std::string> raw = mmu::SplitArgs(args.ArgS());
 	if (raw.size() < 3)
 	{
 		META_CONPRINTF("Usage: sc_fw_block <type> <length> <steamid>\n");
@@ -172,7 +148,7 @@ CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag/silence a player (RCON)", FCVAR_
 
 CON_COMMAND_F(sc_fw_ungag, "Web panel: ungag a player (RCON)", FCVAR_NONE)
 {
-	std::vector<std::string> raw = RawArgs(args);
+	std::vector<std::string> raw = mmu::SplitArgs(args.ArgS());
 	if (raw.empty())
 	{
 		META_CONPRINTF("Usage: sc_fw_ungag <steamid>\n");
@@ -191,7 +167,7 @@ CON_COMMAND_F(sc_fw_ungag, "Web panel: ungag a player (RCON)", FCVAR_NONE)
 
 CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
 {
-	std::vector<std::string> raw = RawArgs(args);
+	std::vector<std::string> raw = mmu::SplitArgs(args.ArgS());
 	if (raw.empty())
 	{
 		META_CONPRINTF("Usage: sc_fw_unmute <steamid>\n");

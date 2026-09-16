@@ -2317,12 +2317,8 @@ static void ConsoleCommandCallback(const CCommandContext &context, const CComman
 		cmdName += 3;
 	}
 
-	// Build args vector from CCommand (skip arg 0 which is the command name)
-	std::vector<std::string> cmdArgs;
-	for (int i = 1; i < args.ArgC(); i++)
-	{
-		cmdArgs.push_back(args[i]);
-	}
+	// Not args[i], the engine tokenizer would cut a SteamID apart at its colons.
+	std::vector<std::string> cmdArgs = mmu::SplitArgs(args.ArgS());
 
 	// Use the player slot from the command context (-1 for server console)
 	int slot = context.GetPlayerSlot().Get();

@@ -63,18 +63,7 @@ void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, i
 		return;
 	}
 
-	// Built here rather than with mmu::discord::SendEmbed to add allowed_mentions, so no name or reason can ping anyone.
-	std::string payload = "{\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{";
-	payload += "\"title\":\"" + mmu::json::Escape(title ? title : "") + "\",";
-	payload += "\"description\":\"" + mmu::json::Escape(description ? description : "") + "\",";
-	payload += "\"color\":" + std::to_string(color);
-	if (footer && *footer)
-	{
-		payload += ",\"footer\":{\"text\":\"" + mmu::json::Escape(footer) + "\"}";
-	}
-	payload += "}]}";
-
-	mmu::discord::SendPayload(g_CS2AConfig.discordWebhookUrl, payload);
+	mmu::discord::SendEmbed(g_CS2AConfig.discordWebhookUrl, title, description, color, footer);
 }
 
 void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, const char *targetName, const char *reason, int durationMinutes,

@@ -33,6 +33,11 @@ struct PlayerInfo
 	double gagExpireTime = 0.0;
 	std::string muteReason;
 	std::string gagReason;
+	// Who placed each block, for the unblock immunity check. A steamid64 of 0 is the console.
+	int muteIssuerImmunity = 0;
+	int gagIssuerImmunity = 0;
+	uint64_t muteIssuerSteamid64 = 0;
+	uint64_t gagIssuerSteamid64 = 0;
 
 	// Report system
 	double lastReportTime = 0.0;
@@ -63,6 +68,10 @@ struct PlayerInfo
 		gagExpireTime = 0.0;
 		muteReason.clear();
 		gagReason.clear();
+		muteIssuerImmunity = 0;
+		gagIssuerImmunity = 0;
+		muteIssuerSteamid64 = 0;
+		gagIssuerSteamid64 = 0;
 		lastReportTime = 0.0;
 		reportTargetSlot = -1;
 		pendingReport = false;

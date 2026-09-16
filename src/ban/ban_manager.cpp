@@ -18,6 +18,15 @@
 
 CS2ABanManager g_CS2ABanManager;
 
+void CS2ABanManager::PrintBanNotice(int slot, const char *reason)
+{
+	ADMIN_PrintToClientT(slot, "[ADMIN] You are banned from this server. Reason: %s\n", reason ? reason : "Banned");
+	if (!g_CS2AConfig.website.empty())
+	{
+		ADMIN_PrintToClientT(slot, "[ADMIN] Visit %s for more information.\n", g_CS2AConfig.website.c_str());
+	}
+}
+
 int CS2ABanManager::GetServerID() const
 {
 	return g_CS2AConfig.serverID;
@@ -100,6 +109,12 @@ bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 		return false;
 	}
 
+	// A bot has no real SteamID or IP.
+	if (target->fakePlayer)
+	{
+		return false;
+	}
+
 	if (g_CS2AForwards.FireOnBanPlayer(targetSlot, adminSlot, time, reason))
 	{
 		return false;
@@ -113,6 +128,7 @@ bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 
 	InsertBan(targetIP.c_str(), targetAuth.c_str(), targetName.c_str(), time, reason, adminSlot);
 
+	PrintBanNotice(targetSlot, reason);
 	if (time == 0)
 	{
 		ADMIN_PrintToChatT(targetSlot, "You have been permanently banned. Reason: %s\n", reason ? reason : "No reason");
@@ -216,7 +232,7 @@ bool CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 			continue;
 		}
 		MMU_LOG_INFO("Kicking \"%s\" (%s), IP %s was banned.\n", player->name.c_str(), player->authid.c_str(), ip);
-		ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason ? reason : "Banned");
+		PrintBanNotice(i, reason);
 		g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 	}
 	return true;
@@ -412,6 +428,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 
 	std::string escapedIP = g_CS2ADatabase.Escape(ip);
 	std::string prefix = g_CS2AConfig.database.prefix;
+	std::string ownAuth = CS2ADatabase::AuthMatch("authid", g_CS2ADatabase.Escape(SteamID64ToSuffix(steamid64).c_str()));
 
 	long long now = (long long)std::time(nullptr);
 
@@ -429,11 +446,13 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 		typeFilter = " AND length = 0";
 	}
 
+	// Other accounts' SteamID bans only.
+	// VerifyBan already enforces the player's own and IP bans, and counting them would re-ban the player on every reconnect.
 	char query[1024];
 	snprintf(query, sizeof(query),
-			 "SELECT COUNT(*), MAX(length), MIN(length) FROM %s_bans WHERE ip = '%s' AND RemoveType IS NULL "
+			 "SELECT COUNT(*), MAX(length), MIN(length) FROM %s_bans WHERE type = 0 AND ip = '%s' AND NOT (%s) AND RemoveType IS NULL "
 			 "AND (length = '0' OR ends > %lld)%s%s",
-			 prefix.c_str(), escapedIP.c_str(), now, typeFilter.c_str(), timeFilter.c_str());
+			 prefix.c_str(), escapedIP.c_str(), ownAuth.c_str(), now, typeFilter.c_str(), timeFilter.c_str());
 
 	g_CS2ADatabase.Query(
 		query,

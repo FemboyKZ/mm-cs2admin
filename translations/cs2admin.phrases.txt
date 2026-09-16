@@ -339,30 +339,30 @@
 		"en"	"Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 		"chi"	"用法: !addban <时长> <SteamID> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
-	"Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !mute <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !mute <目标> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !mute <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !mute <目标> [时长] [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !unmute <target>\n"
 	{
 		"en"	"Usage: !unmute <target>\n"
 		"chi"	"用法: !unmute <目标>\n"
 	}
-	"Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !gag <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !gag <目标> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !gag <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !gag <目标> [时长] [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !ungag <target>\n"
 	{
 		"en"	"Usage: !ungag <target>\n"
 		"chi"	"用法: !ungag <目标>\n"
 	}
-	"Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !silence <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !silence <目标> <时长> [原因] (双重禁言：语音+文字；时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !silence <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !silence <目标> [时长] [原因] (双重禁言：语音+文字；时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !unsilence <target>\n"
 	{
@@ -762,5 +762,29 @@
 	"%s could not be downloaded in time. Staying on the current map."
 	{
 		"en"	"{red}%s could not be downloaded in time.{default} Staying on the current map."
+	}
+	"You cannot ban yourself.\n"
+	{
+		"en"	"You cannot ban yourself.\n"
+	}
+	"Bots cannot be banned.\n"
+	{
+		"en"	"Bots cannot be banned.\n"
+	}
+	"[ADMIN] Visit %s for more information.\n"
+	{
+		"en"	"[ADMIN] Visit %s for more information.\n"
+	}
+	"This command is disabled on this server. Use the web panel instead.\n"
+	{
+		"en"	"This command is disabled on this server. Use the web panel instead.\n"
+	}
+	"You cannot issue blocks longer than %s.\n"
+	{
+		"en"	"You cannot issue blocks longer than %s.\n"
+	}
+	"You cannot lift a block placed by an admin with higher immunity.\n"
+	{
+		"en"	"You cannot lift a block placed by an admin with higher immunity.\n"
 	}
 }

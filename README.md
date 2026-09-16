@@ -64,15 +64,16 @@ This means the following articles are valid here too:
 | Command      | Usage                               | Permissions     | Description                                                                                  |
 | ------------ | ----------------------------------- | --------------- | -------------------------------------------------------------------------------------------- |
 | `!ban`       | `!ban <target> <time> [reason]`     | `d` (Ban)       | Ban a connected player. Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.         |
-| `!unban`     | `!unban <steamid>`                  | `e` (Unban)     | Unban a player by SteamID.                                                                   |
+| `!unban`     | `!unban <steamid>`                  | `e` (Unban)     | Unban a player by SteamID. Off when `Unban` is 0.                                            |
+| `!addban`    | `!addban <time> <steamid> [reason]` | `d` (Ban)       | Ban a SteamID, online or not. Off when `Addban` is 0.                                        |
 | `!banip`     | `!banip <ip> <time> [reason]`       | `d` (Ban)       | Ban an IP address. Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.              |
 | `!kick`      | `!kick <target> [reason]`           | `c` (Kick)      | Kick a connected player from the server.                                                     |
 | `!slay`      | `!slay <target>`                    | `f` (Slay)      | Slay a player. Supports multi-target selectors (@all, @t, @ct, etc.).                        |
-| `!mute`      | `!mute <target> <time> [reason]`    | `j` (Chat)      | Mute a player (block voice). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.    |
+| `!mute`      | `!mute <target> [time] [reason]`    | `j` (Chat)      | Mute a player (block voice). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.    |
 | `!unmute`    | `!unmute <target>`                  | `j` (Chat)      | Unmute a player.                                                                             |
-| `!gag`       | `!gag <target> <time> [reason]`     | `j` (Chat)      | Gag a player (block text chat). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent. |
+| `!gag`       | `!gag <target> [time] [reason]`     | `j` (Chat)      | Gag a player (block text chat). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent. |
 | `!ungag`     | `!ungag <target>`                   | `j` (Chat)      | Ungag a player.                                                                              |
-| `!silence`   | `!silence <target> <time> [reason]` | `j` (Chat)      | Silence a player (mute + gag). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.  |
+| `!silence`   | `!silence <target> [time] [reason]` | `j` (Chat)      | Silence a player (mute + gag). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.  |
 | `!unsilence` | `!unsilence <target>`               | `j` (Chat)      | Unsilence a player (unmute + ungag).                                                         |
 | `!comms`     | `!comms [target]`                   | `j` (Chat)      | Show comm restriction status for a player (defaults to self).                                |
 | `!listbans`  | `!listbans <target>`                | `d` (Ban)       | List active bans for a connected player.                                                     |
@@ -113,6 +114,8 @@ Override names are case-insensitive and work with or without the `mm_`/`sm_` pre
 
 Commands that act on a player need strictly higher immunity than the target. Root, console and self-targeting bypass it.
 
+Comm blocks follow SourceComms' `CommsConfig`. `DefaultTime` fills a missing time, `MaxLength` caps it, and lifting a block needs higher immunity than whoever placed it. The `n` flag bypasses both limits.
+
 #### Console / RCON Commands
 
 | Command            | Usage                                         | Description                                                                   |
@@ -120,9 +123,9 @@ Commands that act on a player need strictly higher immunity than the target. Roo
 | `mm_reload`        | `mm_reload`                                   | Reload config and admin cache, re-verify all connected players.               |
 | `mm_rehash`        | `mm_rehash`                                   | Rebuild admin cache from database and flat files.                             |
 | `cs2admin_version` | `cs2admin_version`                            | Display the loaded CS2Admin version.                                          |
-| `sc_fw_block`      | `sc_fw_block <authid> <time> <type> <reason>` | (Web panel RCON) Apply a mute (type 1) or gag (type 2) to a connected player. |
-| `sc_fw_unmute`     | `sc_fw_unmute <authid>`                       | (Web panel RCON) Unmute a connected player.                                   |
-| `sc_fw_ungag`      | `sc_fw_ungag <authid>`                        | (Web panel RCON) Ungag a connected player.                                    |
+| `sc_fw_block`      | `sc_fw_block <type> <length> <steamid>`       | (Web panel RCON) Mute (1), gag (2) or silence (3). Length in seconds.          |
+| `sc_fw_unmute`     | `sc_fw_unmute <steamid>`                      | (Web panel RCON) Unmute a connected player.                                   |
+| `sc_fw_ungag`      | `sc_fw_ungag <steamid>`                       | (Web panel RCON) Ungag a connected player.                                    |
 
 #### Target Selectors
 
@@ -156,6 +159,8 @@ Time values for ban/mute/gag commands support optional suffixes:
 | `d`      | Days              | `7d` = 7 days     |
 | `w`      | Weeks             | `2w` = 2 weeks    |
 | `m`      | Months (30 days)  | `1m` = 30 days    |
+
+Values too large to store are rejected.
 
 ## Build
 

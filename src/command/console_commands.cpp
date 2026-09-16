@@ -34,6 +34,7 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 		g_CS2AConfig = fresh;
 		MMU_LOG_INFO("Config reloaded from %s\n", path);
 		mmu::config::ApplyLogBlock(g_CS2AConfig.log);
+		g_CS2APlugin.OnConfigReloaded();
 	}
 	else
 	{
@@ -66,109 +67,145 @@ CON_COMMAND_F(cs2admin_version, "Display CS2Admin version", FCVAR_NONE)
 	META_CONPRINTF("CS2Admin version %s (%s)\n", PLUGIN_FULL_VERSION, __DATE__);
 }
 
-// Web panel integration commands, called by SourceBans web panel via RCON
-CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag a player (RCON)", FCVAR_NONE)
+// SourceBans++ web panel commands, sent over RCON.
+// The panel already wrote the DB row, so these only update the game.
+
+// The tokenizer splits on ':', which breaks SteamIDs like [U:1:X].
+static std::vector<std::string> RawArgs(const CCommand &args)
 {
-	// Format: sc_fw_block <authid> <time> <type> <reason>
-	// type: 1 = mute, 2 = gag
-	if (args.ArgC() < 5)
+	std::vector<std::string> out;
+	std::string current;
+	for (const char *p = args.ArgS(); *p; p++)
 	{
-		META_CONPRINTF("Usage: sc_fw_block <authid> <time> <type> <reason>\n");
+		if (*p == ' ' || *p == '\t' || *p == '"')
+		{
+			if (!current.empty())
+			{
+				out.push_back(std::move(current));
+				current.clear();
+			}
+			continue;
+		}
+		current += *p;
+	}
+	if (!current.empty())
+	{
+		out.push_back(std::move(current));
+	}
+	return out;
+}
+
+// Human player slot for a SteamID in any format, or -1.
+static int FindWebTarget(const std::string &steamid)
+{
+	uint64_t steamid64 = CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(steamid.c_str()).c_str());
+	if (steamid64 == 0)
+	{
+		return -1;
+	}
+	int slot = g_CS2APlayerManager.FindSlotBySteamID64(steamid64);
+	PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+	return (p && !p->fakePlayer) ? slot : -1;
+}
+
+CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag/silence a player (RCON)", FCVAR_NONE)
+{
+	// type 1 = mute, 2 = gag, 3 = silence. length in seconds, 0 = permanent, negative = session.
+	std::vector<std::string> raw = RawArgs(args);
+	if (raw.size() < 3)
+	{
+		META_CONPRINTF("Usage: sc_fw_block <type> <length> <steamid>\n");
 		return;
 	}
 
-	const char *authid = args[1];
-	int time = atoi(args[2]);
-	int type = atoi(args[3]);
-	const char *reason = args[4];
+	int type = atoi(raw[0].c_str());
+	int seconds = atoi(raw[1].c_str());
+	const std::string &steamid = raw[2];
 
-	int targetSlot = -1;
-	CGlobalVars *globals = GetGameGlobals();
-	if (globals)
+	if (type < 1 || type > 3)
 	{
-		for (int i = 0; i < globals->maxClients; i++)
+		MMU_LOG_WARN("sc_fw_block: invalid type %d.\n", type);
+		return;
+	}
+
+	int targetSlot = FindWebTarget(steamid);
+	if (targetSlot < 0)
+	{
+		MMU_LOG_INFO("sc_fw_block: Player %s not on this server.\n", steamid.c_str());
+		return;
+	}
+
+	bool mute = type == COMM_MUTE || type == 3;
+	bool gag = type == COMM_GAG || type == 3;
+
+	if (seconds < 0)
+	{
+		if (mute)
 		{
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-			if (p && p->connected && !p->fakePlayer && p->authid == authid)
-			{
-				targetSlot = i;
-				break;
-			}
+			g_CS2ACommManager.SessionMutePlayer(targetSlot, -1);
+		}
+		if (gag)
+		{
+			g_CS2ACommManager.SessionGagPlayer(targetSlot, -1);
+		}
+	}
+	else
+	{
+		// Rounded up, so a sub-minute block does not become 0 (permanent).
+		int minutes = (seconds + 59) / 60;
+		if (type == 3)
+		{
+			g_CS2ACommManager.SilencePlayer(targetSlot, minutes, "Blocked from web panel", -1, false);
+		}
+		else if (mute)
+		{
+			g_CS2ACommManager.MutePlayer(targetSlot, minutes, "Blocked from web panel", -1, false);
+		}
+		else
+		{
+			g_CS2ACommManager.GagPlayer(targetSlot, minutes, "Blocked from web panel", -1, false);
 		}
 	}
 
-	if (targetSlot < 0)
-	{
-		MMU_LOG_WARN("sc_fw_block: Player %s not found on server.\n", authid);
-		return;
-	}
-
-	if (type == COMM_MUTE)
-	{
-		g_CS2ACommManager.MutePlayer(targetSlot, time, reason, -1);
-	}
-	else if (type == COMM_GAG)
-	{
-		g_CS2ACommManager.GagPlayer(targetSlot, time, reason, -1);
-	}
-
-	MMU_LOG_INFO("sc_fw_block: Applied type=%d to %s for %d min.\n", type, authid, time);
+	MMU_LOG_INFO("sc_fw_block: Applied type=%d to %s for %d sec.\n", type, steamid.c_str(), seconds);
 }
 
 CON_COMMAND_F(sc_fw_ungag, "Web panel: ungag a player (RCON)", FCVAR_NONE)
 {
-	if (args.ArgC() < 2)
+	std::vector<std::string> raw = RawArgs(args);
+	if (raw.empty())
 	{
-		META_CONPRINTF("Usage: sc_fw_ungag <authid>\n");
+		META_CONPRINTF("Usage: sc_fw_ungag <steamid>\n");
 		return;
 	}
 
-	const char *authid = args[1];
-	CGlobalVars *globals = GetGameGlobals();
-	if (!globals)
+	int targetSlot = FindWebTarget(raw[0]);
+	if (targetSlot < 0)
 	{
+		MMU_LOG_INFO("sc_fw_ungag: Player %s not on this server.\n", raw[0].c_str());
 		return;
 	}
-
-	for (int i = 0; i < globals->maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (p && p->connected && !p->fakePlayer && p->authid == authid)
-		{
-			g_CS2ACommManager.UngagPlayer(i, -1);
-			MMU_LOG_INFO("sc_fw_ungag: Ungagged %s.\n", authid);
-			return;
-		}
-	}
-	MMU_LOG_WARN("sc_fw_ungag: Player %s not found on server.\n", authid);
+	g_CS2ACommManager.UngagPlayer(targetSlot, -1, false);
+	MMU_LOG_INFO("sc_fw_ungag: Ungagged %s.\n", raw[0].c_str());
 }
 
 CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
 {
-	if (args.ArgC() < 2)
+	std::vector<std::string> raw = RawArgs(args);
+	if (raw.empty())
 	{
-		META_CONPRINTF("Usage: sc_fw_unmute <authid>\n");
+		META_CONPRINTF("Usage: sc_fw_unmute <steamid>\n");
 		return;
 	}
 
-	const char *authid = args[1];
-	CGlobalVars *globals = GetGameGlobals();
-	if (!globals)
+	int targetSlot = FindWebTarget(raw[0]);
+	if (targetSlot < 0)
 	{
+		MMU_LOG_INFO("sc_fw_unmute: Player %s not on this server.\n", raw[0].c_str());
 		return;
 	}
-
-	for (int i = 0; i < globals->maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (p && p->connected && !p->fakePlayer && p->authid == authid)
-		{
-			g_CS2ACommManager.UnmutePlayer(i, -1);
-			MMU_LOG_INFO("sc_fw_unmute: Unmuted %s.\n", authid);
-			return;
-		}
-	}
-	MMU_LOG_WARN("sc_fw_unmute: Player %s not found on server.\n", authid);
+	g_CS2ACommManager.UnmutePlayer(targetSlot, -1, false);
+	MMU_LOG_INFO("sc_fw_unmute: Unmuted %s.\n", raw[0].c_str());
 }
 
 void ShutdownConsoleCommands()

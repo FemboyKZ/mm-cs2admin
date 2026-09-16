@@ -430,7 +430,7 @@ void ADMIN_RecheckConnectedPlayers()
 										   g_CS2ACommManager.VerifyComms(i, steamid64);
 										   return;
 									   }
-									   ADMIN_PrintToClientT(i, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
+									   CS2ABanManager::PrintBanNotice(i, reason.c_str());
 									   MMU_LOG_INFO("Kicking banned player \"%s\" (%s). Reason: %s\n", pp->name.c_str(), pp->authid.c_str(),
 													reason.c_str());
 									   g_pEngine->DisconnectClient(CPlayerSlot(i), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
@@ -466,6 +466,11 @@ void CS2APlugin::AllPluginsLoaded()
 		return;
 	}
 
+	StartDatabase();
+}
+
+void CS2APlugin::StartDatabase()
+{
 	// This is where sql_mm should be available
 	if (!g_CS2ADatabase.Init())
 	{
@@ -476,6 +481,7 @@ void CS2APlugin::AllPluginsLoaded()
 
 	// Read once, before anything can be queued.
 	// Enqueue rewrites the file from memory, so a later read would either come too late to save the old entries or load duplicates of new ones.
+	// Still the first read, since nothing is queued before Init succeeds and it only succeeds once.
 	g_CS2AOfflineQueue.LoadFromFile();
 
 	g_CS2ADatabase.Connect(
@@ -484,35 +490,69 @@ void CS2APlugin::AllPluginsLoaded()
 			if (success)
 			{
 				MMU_LOG_INFO("Database ready.\n");
-
-				// Lookup server ID if set to auto (MySQL/SBPP only)
-				if (g_CS2AConfig.serverID == -1 && g_CS2ADatabase.IsMySQL())
-				{
-					LookupServerID();
-				}
-				else if (g_CS2AConfig.serverID == -1)
-				{
-					g_CS2AConfig.serverID = 0;
-				}
-
-				if (g_CS2AOfflineQueue.HasItems())
-				{
-					g_CS2AOfflineQueue.ProcessQueue();
-				}
-
-				// Load admins from both DB and flat file
-				g_CS2AAdminManager.ReloadAdmins();
-
-				g_CS2ATagManager.EnsureSchema();
-
-				// Anyone who connected before this point was never ban or comm checked.
-				ADMIN_RecheckConnectedPlayers();
+				OnDatabaseReady();
 			}
 			else
 			{
 				MMU_LOG_WARN("Database connection failed! Bans will not be enforced.\n");
+				// The startup reload ran before Init and skipped the admin backup.
+				g_CS2AAdminManager.ReloadAdmins();
 			}
 		});
+}
+
+void CS2APlugin::OnDatabaseReady()
+{
+	m_iReconnectAttempts = 0;
+	m_bReconnectGaveUp = false;
+
+	// Auto server ID (MySQL/SBPP only). Without it every new row carries sid 0.
+	if (g_CS2AConfig.serverID == -1 && g_CS2ADatabase.IsMySQL())
+	{
+		LookupServerID(g_CS2AConfig.autoAddServer != 0);
+	}
+	else if (g_CS2AConfig.serverID == -1)
+	{
+		g_CS2AConfig.serverID = 0;
+	}
+
+	g_CS2ATagManager.EnsureSchema();
+
+	if (g_CS2AOfflineQueue.HasItems())
+	{
+		g_CS2AOfflineQueue.ProcessQueue();
+	}
+
+	// Admin data is whatever the last reload could reach. Pick up the DB side now.
+	g_CS2AAdminManager.ReloadAdmins();
+
+	// Anyone who connected while the DB was unreachable was never ban or comm checked.
+	ADMIN_RecheckConnectedPlayers();
+}
+
+void CS2APlugin::OnConfigReloaded()
+{
+	if (!m_bConfigLoaded)
+	{
+		// Startup skipped the DB for want of a config.
+		m_bConfigLoaded = true;
+		StartDatabase();
+		return;
+	}
+
+	// Also how an admin gets the DB back after the reconnect loop gave up.
+	if (m_bReconnectGaveUp)
+	{
+		MMU_LOG_INFO("Resuming database reconnection attempts.\n");
+	}
+	m_iReconnectAttempts = 0;
+	m_bReconnectGaveUp = false;
+	m_flNextReconnect = 0.0;
+
+	if (!g_CS2ADatabase.IsInitialized())
+	{
+		StartDatabase();
+	}
 }
 
 void CS2APlugin::OnPluginLoad(PluginId /*id*/)
@@ -531,7 +571,7 @@ void CS2APlugin::OnPluginUnload(PluginId id)
 	g_CS2AForeignPlugins.Refresh(id);
 }
 
-void CS2APlugin::LookupServerID()
+void CS2APlugin::LookupServerID(bool allowAutoAdd)
 {
 	ConVarRefAbstract hostip_ref("hostip");
 	ConVarRefAbstract hostport_ref("hostport");
@@ -554,7 +594,7 @@ void CS2APlugin::LookupServerID()
 			 g_CS2ADatabase.Escape(ipStr).c_str(), hostport);
 
 	g_CS2ADatabase.Query(query,
-						 [ipStr = std::string(ipStr), hostport](ISQLQuery *result)
+						 [this, ipStr = std::string(ipStr), hostport, allowAutoAdd](ISQLQuery *result)
 						 {
 							 if (!result)
 							 {
@@ -571,11 +611,41 @@ void CS2APlugin::LookupServerID()
 									 MMU_LOG_INFO("Auto-detected server ID: %d\n", g_CS2AConfig.serverID);
 								 }
 							 }
+							 // hostip 0 is no usable address to register.
+							 else if (allowAutoAdd && ipStr != "0.0.0.0")
+							 {
+								 AddServerRow(ipStr, hostport);
+							 }
 							 else
 							 {
 								 MMU_LOG_WARN("Server not found in database (%s:%d). Using serverID=0.\n", ipStr.c_str(), hostport);
 								 g_CS2AConfig.serverID = 0;
 							 }
+						 });
+}
+
+void CS2APlugin::AddServerRow(const std::string &ip, int port)
+{
+	MMU_LOG_INFO("Server %s:%d not in database, adding it (AutoAddServer).\n", ip.c_str(), port);
+
+	// The panel's mod folder may be cs2 or csgo. No match leaves modid 0.
+	const char *prefix = g_CS2AConfig.database.prefix.c_str();
+	char query[512];
+	snprintf(
+		query, sizeof(query),
+		"INSERT INTO %s_servers (ip, port, rcon, modid, enabled) "
+		"VALUES ('%s', %d, '', IFNULL((SELECT mid FROM %s_mods WHERE modfolder IN ('cs2', 'csgo') ORDER BY modfolder = 'cs2' DESC LIMIT 1), 0), 1)",
+		prefix, g_CS2ADatabase.Escape(ip.c_str()).c_str(), port, prefix);
+
+	g_CS2ADatabase.Query(query,
+						 [this](ISQLQuery *result)
+						 {
+							 if (!result)
+							 {
+								 return;
+							 }
+							 // Re-read the row rather than trust an insert id. false so it never inserts twice.
+							 LookupServerID(false);
 						 });
 }
 
@@ -649,7 +719,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 									   PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slotIdx);
 									   if (p && p->connected && p->steamid64 == steamid64)
 									   {
-										   ADMIN_PrintToClientT(slotIdx, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
+										   CS2ABanManager::PrintBanNotice(slotIdx, reason.c_str());
 										   MMU_LOG_INFO("Kicking banned player \"%s\" (%s). Reason: %s\n", p->name.c_str(), p->authid.c_str(),
 														reason.c_str());
 										   g_pEngine->DisconnectClient(CPlayerSlot(slotIdx), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
@@ -932,26 +1002,7 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 				if (success)
 				{
 					MMU_LOG_INFO("Database reconnected!\n");
-					m_iReconnectAttempts = 0;
-					m_bReconnectGaveUp = false;
-
-					// The first connect ran these too, and without them every row written from here on carries sid 0.
-					if (g_CS2AConfig.serverID == -1 && g_CS2ADatabase.IsMySQL())
-					{
-						LookupServerID();
-					}
-					g_CS2ATagManager.EnsureSchema();
-
-					if (g_CS2AOfflineQueue.HasItems())
-					{
-						g_CS2AOfflineQueue.ProcessQueue();
-					}
-
-					// Admin data is whatever the last reload could reach. Pick up the DB side now.
-					g_CS2AAdminManager.ReloadAdmins();
-
-					// Anyone who connected while the DB was down was never ban or comm checked.
-					ADMIN_RecheckConnectedPlayers();
+					OnDatabaseReady();
 				}
 			});
 

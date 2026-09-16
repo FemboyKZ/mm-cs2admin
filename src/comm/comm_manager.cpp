@@ -1,6 +1,7 @@
 #include "comm_manager.h"
 #include "mmu/log.h"
 #include "src/common.h"
+#include "src/admin/admin_manager.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
 #include "interfaces/cs2admin/forwards.h"
@@ -13,6 +14,75 @@
 #include <ctime>
 
 CS2ACommManager g_CS2ACommManager;
+
+// Bypasses MaxLength and the unblock immunity check, as in SourceComms.
+static const uint32_t COMM_BYPASS_FLAG = ADMFLAG_CHEATS;
+
+static void RecordIssuer(int adminSlot, int &immunity, uint64_t &steamid64)
+{
+	if (adminSlot < 0)
+	{
+		immunity = g_CS2AConfig.consoleImmunity;
+		steamid64 = 0;
+		return;
+	}
+	const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(adminSlot);
+	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(adminSlot);
+	immunity = admin ? admin->immunity : 0;
+	steamid64 = player ? player->steamid64 : 0;
+}
+
+bool CS2ACommManager::CanLiftBlock(int callerSlot, int targetSlot, int type) const
+{
+	if (callerSlot < 0)
+	{
+		return true;
+	}
+
+	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	if (!target)
+	{
+		return true;
+	}
+
+	bool active = (type == COMM_MUTE) ? target->isMuted : target->isGagged;
+	if (!active)
+	{
+		return true;
+	}
+
+	uint64_t issuer = (type == COMM_MUTE) ? target->muteIssuerSteamid64 : target->gagIssuerSteamid64;
+	int issuerImmunity = (type == COMM_MUTE) ? target->muteIssuerImmunity : target->gagIssuerImmunity;
+
+	PlayerInfo *caller = g_CS2APlayerManager.GetPlayer(callerSlot);
+	if (caller && issuer != 0 && caller->steamid64 == issuer)
+	{
+		return true;
+	}
+
+	if (g_CS2AAdminManager.PlayerHasFlag(callerSlot, COMM_BYPASS_FLAG))
+	{
+		return true;
+	}
+
+	if (g_CS2AConfig.disableUnblockImmunityCheck)
+	{
+		return false;
+	}
+
+	const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(callerSlot);
+	return (admin ? admin->immunity : 0) > issuerImmunity;
+}
+
+bool CS2ACommManager::IsAllowedLength(int callerSlot, int minutes) const
+{
+	int maxLength = g_CS2AConfig.commsMaxLength;
+	if (maxLength <= 0 || callerSlot < 0 || g_CS2AAdminManager.PlayerHasFlag(callerSlot, COMM_BYPASS_FLAG))
+	{
+		return true;
+	}
+	return minutes != 0 && minutes <= maxLength;
+}
 
 void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 {
@@ -37,7 +107,8 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 	snprintf(query, sizeof(query),
 			 "SELECT (c.ends - %lld) AS remaining, "
 			 "c.length, c.type, c.created, c.reason, a.user, "
-			 "CASE WHEN a.immunity >= g.immunity THEN a.immunity ELSE IFNULL(g.immunity, 0) END AS immunity, "
+			 // Without IFNULL an admin with no group compares against NULL and loses their own immunity.
+			 "CASE WHEN IFNULL(a.immunity, 0) >= IFNULL(g.immunity, 0) THEN IFNULL(a.immunity, 0) ELSE g.immunity END AS immunity, "
 			 "c.aid, c.sid, a.authid "
 			 "FROM %s_comms AS c "
 			 "LEFT JOIN %s_admins AS a ON a.aid = c.aid "
@@ -95,6 +166,17 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 				int type = rs->GetInt(2);
 				const char *reason = rs->GetString(4);
 
+				// Column 6 = issuer immunity, 7 = issuer aid (0 = console), 9 = issuer authid
+				int issuerImmunity = rs->GetInt(6);
+				bool byConsole = rs->GetInt(7) == 0;
+				if (byConsole && g_CS2AConfig.consoleImmunity > issuerImmunity)
+				{
+					issuerImmunity = g_CS2AConfig.consoleImmunity;
+				}
+				const char *issuerAuth = rs->GetString(9);
+				uint64_t issuerSteamid64 =
+					(byConsole || !issuerAuth) ? 0 : CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(issuerAuth).c_str());
+
 				if (type == COMM_MUTE)
 				{
 					foundMute = true;
@@ -105,6 +187,8 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					player->muteRemaining = (length == 0) ? 0 : remaining;
 					player->muteReason = reason ? reason : "";
 					player->muteExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
+					player->muteIssuerImmunity = issuerImmunity;
+					player->muteIssuerSteamid64 = issuerSteamid64;
 					if (!announce)
 					{
 						continue;
@@ -128,6 +212,8 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					player->gagRemaining = (length == 0) ? 0 : remaining;
 					player->gagReason = reason ? reason : "";
 					player->gagExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
+					player->gagIssuerImmunity = issuerImmunity;
+					player->gagIssuerSteamid64 = issuerSteamid64;
 					if (!announce)
 					{
 						continue;
@@ -245,9 +331,9 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 	g_CS2AOfflineQueue.Submit(query);
 }
 
-bool CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+bool CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
 {
-	if (!ApplyMute(targetSlot, timeMinutes, reason, adminSlot))
+	if (!ApplyMute(targetSlot, timeMinutes, reason, adminSlot, persist))
 	{
 		return false;
 	}
@@ -256,9 +342,9 @@ bool CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *re
 	return true;
 }
 
-bool CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+bool CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
 {
-	if (!ApplyGag(targetSlot, timeMinutes, reason, adminSlot))
+	if (!ApplyGag(targetSlot, timeMinutes, reason, adminSlot, persist))
 	{
 		return false;
 	}
@@ -300,7 +386,7 @@ void CS2ACommManager::AnnounceLift(int targetSlot, int adminSlot, const char *se
 	ADMIN_ChatToAllT(allPhrase, adminName.c_str(), target->name.c_str());
 }
 
-bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
 {
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
@@ -325,8 +411,12 @@ bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *rea
 	{
 		target->muteExpireTime = 0.0;
 	}
+	RecordIssuer(adminSlot, target->muteIssuerImmunity, target->muteIssuerSteamid64);
 
-	InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_MUTE);
+	if (persist)
+	{
+		InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_MUTE);
+	}
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Muted \"%s\" (%s) for %d min. Reason: %s", target->name.c_str(), target->authid.c_str(), timeMinutes,
@@ -337,7 +427,7 @@ bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *rea
 	return true;
 }
 
-bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
 {
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
@@ -362,8 +452,12 @@ bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reas
 	{
 		target->gagExpireTime = 0.0;
 	}
+	RecordIssuer(adminSlot, target->gagIssuerImmunity, target->gagIssuerSteamid64);
 
-	InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_GAG);
+	if (persist)
+	{
+		InsertComm(target->authid.c_str(), target->name.c_str(), timeMinutes, reason, adminSlot, COMM_GAG);
+	}
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Gagged \"%s\" (%s) for %d min. Reason: %s", target->name.c_str(), target->authid.c_str(), timeMinutes,
@@ -374,7 +468,7 @@ bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reas
 	return true;
 }
 
-int CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot)
+int CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
 {
 	if (g_CS2AForwards.FireOnSilencePlayer(targetSlot, adminSlot, timeMinutes, reason))
 	{
@@ -383,8 +477,8 @@ int CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *
 
 	// The mute and gag forwards still fire, so one of them can block its half.
 	// The announcement then names whatever actually applied instead of claiming a full silence.
-	bool muted = ApplyMute(targetSlot, timeMinutes, reason, adminSlot);
-	bool gagged = ApplyGag(targetSlot, timeMinutes, reason, adminSlot);
+	bool muted = ApplyMute(targetSlot, timeMinutes, reason, adminSlot, persist);
+	bool gagged = ApplyGag(targetSlot, timeMinutes, reason, adminSlot, persist);
 	if (muted && gagged)
 	{
 		AnnounceBlock(targetSlot, adminSlot, timeMinutes, reason, "You have been permanently silenced. Reason: %s\n",
@@ -403,9 +497,9 @@ int CS2ACommManager::SilencePlayer(int targetSlot, int timeMinutes, const char *
 	return (muted ? COMM_MUTE : 0) | (gagged ? COMM_GAG : 0);
 }
 
-bool CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
+bool CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot, bool persist)
 {
-	if (!LiftMute(targetSlot, adminSlot))
+	if (!LiftMute(targetSlot, adminSlot, persist))
 	{
 		return false;
 	}
@@ -413,9 +507,9 @@ bool CS2ACommManager::UnmutePlayer(int targetSlot, int adminSlot)
 	return true;
 }
 
-bool CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
+bool CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot, bool persist)
 {
-	if (!LiftGag(targetSlot, adminSlot))
+	if (!LiftGag(targetSlot, adminSlot, persist))
 	{
 		return false;
 	}
@@ -426,8 +520,8 @@ bool CS2ACommManager::UngagPlayer(int targetSlot, int adminSlot)
 int CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
 {
 	g_CS2AForwards.FireOnUnsilencePlayer(targetSlot, adminSlot);
-	bool unmuted = LiftMute(targetSlot, adminSlot);
-	bool ungagged = LiftGag(targetSlot, adminSlot);
+	bool unmuted = LiftMute(targetSlot, adminSlot, true);
+	bool ungagged = LiftGag(targetSlot, adminSlot, true);
 	if (unmuted && ungagged)
 	{
 		AnnounceLift(targetSlot, adminSlot, "You have been unsilenced.\n", "%s unsilenced %s.\n");
@@ -443,7 +537,7 @@ int CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
 	return (unmuted ? COMM_MUTE : 0) | (ungagged ? COMM_GAG : 0);
 }
 
-bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
+bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot, bool persist)
 {
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
@@ -454,7 +548,10 @@ bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
 	// Nothing to lift here, but the DB can still hold a row this server never loaded (added elsewhere while the player was on), so clear it quietly.
 	if (!target->isMuted)
 	{
-		RemoveComm(target->authid.c_str(), adminSlot, COMM_MUTE);
+		if (persist)
+		{
+			RemoveComm(target->authid.c_str(), adminSlot, COMM_MUTE);
+		}
 		return false;
 	}
 
@@ -466,7 +563,10 @@ bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
 	target->muteReason.clear();
 	target->muteExpireTime = 0.0;
 
-	RemoveComm(target->authid.c_str(), adminSlot, COMM_MUTE);
+	if (persist)
+	{
+		RemoveComm(target->authid.c_str(), adminSlot, COMM_MUTE);
+	}
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Unmuted \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
@@ -474,7 +574,7 @@ bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot)
 	return true;
 }
 
-bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot)
+bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot, bool persist)
 {
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
@@ -484,7 +584,10 @@ bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot)
 
 	if (!target->isGagged)
 	{
-		RemoveComm(target->authid.c_str(), adminSlot, COMM_GAG);
+		if (persist)
+		{
+			RemoveComm(target->authid.c_str(), adminSlot, COMM_GAG);
+		}
 		return false;
 	}
 
@@ -496,7 +599,10 @@ bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot)
 	target->gagReason.clear();
 	target->gagExpireTime = 0.0;
 
-	RemoveComm(target->authid.c_str(), adminSlot, COMM_GAG);
+	if (persist)
+	{
+		RemoveComm(target->authid.c_str(), adminSlot, COMM_GAG);
+	}
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Ungagged \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
@@ -517,6 +623,7 @@ void CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 	target->isSessionMuted = true;
 	target->muteExpireTime = 0.0;
 	target->muteReason = "Session mute";
+	RecordIssuer(adminSlot, target->muteIssuerImmunity, target->muteIssuerSteamid64);
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 
@@ -541,6 +648,7 @@ void CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 	target->isSessionGagged = true;
 	target->gagExpireTime = 0.0;
 	target->gagReason = "Session gag";
+	RecordIssuer(adminSlot, target->gagIssuerImmunity, target->gagIssuerSteamid64);
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 

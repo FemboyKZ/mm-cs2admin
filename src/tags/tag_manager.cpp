@@ -616,6 +616,12 @@ void CS2ATagManager::SavePlayerPref(int slot)
 		return;
 	}
 
+	// Unsendable without a DB, and it would fill the queue ban and comm writes share.
+	if (!g_CS2ADatabase.IsInitialized())
+	{
+		return;
+	}
+
 	const char *prefix = g_CS2AConfig.database.prefix.c_str();
 	std::string escapedId = g_CS2ADatabase.Escape(m_selected[slot].c_str());
 

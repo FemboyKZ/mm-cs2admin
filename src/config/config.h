@@ -8,7 +8,8 @@
 
 struct CS2AConfig
 {
-	std::string website = "http://www.yourwebsite.net/sourcebans";
+	// Shown to banned players on kick. Empty = not shown.
+	std::string website;
 	std::string chatPrefix = "\x03[CS2 Admin]\x01 ";
 	std::string commandPrefix = "!";
 	std::string silentCommandPrefix = "/";

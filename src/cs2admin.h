@@ -85,8 +85,17 @@ public:
 		return PLUGIN_LOGTAG;
 	}
 
+	// Called by mm_reload. Restarts the DB when startup skipped it or reconnects gave up.
+	void OnConfigReloaded();
+
 private:
-	void LookupServerID();
+	// allowAutoAdd inserts the row when none matches (AutoAddServer).
+	void LookupServerID(bool allowAutoAdd);
+	void AddServerRow(const std::string &ip, int port);
+	// A failed Init is retried by the next mm_reload.
+	void StartDatabase();
+	// Shared by the first connect and every reconnect.
+	void OnDatabaseReady();
 	void OnLateLoad();
 
 	bool m_bLateLoaded = false;

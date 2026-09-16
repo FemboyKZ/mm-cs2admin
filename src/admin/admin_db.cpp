@@ -37,6 +37,7 @@ void CS2AAdminManager::LoadGroups(uint32_t generation, std::function<void()> onC
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load admin groups from database.\n");
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -47,6 +48,7 @@ void CS2AAdminManager::LoadGroups(uint32_t generation, std::function<void()> onC
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs)
 							 {
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -132,6 +134,7 @@ void CS2AAdminManager::LoadGroupOverrides(uint32_t generation, std::function<voi
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load group overrides from database.\n");
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -142,6 +145,7 @@ void CS2AAdminManager::LoadGroupOverrides(uint32_t generation, std::function<voi
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs)
 							 {
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -236,6 +240,7 @@ void CS2AAdminManager::LoadGlobalOverrides(uint32_t generation, std::function<vo
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load global overrides from database.\n");
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -246,6 +251,7 @@ void CS2AAdminManager::LoadGlobalOverrides(uint32_t generation, std::function<vo
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs)
 							 {
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -328,6 +334,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 		if (!hostip_ref.IsValidRef() || !hostport_ref.IsValidRef())
 		{
 			MMU_LOG_WARN("Cannot load admins by IP: hostip/hostport cvars not available.\n");
+			m_loadingDbFailed = true;
 			if (onComplete)
 			{
 				onComplete();
@@ -380,6 +387,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 							 if (!result)
 							 {
 								 MMU_LOG_WARN("Failed to load admins from database.\n");
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -390,6 +398,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 							 ISQLResult *rs = result->GetResultSet();
 							 if (!rs)
 							 {
+								 m_loadingDbFailed = true;
 								 if (onComplete)
 								 {
 									 onComplete();
@@ -489,6 +498,11 @@ void CS2AAdminManager::LoadDatabaseAdmins(uint32_t generation, std::function<voi
 																				   [this, onComplete]()
 																				   {
 																					   CommitLoadedData();
+																					   if (g_CS2AConfig.backupConfigs && !m_loadingDbFailed
+																						   && g_CS2ADatabase.IsConnected())
+																					   {
+																						   SaveBackup();
+																					   }
 																					   MergeAndApplyAll();
 																					   g_CS2ATagManager.UpdateAllClanTags();
 																					   if (onComplete)

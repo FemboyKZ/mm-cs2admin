@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <climits>
 #include <cmath>
 #include <cstdlib>
 #include <cstring>
@@ -508,10 +509,10 @@ int ADMIN_ParseDuration(const char *input)
 		return -1;
 	}
 
+	// Rejected, not read as permanent, so a typo can't become a permanent ban.
 	if (digits.size() > 9)
 	{
-		MMU_LOG_INFO("Duration value too large ('%s'), treating as permanent.\n", input);
-		return 0; // treat as permanent
+		return -1;
 	}
 
 	int value = std::atoi(digits.c_str());
@@ -520,30 +521,25 @@ int ADMIN_ParseDuration(const char *input)
 		return 0; // permanent
 	}
 
+	// Lengths are stored in seconds, so minutes must fit INT_MAX / 60.
+	auto scaled = [](int count, double minutesPerUnit) -> int
+	{
+		double mins = (double)count * minutesPerUnit;
+		return mins > INT_MAX / 60 ? -1 : (int)mins;
+	};
+
 	switch (suffix)
 	{
 		case 'h': // hours
-		{
-			double mins = (double)value * 60.0;
-			return mins > INT_MAX ? 0 : (int)mins;
-		}
+			return scaled(value, 60.0);
 		case 'd': // days
-		{
-			double mins = (double)value * 60.0 * 24.0;
-			return mins > INT_MAX ? 0 : (int)mins;
-		}
+			return scaled(value, 60.0 * 24.0);
 		case 'w': // weeks
-		{
-			double mins = (double)value * 60.0 * 24.0 * 7.0;
-			return mins > INT_MAX ? 0 : (int)mins;
-		}
+			return scaled(value, 60.0 * 24.0 * 7.0);
 		case 'm': // months (30 days)
-		{
-			double mins = (double)value * 60.0 * 24.0 * 30.0;
-			return mins > INT_MAX ? 0 : (int)mins;
-		}
+			return scaled(value, 60.0 * 24.0 * 30.0);
 		case 0: // no suffix = minutes
-			return value;
+			return scaled(value, 1.0);
 		default:
 			return -1;
 	}

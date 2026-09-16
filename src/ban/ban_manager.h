@@ -33,6 +33,9 @@ public:
 	// Unban by IP. Returns false when there is no database to write to.
 	bool UnbanIP(const char *ip, int adminSlot);
 
+	// Console notice before a ban kick, plus the website when set.
+	static void PrintBanNotice(int slot, const char *reason);
+
 	// Get the server ID for ban insertions.
 	int GetServerID() const;
 

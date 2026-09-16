@@ -181,6 +181,7 @@ void CS2AAdminManager::ReloadAdmins()
 	m_loadingGroups.clear();
 	m_loadingGroupIdToName.clear();
 	m_loadingGlobalOverrides.clear();
+	m_loadingDbFailed = false;
 
 	// Load flat file groups and overrides first (synchronous, needed for group resolution)
 	LoadFlatFileGroups();
@@ -202,6 +203,12 @@ void CS2AAdminManager::ReloadAdmins()
 	}
 	else
 	{
+		// DB configured but unreachable, so use the last good load.
+		if (g_CS2AConfig.enableAdmins && g_CS2AConfig.backupConfigs && g_CS2ADatabase.IsInitialized())
+		{
+			LoadBackup();
+		}
+
 		// No DB, just apply flat file admins to connected players
 		CommitLoadedData();
 		MergeAndApplyAll();

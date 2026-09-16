@@ -24,20 +24,22 @@ public:
 	// Called after player is connected and DB is available.
 	void VerifyComms(int slot, uint64_t steamid64);
 
+	// persist false skips the DB write, for web panel commands whose row already exists.
+
 	// Mute a player (voice). False when the target is gone or a forward blocked it.
-	bool MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	bool MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist = true);
 
 	// Gag a player (chat). False when the target is gone or a forward blocked it.
-	bool GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	bool GagPlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist = true);
 
 	// Silence a player (both mute + gag). Returns the COMM_MUTE/COMM_GAG bits that actually applied, since a forward can block either half.
-	int SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
+	int SilencePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist = true);
 
 	// Remove mute. False when the player wasn't muted, in which case nothing is announced.
-	bool UnmutePlayer(int targetSlot, int adminSlot);
+	bool UnmutePlayer(int targetSlot, int adminSlot, bool persist = true);
 
 	// Remove gag. False when the player wasn't gagged, in which case nothing is announced.
-	bool UngagPlayer(int targetSlot, int adminSlot);
+	bool UngagPlayer(int targetSlot, int adminSlot, bool persist = true);
 
 	// Remove silence (both). Returns the COMM_MUTE/COMM_GAG bits that were actually lifted.
 	int UnsilencePlayer(int targetSlot, int adminSlot);
@@ -47,6 +49,13 @@ public:
 
 	// Session-only gag (no DB record, clears on disconnect)
 	void SessionGagPlayer(int targetSlot, int adminSlot);
+
+	// SourceComms' unblock rule. The issuer, the console, the cheats flag,
+	// or strictly higher immunity than the issuer unless DisableUnblockImmunityCheck is set.
+	bool CanLiftBlock(int callerSlot, int targetSlot, int type) const;
+
+	// MaxLength check, 0 = permanent. The console and the cheats flag are exempt.
+	bool IsAllowedLength(int callerSlot, int minutes) const;
 
 	// Check and auto-expire timed comm blocks. Called periodically from GameFrame.
 	void CheckExpiredComms();
@@ -79,10 +88,10 @@ private:
 	}
 
 	// Apply or lift without announcing, so silence can announce once for both halves. Apply returns false when a forward blocked it.
-	bool ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
-	bool ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot);
-	bool LiftMute(int targetSlot, int adminSlot);
-	bool LiftGag(int targetSlot, int adminSlot);
+	bool ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist);
+	bool ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist);
+	bool LiftMute(int targetSlot, int adminSlot, bool persist);
+	bool LiftGag(int targetSlot, int adminSlot, bool persist);
 	void AnnounceBlock(int targetSlot, int adminSlot, int timeMinutes, const char *reason, const char *permanentPhrase, const char *timedPhrase,
 					   const char *allPhrase);
 	void AnnounceLift(int targetSlot, int adminSlot, const char *selfPhrase, const char *allPhrase);

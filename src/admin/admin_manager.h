@@ -173,6 +173,13 @@ private:
 	// Release the reload lock and run a request that arrived mid-reload.
 	void FinishReload();
 
+	// BackupConfigs. Load fills the staging set and is false without a backup file.
+	void SaveBackup() const;
+	bool LoadBackup();
+
+	// Keeps a partial DB load from overwriting a good backup.
+	bool m_loadingDbFailed = false;
+
 	// Flatfile admins (keyed by normalized SteamID)
 	std::unordered_map<std::string, AdminEntry> m_flatFileAdmins;
 

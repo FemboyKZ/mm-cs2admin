@@ -324,6 +324,50 @@ static const char *CommActionName(int applied, const char *both, const char *mut
 	return nullptr;
 }
 
+// Parses "[time] [reason]" after a block command's target.
+// No time, or a word in its place, uses DefaultTime and the word starts the reason. A malformed number is still an error.
+// minutes is 0 for permanent, -1 for session. False after replying.
+static bool ParseBlockArgs(int slot, const std::vector<std::string> &args, const char *defaultReason, int &minutes, std::string &reason)
+{
+	size_t reasonStart = 1;
+	if (args.size() >= 2 && std::isdigit(static_cast<unsigned char>(args[1][0])))
+	{
+		minutes = ADMIN_ParseDuration(args[1].c_str());
+		if (minutes < 0)
+		{
+			ADMIN_ReplyToCommandT(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
+			return false;
+		}
+		reasonStart = 2;
+	}
+	else
+	{
+		int defaultTime = g_CS2AConfig.commsDefaultTime;
+		minutes = defaultTime < 0 ? -1 : (defaultTime == 0 ? 30 : defaultTime);
+	}
+
+	if (minutes >= 0 && !g_CS2ACommManager.IsAllowedLength(slot, minutes))
+	{
+		ADMIN_ReplyToCommandT(slot, "You cannot issue blocks longer than %s.\n", ADMIN_FormatDuration(g_CS2AConfig.commsMaxLength).c_str());
+		return false;
+	}
+
+	reason = JoinArgs(args, reasonStart, defaultReason);
+	return true;
+}
+
+// False after replying when the caller may not lift an active block of `types` (COMM_MUTE/COMM_GAG bits).
+static bool CheckCanLift(int slot, int target, int types)
+{
+	if (((types & COMM_MUTE) && !g_CS2ACommManager.CanLiftBlock(slot, target, COMM_MUTE))
+		|| ((types & COMM_GAG) && !g_CS2ACommManager.CanLiftBlock(slot, target, COMM_GAG)))
+	{
+		ADMIN_ReplyToCommandT(slot, "You cannot lift a block placed by an admin with higher immunity.\n");
+		return false;
+	}
+	return true;
+}
+
 CS2ACommandSystem g_CS2ACommandSystem;
 
 void CS2ACommandSystem::RegisterCommand(const char *name, ChatCommandCallback callback)
@@ -734,6 +778,19 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						if (target == slot)
+						{
+							ADMIN_ReplyToCommandT(slot, "You cannot ban yourself.\n");
+							return;
+						}
+
+						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+						if (targetPlayer && targetPlayer->fakePlayer)
+						{
+							ADMIN_ReplyToCommandT(slot, "Bots cannot be banned.\n");
+							return;
+						}
+
 						if (!CheckImmunity(slot, target))
 						{
 							return;
@@ -765,6 +822,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						if (!g_CS2AConfig.unban)
+						{
+							ADMIN_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
+							return;
+						}
+
 						std::string authid;
 						if (args.empty() || !ParseSteamIDArg(args[0], authid))
 						{
@@ -791,6 +854,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "addban", "basebans", ADMFLAG_BAN))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
+						if (!g_CS2AConfig.addban)
+						{
+							ADMIN_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
 							return;
 						}
 
@@ -849,7 +918,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						// The ban row alone would not touch them until they reconnect.
 						if (online >= 0)
 						{
-							ADMIN_PrintToClientT(online, "[ADMIN] You are banned from this server. Reason: %s\n", reason.c_str());
+							CS2ABanManager::PrintBanNotice(online, reason.c_str());
 							g_pEngine->DisconnectClient(CPlayerSlot(online), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 						}
 					});
@@ -870,9 +939,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (args.size() < 2)
+						if (args.empty())
 						{
-							ADMIN_ReplyToCommandT(slot, "Usage: !mute <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
+							ADMIN_ReplyToCommandT(slot, "Usage: !mute <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 							return;
 						}
 
@@ -887,16 +956,20 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						int time = ADMIN_ParseDuration(args[1].c_str());
-						if (time < 0)
+						int time = 0;
+						std::string reason;
+						if (!ParseBlockArgs(slot, args, "Muted", time, reason))
 						{
-							ADMIN_ReplyToCommandT(
-								slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 							return;
 						}
-						std::string reason = JoinArgs(args, 2, "Muted");
 
 						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
+						if (time < 0)
+						{
+							g_CS2ACommManager.SessionMutePlayer(target, slot);
+							NotifyDiscordOnPlayer("Session Mute", discordTarget, reason.c_str());
+							return;
+						}
 						if (g_CS2ACommManager.MutePlayer(target, time, reason.c_str(), slot))
 						{
 							NotifyDiscordOnPlayer("Mute", discordTarget, reason.c_str(), time);
@@ -930,7 +1003,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (!CheckImmunity(slot, target))
+						if (!CheckImmunity(slot, target) || !CheckCanLift(slot, target, COMM_MUTE))
 						{
 							return;
 						}
@@ -960,9 +1033,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (args.size() < 2)
+						if (args.empty())
 						{
-							ADMIN_ReplyToCommandT(slot, "Usage: !gag <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
+							ADMIN_ReplyToCommandT(slot, "Usage: !gag <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 							return;
 						}
 
@@ -977,15 +1050,20 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						int time = ADMIN_ParseDuration(args[1].c_str());
-						if (time < 0)
+						int time = 0;
+						std::string reason;
+						if (!ParseBlockArgs(slot, args, "Gagged", time, reason))
 						{
-							ADMIN_ReplyToCommandT(
-								slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 							return;
 						}
-						std::string reason = JoinArgs(args, 2, "Gagged");
+
 						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
+						if (time < 0)
+						{
+							g_CS2ACommManager.SessionGagPlayer(target, slot);
+							NotifyDiscordOnPlayer("Session Gag", discordTarget, reason.c_str());
+							return;
+						}
 						if (g_CS2ACommManager.GagPlayer(target, time, reason.c_str(), slot))
 						{
 							NotifyDiscordOnPlayer("Gag", discordTarget, reason.c_str(), time);
@@ -1019,7 +1097,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (!CheckImmunity(slot, target))
+						if (!CheckImmunity(slot, target) || !CheckCanLift(slot, target, COMM_GAG))
 						{
 							return;
 						}
@@ -1049,9 +1127,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (args.size() < 2)
+						if (args.empty())
 						{
-							ADMIN_ReplyToCommandT(slot, "Usage: !silence <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n");
+							ADMIN_ReplyToCommandT(slot, "Usage: !silence <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n");
 							return;
 						}
 
@@ -1066,15 +1144,21 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						int time = ADMIN_ParseDuration(args[1].c_str());
-						if (time < 0)
+						int time = 0;
+						std::string reason;
+						if (!ParseBlockArgs(slot, args, "Silenced", time, reason))
 						{
-							ADMIN_ReplyToCommandT(
-								slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 							return;
 						}
-						std::string reason = JoinArgs(args, 2, "Silenced");
+
 						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
+						if (time < 0)
+						{
+							g_CS2ACommManager.SessionMutePlayer(target, slot);
+							g_CS2ACommManager.SessionGagPlayer(target, slot);
+							NotifyDiscordOnPlayer("Session Silence", discordTarget, reason.c_str());
+							return;
+						}
 						int applied = g_CS2ACommManager.SilencePlayer(target, time, reason.c_str(), slot);
 						if (const char *action = CommActionName(applied, "Silence", "Mute", "Gag"))
 						{
@@ -1109,7 +1193,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (!CheckImmunity(slot, target))
+						if (!CheckImmunity(slot, target) || !CheckCanLift(slot, target, COMM_MUTE | COMM_GAG))
 						{
 							return;
 						}

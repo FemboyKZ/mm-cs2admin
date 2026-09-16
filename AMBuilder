@@ -32,6 +32,7 @@ for sdk_target in MMSPlugin.sdk_targets:
         "src/admin/admin_manager.cpp",
         "src/admin/admin_flatfile.cpp",
         "src/admin/admin_db.cpp",
+        "src/admin/admin_backup.cpp",
         "src/queue/offline_queue.cpp",
         "src/utils/print_utils.cpp",
         "src/utils/discord.cpp",

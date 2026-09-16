@@ -26,7 +26,8 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "website")
 		{
-			cfg->website = value;
+			// Older example configs shipped this placeholder, which banned players must not be sent to.
+			cfg->website = (value == "http://www.yourwebsite.net/sourcebans") ? "" : value;
 		}
 		else if (k == "chatprefix")
 		{

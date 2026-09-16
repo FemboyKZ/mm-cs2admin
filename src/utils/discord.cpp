@@ -6,6 +6,7 @@
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/player/player_manager.h"
+#include "version_gen.h"
 
 #include "tier1/convar.h"
 
@@ -15,9 +16,32 @@
 
 CS2ADiscord g_CS2ADiscord;
 
+// Player-controlled text as an inline code span.
+// A backtick would close the span early and let the rest render as markdown, and a newline would start a fake field.
+static std::string Code(const std::string &text)
+{
+	std::string out = "``";
+	for (char c : text)
+	{
+		if (c == '`')
+		{
+			out += '\'';
+		}
+		else if (c == '\n' || c == '\r')
+		{
+			out += ' ';
+		}
+		else
+		{
+			out += c;
+		}
+	}
+	return out + "``";
+}
+
 void CS2ADiscord::Init()
 {
-	mmu::http::SetUserAgent("CS2Admin/1.0");
+	mmu::http::SetUserAgent((std::string("CS2Admin/") + PLUGIN_FULL_VERSION).c_str());
 	mmu::http::ResetShutdownLatch();
 	MMU_LOG_INFO("Discord: webhook sender ready.\n");
 }
@@ -49,7 +73,18 @@ void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, i
 		return;
 	}
 
-	mmu::discord::SendEmbed(g_CS2AConfig.discordWebhookUrl, title, description, color, footer);
+	// Built here rather than with mmu::discord::SendEmbed to add allowed_mentions, so no name or reason can ping anyone.
+	std::string payload = "{\"allowed_mentions\":{\"parse\":[]},\"embeds\":[{";
+	payload += "\"title\":\"" + mmu::json::Escape(title ? title : "") + "\",";
+	payload += "\"description\":\"" + mmu::json::Escape(description ? description : "") + "\",";
+	payload += "\"color\":" + std::to_string(color);
+	if (footer && *footer)
+	{
+		payload += ",\"footer\":{\"text\":\"" + mmu::json::Escape(footer) + "\"}";
+	}
+	payload += "}]}";
+
+	mmu::discord::SendPayload(g_CS2AConfig.discordWebhookUrl, payload);
 }
 
 void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, const char *targetName, const char *reason, int durationMinutes,
@@ -69,19 +104,19 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 			CUtlString s = hn.GetString();
 			if (s.Get() && *s.Get())
 			{
-				desc += "**Server:** ``" + std::string(s.Get()) + "``\n";
+				desc += "**Server:** " + Code(s.Get()) + "\n";
 			}
 		}
 	}
 
-	desc += "**Admin:** ``" + std::string(adminName ? adminName : "Console") + "``";
+	desc += "**Admin:** " + Code(adminName ? adminName : "Console");
 	if (adminSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(adminSteamid64) + "``";
 	}
 	desc += "\n";
-	desc += "**Action:** ``" + std::string(action ? action : "") + "``\n";
-	desc += "**Target:** ``" + std::string(targetName ? targetName : "") + "``";
+	desc += "**Action:** " + Code(action ? action : "") + "\n";
+	desc += "**Target:** " + Code(targetName ? targetName : "");
 	if (targetSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(targetSteamid64) + "``";
@@ -96,7 +131,7 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 
 	if (reason && *reason)
 	{
-		desc += "**Reason:** ``" + std::string(reason) + "``\n";
+		desc += "**Reason:** " + Code(reason) + "\n";
 	}
 
 	if (output && *output)
@@ -155,23 +190,23 @@ void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName,
 			CUtlString s = hn.GetString();
 			if (s.Get() && *s.Get())
 			{
-				desc += "**Server:** ``" + std::string(s.Get()) + "``\n";
+				desc += "**Server:** " + Code(s.Get()) + "\n";
 			}
 		}
 	}
-	desc += "**Reporter:** ``" + std::string(reporterName ? reporterName : "") + "``";
+	desc += "**Reporter:** " + Code(reporterName ? reporterName : "");
 	if (reporterSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(reporterSteamid64) + "``";
 	}
 	desc += "\n";
-	desc += "**Target:** ``" + std::string(targetName ? targetName : "") + "``";
+	desc += "**Target:** " + Code(targetName ? targetName : "");
 	if (targetSteamid64 != 0)
 	{
 		desc += " - ``" + std::to_string(targetSteamid64) + "``";
 	}
 	desc += "\n";
-	desc += "**Reason:** ``" + std::string(reason ? reason : "") + "``\n";
+	desc += "**Reason:** " + Code(reason ? reason : "") + "\n";
 
 	SendEmbedMessage("Player Report", desc.c_str(), 0xF39C12, g_CS2AConfig.discordFooterText.c_str());
 }

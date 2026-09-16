@@ -9,6 +9,7 @@
 #include "src/admin/admin_manager.h"
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
+#include "src/utils/discord.h"
 
 #include <sql_mm.h>
 #include <algorithm>
@@ -128,15 +129,8 @@ bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 
 	InsertBan(targetIP.c_str(), targetAuth.c_str(), targetName.c_str(), time, reason, adminSlot);
 
+	// Console, not chat. The kick below comes before a chat line would render.
 	PrintBanNotice(targetSlot, reason);
-	if (time == 0)
-	{
-		ADMIN_PrintToChatT(targetSlot, "You have been permanently banned. Reason: %s\n", reason ? reason : "No reason");
-	}
-	else
-	{
-		ADMIN_PrintToChatT(targetSlot, "You have been banned for %d minutes. Reason: %s\n", time, reason ? reason : "No reason");
-	}
 
 	std::string adminName = "Console";
 	if (adminSlot >= 0)
@@ -364,12 +358,13 @@ void CS2ABanManager::CheckHistory(int slot, uint64_t steamid64, const char *ip,
 
 	std::string authCond = CS2ADatabase::AuthMatch("authid", suffix);
 
+	// All three count every record, lifted and expired included, so the numbers read as one history.
 	char query[2048];
 	snprintf(query, sizeof(query),
 			 "SELECT "
 			 "(SELECT COUNT(*) FROM %s_bans WHERE (type=0 AND %s) OR (type=1 AND ip='%s')) AS ban_count, "
-			 "(SELECT COUNT(*) FROM %s_comms WHERE %s AND type=1 AND RemoveType IS NULL) AS mute_count, "
-			 "(SELECT COUNT(*) FROM %s_comms WHERE %s AND type=2 AND RemoveType IS NULL) AS gag_count",
+			 "(SELECT COUNT(*) FROM %s_comms WHERE %s AND type=1) AS mute_count, "
+			 "(SELECT COUNT(*) FROM %s_comms WHERE %s AND type=2) AS gag_count",
 			 prefix.c_str(), authCond.c_str(), escapedIP.c_str(), prefix.c_str(), authCond.c_str(), prefix.c_str(), authCond.c_str());
 
 	g_CS2ADatabase.Query(query,
@@ -530,6 +525,14 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 			ADMIN_ChatToAdminsT("Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n", player->name.c_str(), player->authid.c_str(), count);
 
 			g_CS2ABanManager.InsertBan(player->ip.c_str(), player->authid.c_str(), player->name.c_str(), banTime, reason, -1);
+
+			char logMsg[512];
+			snprintf(logMsg, sizeof(logMsg), "Sleuth banned \"%s\" (%s) for %d min. Reason: %s", player->name.c_str(), player->authid.c_str(),
+					 banTime, reason);
+			ADMIN_LogAction(-1, logMsg);
+			g_CS2ADiscord.NotifyAdminAction("Sleuth", "Ban", player->name.c_str(), reason, banTime, 0, player->steamid64);
+
+			CS2ABanManager::PrintBanNotice(slot, reason);
 			g_pEngine->DisconnectClient(CPlayerSlot(slot), NETWORK_DISCONNECT_KICKED_CONVICTEDACCOUNT);
 		});
 }

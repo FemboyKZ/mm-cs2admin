@@ -340,8 +340,8 @@ public:
 			return;
 		}
 
-		std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 		ADMIN_LogAction(adminSlot, (std::string("Kicked ") + p->name + ": " + (reason ? reason : "Kicked")).c_str());
+		ADMIN_PrintToClientT(targetSlot, "[ADMIN] You have been kicked. Reason: %s\n", reason ? reason : "Kicked");
 		g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED);
 	}
 

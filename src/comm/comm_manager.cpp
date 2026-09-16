@@ -193,7 +193,6 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					bool announce = !player->isMuted;
 					player->isMuted = true;
 					player->isSessionMuted = false;
-					player->muteRemaining = (length == 0) ? 0 : remaining;
 					player->muteReason = reason ? reason : "";
 					player->muteExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
 					player->muteIssuerImmunity = issuerImmunity;
@@ -218,7 +217,6 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 					bool announce = !player->isGagged;
 					player->isGagged = true;
 					player->isSessionGagged = false;
-					player->gagRemaining = (length == 0) ? 0 : remaining;
 					player->gagReason = reason ? reason : "";
 					player->gagExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
 					player->gagIssuerImmunity = issuerImmunity;

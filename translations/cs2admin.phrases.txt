@@ -27,15 +27,9 @@
 		"en"	"Slow down! You are sending messages too fast.\n"
 		"chi"	"发太快了！请慢一点发言。\n"
 	}
-	"You have been permanently banned. Reason: %s\n"
+	"[ADMIN] You have been kicked. Reason: %s\n"
 	{
-		"en"	"You have been permanently banned. Reason: %s\n"
-		"chi"	"你已被永久封禁。原因: %s\n"
-	}
-	"You have been banned for %d minutes. Reason: %s\n"
-	{
-		"en"	"You have been banned for %d minutes. Reason: %s\n"
-		"chi"	"你已被封禁 %d 分钟。原因: %s\n"
+		"en"	"[ADMIN] You have been kicked. Reason: %s\n"
 	}
 	"%s banned %s (%d min). Reason: %s\n"
 	{

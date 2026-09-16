@@ -19,16 +19,11 @@ struct PlayerInfo
 	// Auth state
 	bool authenticated = false;
 
-	// Ban state
-	bool banChecked = false;
-
 	// Comm state
 	bool isMuted = false;
 	bool isGagged = false;
 	bool isSessionMuted = false; // Session-only (no DB record)
 	bool isSessionGagged = false;
-	int muteRemaining = 0; // Seconds remaining, 0 = permanent
-	int gagRemaining = 0;
 	double muteExpireTime = 0.0; // Plat_FloatTime when mute expires (0 = permanent/session)
 	double gagExpireTime = 0.0;
 	std::string muteReason;
@@ -41,8 +36,6 @@ struct PlayerInfo
 
 	// Report system
 	double lastReportTime = 0.0;
-	int reportTargetSlot = -1;
-	bool pendingReport = false;
 
 	// Chat flood tracking
 	double lastChatTime = 0.0;
@@ -57,13 +50,10 @@ struct PlayerInfo
 		ip.clear();
 		fakePlayer = false;
 		authenticated = false;
-		banChecked = false;
 		isMuted = false;
 		isGagged = false;
 		isSessionMuted = false;
 		isSessionGagged = false;
-		muteRemaining = 0;
-		gagRemaining = 0;
 		muteExpireTime = 0.0;
 		gagExpireTime = 0.0;
 		muteReason.clear();
@@ -73,8 +63,6 @@ struct PlayerInfo
 		muteIssuerSteamid64 = 0;
 		gagIssuerSteamid64 = 0;
 		lastReportTime = 0.0;
-		reportTargetSlot = -1;
-		pendingReport = false;
 		lastChatTime = 0.0;
 		chatMessageCount = 0;
 	}

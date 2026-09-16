@@ -1539,6 +1539,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						ADMIN_LogAction(slot, (std::string("Kicked ") + targetPlayer->name + ": " + reason).c_str());
 
+						ADMIN_PrintToClientT(target, "[ADMIN] You have been kicked. Reason: %s\n", reason.c_str());
 						g_pEngine->DisconnectClient(CPlayerSlot(target), NETWORK_DISCONNECT_KICKED);
 					});
 
@@ -2283,6 +2284,22 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (weapon.find("weapon_") != 0 && weapon.find("item_") != 0)
 						{
 							weapon = "weapon_" + weapon;
+						}
+
+						// Only classnames from the picker table, so a typo or a non-item entity never reaches GiveNamedItem.
+						bool known = false;
+						for (const WeaponEntry &w : kWeapons)
+						{
+							if (weapon == w.classname)
+							{
+								known = true;
+								break;
+							}
+						}
+						if (!known)
+						{
+							ADMIN_ReplyToCommandT(slot, "Unknown weapon '%s'.\n", args[1].c_str());
+							return;
 						}
 
 						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);

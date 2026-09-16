@@ -371,9 +371,12 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 	// # slot/userid targeting
 	if (pat[0] == '#')
 	{
-		int slot = std::atoi(pat.c_str() + 1);
-		if (slot >= 0 && slot <= MAXPLAYERS)
+		// atoi would read "#abc" as slot 0.
+		char *end = nullptr;
+		long parsed = std::strtol(pat.c_str() + 1, &end, 10);
+		if (pat.size() > 1 && *end == '\0' && parsed >= 0 && parsed <= MAXPLAYERS)
 		{
+			int slot = static_cast<int>(parsed);
 			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
 			if (p && p->connected)
 			{

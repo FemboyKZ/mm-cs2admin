@@ -114,18 +114,18 @@ Override names are case-insensitive and work with or without the `mm_`/`sm_` pre
 
 Commands that act on a player need strictly higher immunity than the target. Root, console and self-targeting bypass it.
 
-Comm blocks follow SourceComms' `CommsConfig`. `DefaultTime` fills a missing time, `MaxLength` caps it, and lifting a block needs higher immunity than whoever placed it. The `n` flag bypasses both limits.
+Comm blocks follow SourceComms' `CommsConfig`. `DefaultTime` fills a missing time, `MaxLength` caps it, and lifting a block needs at least the immunity of whoever placed it. The `n` flag bypasses both limits.
 
 #### Console / RCON Commands
 
-| Command            | Usage                                         | Description                                                                   |
-| ------------------ | --------------------------------------------- | ----------------------------------------------------------------------------- |
-| `mm_reload`        | `mm_reload`                                   | Reload config and admin cache, re-verify all connected players.               |
-| `mm_rehash`        | `mm_rehash`                                   | Rebuild admin cache from database and flat files.                             |
-| `cs2admin_version` | `cs2admin_version`                            | Display the loaded CS2Admin version.                                          |
-| `sc_fw_block`      | `sc_fw_block <type> <length> <steamid>`       | (Web panel RCON) Mute (1), gag (2) or silence (3). Length in seconds.          |
-| `sc_fw_unmute`     | `sc_fw_unmute <steamid>`                      | (Web panel RCON) Unmute a connected player.                                   |
-| `sc_fw_ungag`      | `sc_fw_ungag <steamid>`                       | (Web panel RCON) Ungag a connected player.                                    |
+| Command            | Usage                                   | Description                                                           |
+| ------------------ | --------------------------------------- | --------------------------------------------------------------------- |
+| `mm_reload`        | `mm_reload`                             | Reload config and admin cache, re-verify all connected players.       |
+| `mm_rehash`        | `mm_rehash`                             | Rebuild admin cache from database and flat files.                     |
+| `cs2admin_version` | `cs2admin_version`                      | Display the loaded CS2Admin version.                                  |
+| `sc_fw_block`      | `sc_fw_block <type> <length> <steamid>` | (Web panel RCON) Mute (1), gag (2) or silence (3). Length in seconds. |
+| `sc_fw_unmute`     | `sc_fw_unmute <steamid>`                | (Web panel RCON) Unmute a connected player.                           |
+| `sc_fw_ungag`      | `sc_fw_ungag <steamid>`                 | (Web panel RCON) Ungag a connected player.                            |
 
 #### Target Selectors
 

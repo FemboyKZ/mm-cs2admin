@@ -71,7 +71,8 @@ bool CS2ACommManager::CanLiftBlock(int callerSlot, int targetSlot, int type) con
 	}
 
 	const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(callerSlot);
-	return (admin ? admin->immunity : 0) > issuerImmunity;
+	// At least equal rather than SourceComms' strictly higher, so peers at the same level can lift each other's blocks.
+	return (admin ? admin->immunity : 0) >= issuerImmunity;
 }
 
 bool CS2ACommManager::IsAllowedLength(int callerSlot, int minutes) const
@@ -109,7 +110,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 			 "c.length, c.type, c.created, c.reason, a.user, "
 			 // Without IFNULL an admin with no group compares against NULL and loses their own immunity.
 			 "CASE WHEN IFNULL(a.immunity, 0) >= IFNULL(g.immunity, 0) THEN IFNULL(a.immunity, 0) ELSE g.immunity END AS immunity, "
-			 "c.aid, c.sid, a.authid "
+			 "c.aid, c.sid, a.authid, c.adminIp "
 			 "FROM %s_comms AS c "
 			 "LEFT JOIN %s_admins AS a ON a.aid = c.aid "
 			 "LEFT JOIN %s_srvgroups AS g ON g.name = a.srv_group "
@@ -166,16 +167,24 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 				int type = rs->GetInt(2);
 				const char *reason = rs->GetString(4);
 
-				// Column 6 = issuer immunity, 7 = issuer aid (0 = console), 9 = issuer authid
+				// Column 6 = issuer immunity, 7 = issuer aid, 9 = issuer authid, 10 = issuer IP
 				int issuerImmunity = rs->GetInt(6);
-				bool byConsole = rs->GetInt(7) == 0;
+				const char *issuerIP = rs->GetString(10);
+				bool noAid = rs->GetInt(7) == 0;
+				// aid 0 is also any admin missing from the admins table, like a flat-file one. Only the console has no IP.
+				bool byConsole = noAid && (!issuerIP || !*issuerIP);
 				if (byConsole && g_CS2AConfig.consoleImmunity > issuerImmunity)
 				{
 					issuerImmunity = g_CS2AConfig.consoleImmunity;
 				}
+				else if (noAid && !byConsole)
+				{
+					// Unknown issuer, so any admin may lift it.
+					issuerImmunity = -1;
+				}
 				const char *issuerAuth = rs->GetString(9);
 				uint64_t issuerSteamid64 =
-					(byConsole || !issuerAuth) ? 0 : CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(issuerAuth).c_str());
+					(noAid || !issuerAuth) ? 0 : CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(issuerAuth).c_str());
 
 				if (type == COMM_MUTE)
 				{

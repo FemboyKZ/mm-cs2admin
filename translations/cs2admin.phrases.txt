@@ -71,11 +71,6 @@
 		"en"	"  %-12s %-16s %-12s %-4s %s\n"
 		"chi"	"  %-12s %-16s %-12s %-4s %s\n"
 	}
-	"  %-12d %-16s %-12s %-4s %s\n"
-	{
-		"en"	"  %-12d %-16s %-12s %-4s %s\n"
-		"chi"	"  %-12d %-16s %-12s %-4s %s\n"
-	}
 	"No comm blocks found for %s.\n"
 	{
 		"en"	"No comm blocks found for %s.\n"
@@ -90,11 +85,6 @@
 	{
 		"en"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
 		"chi"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
-	}
-	"  %-12d %-16s %-6s %-12s %-4s %s\n"
-	{
-		"en"	"  %-12d %-16s %-6s %-12s %-4s %s\n"
-		"chi"	"  %-12d %-16s %-6s %-12s %-4s %s\n"
 	}
 	"You are permanently muted. Reason: %s\n"
 	{
@@ -373,15 +363,15 @@
 		"en"	"Invalid IP address format.\n"
 		"chi"	"IP 地址格式无效。\n"
 	}
-	"Usage: !listbans <target>\n"
+	"Usage: !listbans <target|steamid>\n"
 	{
-		"en"	"Usage: !listbans <target>\n"
-		"chi"	"用法: !listbans <目标>\n"
+		"en"	"Usage: !listbans <target|steamid>\n"
+		"chi"	"用法: !listbans <目标|SteamID>\n"
 	}
-	"Usage: !listcomms <target>\n"
+	"Usage: !listcomms <target|steamid>\n"
 	{
-		"en"	"Usage: !listcomms <target>\n"
-		"chi"	"用法: !listcomms <目标>\n"
+		"en"	"Usage: !listcomms <target|steamid>\n"
+		"chi"	"用法: !listcomms <目标|SteamID>\n"
 	}
 	"This command cannot be used from console.\n"
 	{

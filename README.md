@@ -76,8 +76,8 @@ This means the following articles are valid here too:
 | `!silence`   | `!silence <target> [time] [reason]` | `j` (Chat)      | Silence a player (mute + gag). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.  |
 | `!unsilence` | `!unsilence <target>`               | `j` (Chat)      | Unsilence a player (unmute + ungag).                                                         |
 | `!comms`     | `!comms [target]`                   | `j` (Chat)      | Show comm restriction status for a player (defaults to self).                                |
-| `!listbans`  | `!listbans <target>`                | `d` (Ban)       | List active bans for a connected player.                                                     |
-| `!listcomms` | `!listcomms <target>`               | `j` (Chat)      | List active comm restrictions for a connected player.                                        |
+| `!listbans`  | `!listbans <target\|steamid>`       | `d` (Ban)       | Last 10 bans for a player, online or by SteamID.                                             |
+| `!listcomms` | `!listcomms <target\|steamid>`      | `j` (Chat)      | Last 10 comm blocks for a player, online or by SteamID.                                      |
 | `!who`       | `!who`                              | `b` (Generic)   | List all online admins with their flags, group, and immunity level.                          |
 | `!listdc`    | `!listdc`                           | `d` (Ban)       | Show recently disconnected players (name, SteamID, IP, time ago).                            |
 | `!give`      | `!give <target> <weapon>`           | `n` (Cheats)    | Give a weapon to player(s). Auto-prepends `weapon_` if missing. Supports multi-target.       |
@@ -88,8 +88,8 @@ This means the following articles are valid here too:
 | `!pm`        | `!pm <target> <message>`            | `j` (Chat)      | Private message a player. Echoes to all online admins.                                       |
 | `!entfire`   | `!entfire <entity> <input> [value]` | `n` (Cheats)    | Fire an input on a map entity via `ent_fire`.                                                |
 | `!report`    | `!report <target> <reason>`         | open            | Report a player to online admins. Subject to cooldown.                                       |
-| `!adminhelp` | `!adminhelp [page]`                 | open            | List all available commands (paginated).                                                     |
-| `!find`      | `!find <text>`                      | open            | Search commands by name.                                                                     |
+| `!adminhelp` | `!adminhelp [page]`                 | open            | List the commands you can use (paginated).                                                   |
+| `!find`      | `!find <text>`                      | open            | Search the commands you can use by name.                                                     |
 | `!tag`       | `!tag [id\|none]`                   | open            | Pick which of your matched tags is displayed, or open a picker.                              |
 
 Every chat command is also a console command as `mm_<name>`.

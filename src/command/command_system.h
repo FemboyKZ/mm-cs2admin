@@ -24,7 +24,8 @@ public:
 
 	// Register a chat command (e.g., "ban", "mute").
 	// Triggered by !ban, /ban, !mute, /mute etc. in chat.
-	void RegisterCommand(const char *name, ChatCommandCallback callback);
+	// group and defaultFlag feed CanPlayerUseCommand, which runs before the callback does.
+	void RegisterCommand(const char *name, const char *group, uint32_t defaultFlag, ChatCommandCallback callback);
 
 	// Register mm_ server console commands mirroring all chat commands.
 	// Call once after RegisterBuiltinCommands().
@@ -50,7 +51,18 @@ public:
 	bool ShouldBlockChat(int slot);
 
 private:
-	std::unordered_map<std::string, ChatCommandCallback> m_commands;
+	struct Command
+	{
+		const char *group;
+		uint32_t defaultFlag;
+		ChatCommandCallback callback;
+	};
+
+	bool CanUse(int slot, const std::string &name, const Command &command) const;
+	// Replies with the permission error instead of calling back when the caller may not use it.
+	void Run(const std::string &name, const Command &command, int slot, const std::vector<std::string> &args, bool silent);
+
+	std::unordered_map<std::string, Command> m_commands;
 
 	// Dynamically allocated ConCommand objects for mm_ console commands.
 	// Stored as raw pointers with persistent name/desc strings.

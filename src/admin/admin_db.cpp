@@ -185,11 +185,11 @@ void CS2AAdminManager::LoadGroupOverrides(uint32_t generation, std::function<voi
 								 std::string key;
 								 if (strcmp(type, "command") == 0)
 								 {
-									 key = "cmd:" + StripCommandPrefix(std::string(name));
+									 key = CommandOverrideKey(name);
 								 }
 								 else if (strcmp(type, "group") == 0)
 								 {
-									 key = "grp:" + std::string(name);
+									 key = GroupOverrideKey(name);
 								 }
 								 else
 								 {
@@ -274,11 +274,11 @@ void CS2AAdminManager::LoadGlobalOverrides(uint32_t generation, std::function<vo
 								 std::string key;
 								 if (strcmp(type, "command") == 0)
 								 {
-									 key = "cmd:" + StripCommandPrefix(std::string(name));
+									 key = CommandOverrideKey(name);
 								 }
 								 else if (strcmp(type, "group") == 0)
 								 {
-									 key = "grp:" + std::string(name);
+									 key = GroupOverrideKey(name);
 								 }
 								 else
 								 {
@@ -422,7 +422,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 								 entry.flags = FlagsFromString(flags);
 
 								 const char *group = rs->GetString(3);
-								 entry.group = group ? group : "";
+								 AddGroup(entry.groups, group ? group : "");
 
 								 const char *name = rs->GetString(4);
 								 entry.name = name ? name : "";
@@ -430,9 +430,9 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 								 entry.immunity = rs->GetInt(5);
 
 								 // Inherit group flags and immunity
-								 if (!entry.group.empty())
+								 if (!entry.groups.empty())
 								 {
-									 auto it = m_loadingGroups.find(entry.group);
+									 auto it = m_loadingGroups.find(entry.groups[0]);
 									 if (it != m_loadingGroups.end())
 									 {
 										 entry.flags |= it->second.flags;
@@ -453,6 +453,10 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 										 if (entry.immunity > existing->second.immunity)
 										 {
 											 existing->second.immunity = entry.immunity;
+										 }
+										 for (const std::string &groupName : entry.groups)
+										 {
+											 AddGroup(existing->second.groups, groupName);
 										 }
 									 }
 									 else

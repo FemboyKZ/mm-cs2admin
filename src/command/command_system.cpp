@@ -710,7 +710,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("ban",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "ban", "banning", ADMFLAG_BAN))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "ban", "basebans", ADMFLAG_BAN))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -759,7 +759,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("unban",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unban", "banning", ADMFLAG_UNBAN))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unban", "basebans", ADMFLAG_UNBAN))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -788,7 +788,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("addban",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "addban", "banning", ADMFLAG_BAN))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "addban", "basebans", ADMFLAG_BAN))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -858,7 +858,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("mute",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "mute", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "mute", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -907,7 +907,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("unmute",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unmute", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unmute", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -948,7 +948,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("gag",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "gag", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "gag", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -996,7 +996,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("ungag",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "ungag", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "ungag", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1037,7 +1037,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("silence",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "silence", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "silence", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1086,7 +1086,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("unsilence",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unsilence", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "unsilence", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1130,7 +1130,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 		"banip",
 		[](int slot, const std::vector<std::string> &args, bool silent)
 		{
-			if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "banip", "banning", ADMFLAG_BAN))
+			if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "banip", "basebans", ADMFLAG_BAN))
 			{
 				ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 				return;
@@ -1187,7 +1187,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("comms",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "comms", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "comms", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1210,7 +1210,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("listbans",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listbans", "banning", ADMFLAG_BAN))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listbans", "basebans", ADMFLAG_BAN))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1246,7 +1246,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("listcomms",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listcomms", "comms", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listcomms", "basecomm", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1285,6 +1285,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (slot < 0)
 						{
 							ADMIN_ReplyToCommandT(slot, "This command cannot be used from console.\n");
+							return;
+						}
+
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "report", "cs2admin", ADMFLAG_NONE))
+						{
+							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
 						}
 
@@ -1392,7 +1398,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("kick",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "kick", "kicking", ADMFLAG_KICK))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "kick", "basecommands", ADMFLAG_KICK))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1456,7 +1462,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("slay",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "slay", "slaying", ADMFLAG_SLAY))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "slay", "playercommands", ADMFLAG_SLAY))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1532,7 +1538,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("who",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "who", "admin", ADMFLAG_GENERIC))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "who", "basecommands", ADMFLAG_GENERIC))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1559,7 +1565,15 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							}
 
 							std::string flags = CS2AAdminManager::FlagsToString(admin->flags);
-							std::string group = admin->group.empty() ? "(no group)" : admin->group;
+							std::string group;
+							for (const std::string &groupName : admin->groups)
+							{
+								group += (group.empty() ? "" : ", ") + groupName;
+							}
+							if (group.empty())
+							{
+								group = "(no group)";
+							}
 							int immunity = admin->immunity;
 
 							ADMIN_ReplyToCommandT(slot, "  %s [%s] flags: %s imm: %d\n", p->name.c_str(), group.c_str(), flags.c_str(), immunity);
@@ -1580,10 +1594,16 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("tag",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						// Deliberately no flag check: a player only ever sees the tags they already matched, so eligibility is the permission.
+						// Open by default. A player only ever sees tags they already matched.
 						if (slot < 0)
 						{
 							ADMIN_ReplyToCommandT(slot, "This command cannot be used from the server console.\n");
+							return;
+						}
+
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "tag", "cs2admin", ADMFLAG_NONE))
+						{
+							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
 						}
 
@@ -1682,7 +1702,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("listdc",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listdc", "admin", ADMFLAG_BAN))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "listdc", "basecommands", ADMFLAG_BAN))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1737,6 +1757,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("adminhelp",
 					[this](int slot, const std::vector<std::string> &args, bool silent)
 					{
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "adminhelp", "cs2admin", ADMFLAG_NONE))
+						{
+							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
 						int page = 1;
 						if (!args.empty())
 						{
@@ -1785,6 +1811,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("find",
 					[this](int slot, const std::vector<std::string> &args, bool silent)
 					{
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "find", "cs2admin", ADMFLAG_NONE))
+						{
+							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+							return;
+						}
+
 						if (args.empty())
 						{
 							ADMIN_ReplyToCommandT(slot, "Usage: !find <text>\n");
@@ -1822,7 +1854,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("rcon",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "rcon", "admin", ADMFLAG_RCON))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "rcon", "basecommands", ADMFLAG_RCON))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1926,7 +1958,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("pm",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "pm", "admin", ADMFLAG_CHAT))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "pm", "basechat", ADMFLAG_CHAT))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -1987,7 +2019,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("map",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "map", "admin", ADMFLAG_CHANGEMAP))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "map", "basecommands", ADMFLAG_CHANGEMAP))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -2034,7 +2066,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("maps",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "maps", "admin", ADMFLAG_CHANGEMAP))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "maps", "basecommands", ADMFLAG_CHANGEMAP))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -2101,7 +2133,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("entfire",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "entfire", "admin", ADMFLAG_CHEATS))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "entfire", "cs2admin", ADMFLAG_CHEATS))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -2135,7 +2167,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("give",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "give", "admin", ADMFLAG_CHEATS))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "give", "funcommands", ADMFLAG_CHEATS))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;
@@ -2232,7 +2264,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("strip",
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
-						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "strip", "admin", ADMFLAG_CHEATS))
+						if (!g_CS2AAdminManager.CanPlayerUseCommand(slot, "strip", "funcommands", ADMFLAG_CHEATS))
 						{
 							ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 							return;

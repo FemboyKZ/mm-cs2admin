@@ -279,7 +279,14 @@ bool CS2ATagManager::PlayerMatches(int slot, const TagDef &tag) const
 			// Holding any one of the listed flags is enough, and root passes everything.
 			return CS2AAdminManager::HasFlag(admin->flags, tag.flags);
 		case TagMatch::Group:
-			return ToLower(admin->group) == ToLower(tag.group);
+			for (const std::string &groupName : admin->groups)
+			{
+				if (ToLower(groupName) == ToLower(tag.group))
+				{
+					return true;
+				}
+			}
+			return false;
 		case TagMatch::Immunity:
 			return admin->immunity >= tag.immunity;
 		default:

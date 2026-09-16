@@ -32,7 +32,7 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 
 ### Requirements
 
-- CS2 Server (Recommended to use [SteamRT3 Docker](https://gitlab.steamos.cloud/steamrt/sniper/sdk/-/blob/steamrt/sniper/README.md)
+- CS2 Server (Recommended to use [SteamRT3 Docker](https://gitlab.steamos.cloud/steamrt/sniper/sdk/-/blob/steamrt/sniper/README.md))
 - [MetaMod: Source 2.0](https://www.metamodsource.net/downloads.php/?branch=master)
 - [sql_mm](https://github.com/zer0k-z/sql_mm)
 - (Optional) MySQL Database
@@ -86,9 +86,32 @@ This means the following articles are valid here too:
 | `!maps`      | `!maps [page]`                      | `g` (Changemap) | List available maps from the maplist (paginated).                                            |
 | `!pm`        | `!pm <target> <message>`            | `j` (Chat)      | Private message a player. Echoes to all online admins.                                       |
 | `!entfire`   | `!entfire <entity> <input> [value]` | `n` (Cheats)    | Fire an input on a map entity via `ent_fire`.                                                |
-| `!report`    | `!report <target> <reason>`         | None            | Report a player to online admins. Subject to cooldown.                                       |
-| `!adminhelp` | `!adminhelp [page]`                 | None            | List all available commands (paginated).                                                     |
-| `!find`      | `!find <text>`                      | None            | Search commands by name.                                                                     |
+| `!report`    | `!report <target> <reason>`         | open            | Report a player to online admins. Subject to cooldown.                                       |
+| `!adminhelp` | `!adminhelp [page]`                 | open            | List all available commands (paginated).                                                     |
+| `!find`      | `!find <text>`                      | open            | Search commands by name.                                                                     |
+| `!tag`       | `!tag [id\|none]`                   | open            | Pick which of your matched tags is displayed, or open a picker.                              |
+
+Every chat command is also a console command as `mm_<name>`.
+
+Permission check order. Root (`z`) always passes.
+
+1. Group overrides (`admin_groups.cfg`). The first of the admin's groups with a match decides, flat-file groups before the database group.
+2. Global overrides (`admin_overrides.cfg`, `sb_overrides`).
+3. The default flag above.
+
+Override names are case-insensitive and work with or without the `mm_`/`sm_` prefix. Command groups take an `@` prefix and follow SourceMod's plugin names, so SourceMod group overrides carry over.
+
+| Group             | Commands                                                                       |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `@basebans`       | `ban`, `unban`, `addban`, `banip`, `listbans`                                  |
+| `@basecomm`       | `mute`, `unmute`, `gag`, `ungag`, `silence`, `unsilence`, `comms`, `listcomms` |
+| `@basecommands`   | `kick`, `who`, `listdc`, `rcon`, `map`, `maps`                                 |
+| `@playercommands` | `slay`                                                                         |
+| `@basechat`       | `pm`                                                                           |
+| `@funcommands`    | `give`, `strip`                                                                |
+| `@cs2admin`       | `entfire`, `report`, `tag`, `adminhelp`, `find`                                |
+
+Commands that act on a player need strictly higher immunity than the target. Root, console and self-targeting bypass it.
 
 #### Console / RCON Commands
 
@@ -149,6 +172,12 @@ Time values for ban/mute/gag commands support optional suffixes:
 mkdir -p build && cd build
 python3 ../configure.py --enable-optimize
 ambuild
+```
+
+### Docker
+
+```bash
+docker compose run --rm build
 ```
 
 ## Credits

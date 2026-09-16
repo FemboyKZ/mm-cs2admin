@@ -6,6 +6,8 @@
 #include "src/player/player_manager.h"
 #include "src/tags/tag_manager.h"
 
+#include <algorithm>
+#include <cctype>
 #include <cstring>
 #include <cstdio>
 
@@ -60,13 +62,33 @@ bool CS2AAdminManager::HasFlag(uint32_t playerFlags, uint32_t requiredFlag)
 	return (playerFlags & requiredFlag) != 0;
 }
 
-std::string CS2AAdminManager::StripCommandPrefix(const std::string &name)
+static std::string ToLowerCopy(std::string s)
 {
-	if (name.size() > 3 && (name.compare(0, 3, "sm_") == 0 || name.compare(0, 3, "mm_") == 0))
+	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+	return s;
+}
+
+std::string CS2AAdminManager::CommandOverrideKey(const std::string &name)
+{
+	std::string lower = ToLowerCopy(name);
+	if (lower.size() > 3 && (lower.compare(0, 3, "sm_") == 0 || lower.compare(0, 3, "mm_") == 0))
 	{
-		return name.substr(3);
+		lower.erase(0, 3);
 	}
-	return name;
+	return "cmd:" + lower;
+}
+
+std::string CS2AAdminManager::GroupOverrideKey(const std::string &name)
+{
+	return "grp:" + ToLowerCopy(name);
+}
+
+void CS2AAdminManager::AddGroup(std::vector<std::string> &groups, const std::string &name)
+{
+	if (!name.empty() && std::find(groups.begin(), groups.end(), name) == groups.end())
+	{
+		groups.push_back(name);
+	}
 }
 
 uint64_t CS2AAdminManager::AuthIdToSteamID64(const char *authid)
@@ -250,11 +272,11 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 		{
 			merged.immunity = flatIt->second.immunity;
 		}
-		if (!flatIt->second.group.empty())
+		for (const std::string &groupName : flatIt->second.groups)
 		{
-			merged.group = flatIt->second.group;
+			AddGroup(merged.groups, groupName);
 			// Resolve group flags
-			auto grpIt = m_groups.find(flatIt->second.group);
+			auto grpIt = m_groups.find(groupName);
 			if (grpIt != m_groups.end())
 			{
 				merged.flags |= grpIt->second.flags;
@@ -266,7 +288,7 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 			else
 			{
 				MMU_LOG_INFO("Warning: admin \"%s\" references group \"%s\" which does not exist in admin_groups.cfg.\n", normalized.c_str(),
-							 flatIt->second.group.c_str());
+							 groupName.c_str());
 			}
 		}
 		found = true;
@@ -281,9 +303,10 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 		{
 			merged.immunity = dbIt->second.immunity;
 		}
-		if (merged.group.empty() && !dbIt->second.group.empty())
+		// DB flags already include the DB groups' flags.
+		for (const std::string &groupName : dbIt->second.groups)
 		{
-			merged.group = dbIt->second.group;
+			AddGroup(merged.groups, groupName);
 		}
 		merged.adminId = dbIt->second.adminId;
 		found = true;
@@ -377,17 +400,23 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 	}
 
 	// Step 1: Check per group overrides (sb_srvgroups_overrides)
-	if (m_playerHasAdmin[slot] && !admin.group.empty())
+	// First group with a matching override decides, as in SourceMod.
+	const std::string cmdKey = (commandName && *commandName) ? CommandOverrideKey(commandName) : std::string();
+	const std::string grpKey = (commandGroup && *commandGroup) ? GroupOverrideKey(commandGroup) : std::string();
+	if (m_playerHasAdmin[slot])
 	{
-		auto grpIt = m_groups.find(admin.group);
-		if (grpIt != m_groups.end())
+		for (const std::string &groupName : admin.groups)
 		{
+			auto grpIt = m_groups.find(groupName);
+			if (grpIt == m_groups.end())
+			{
+				continue;
+			}
 			const auto &overrides = grpIt->second.overrides;
 
 			// Check command level override first (more specific)
-			if (commandName && *commandName)
+			if (!cmdKey.empty())
 			{
-				std::string cmdKey = "cmd:" + std::string(commandName);
 				auto ovIt = overrides.find(cmdKey);
 				if (ovIt != overrides.end())
 				{
@@ -396,9 +425,8 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 			}
 
 			// Check command group override
-			if (commandGroup && *commandGroup)
+			if (!grpKey.empty())
 			{
-				std::string grpKey = "grp:" + std::string(commandGroup);
 				auto ovIt = overrides.find(grpKey);
 				if (ovIt != overrides.end())
 				{
@@ -409,9 +437,8 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 	}
 
 	// Step 2: Check global overrides (sb_overrides)
-	if (commandName && *commandName)
+	if (!cmdKey.empty())
 	{
-		std::string cmdKey = "cmd:" + std::string(commandName);
 		auto ovIt = m_globalOverrides.find(cmdKey);
 		if (ovIt != m_globalOverrides.end())
 		{
@@ -419,9 +446,8 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 		}
 	}
 
-	if (commandGroup && *commandGroup)
+	if (!grpKey.empty())
 	{
-		std::string grpKey = "grp:" + std::string(commandGroup);
 		auto ovIt = m_globalOverrides.find(grpKey);
 		if (ovIt != m_globalOverrides.end())
 		{

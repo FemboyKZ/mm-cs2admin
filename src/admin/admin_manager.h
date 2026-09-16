@@ -39,7 +39,7 @@ enum AdminFlag : uint32_t
 enum OverrideType
 {
 	Override_Command = 0,      // A specific command (e.g. "sm_ban")
-	Override_CommandGroup = 1, // A command group (e.g. "@admin")
+	Override_CommandGroup = 1, // A command group (e.g. "@basebans")
 };
 
 // Override rule, mirrors SourceMod's OverrideRule
@@ -56,8 +56,8 @@ struct AdminEntry
 	uint64_t steamid64 = 0;
 	int adminId = 0; // SBPP database admin ID (aid)
 	std::string name;
-	std::string group;  // Server group name (from DB or flat file)
-	uint32_t flags = 0; // Bitfield of AdminFlag
+	std::vector<std::string> groups; // Override precedence order, flat-file groups before DB ones
+	uint32_t flags = 0;              // Bitfield of AdminFlag
 	int immunity = 0;
 	std::string password;
 	bool fromDatabase = false; // true = loaded from SBPP DB, false = from flat file
@@ -84,8 +84,12 @@ public:
 	// Convert a bitmask to a flag string like "abcde"
 	static std::string FlagsToString(uint32_t flags);
 
-	// Strip sm_/mm_ prefix from a command name for override key normalization
-	static std::string StripCommandPrefix(const std::string &name);
+	// Lowercased. Commands also drop an sm_/mm_ prefix.
+	static std::string CommandOverrideKey(const std::string &name);
+	static std::string GroupOverrideKey(const std::string &name);
+
+	// Skips duplicates.
+	static void AddGroup(std::vector<std::string> &groups, const std::string &name);
 
 	// Check if a flag set includes a specific flag (root always passes)
 	static bool HasFlag(uint32_t playerFlags, uint32_t requiredFlag);
@@ -142,7 +146,7 @@ public:
 	// 2. Group overrides (sb_srvgroups_overrides), per-group allow/deny
 	// 3. Default flag check
 	// commandName should be the command without prefix (e.g. "ban", "mute").
-	// commandGroup is an optional command group name (e.g. "admin").
+	// commandGroup is an optional command group name (e.g. "basebans").
 	// defaultFlag is the default required flag if no override applies.
 	bool CanPlayerUseCommand(int slot, const char *commandName, const char *commandGroup, uint32_t defaultFlag);
 

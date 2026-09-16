@@ -151,7 +151,7 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 			}
 			else if (keyLower == "group")
 			{
-				currentEntry.group = value;
+				AddGroup(currentEntry.groups, value);
 			}
 			else if (keyLower == "password")
 			{
@@ -261,7 +261,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			// Check for "@GroupName" format (pure group reference)
 			if (!flagToken.empty() && flagToken[0] == '@')
 			{
-				entry.group = flagToken.substr(1);
+				AddGroup(entry.groups, flagToken.substr(1));
 			}
 			// Check if it's "immunity:flags" or "immunity:@group" format
 			else
@@ -296,7 +296,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 					// After colon: '@' prefix means group, otherwise it's flags
 					if (!after.empty() && after[0] == '@')
 					{
-						entry.group = after.substr(1);
+						AddGroup(entry.groups, after.substr(1));
 					}
 					else if (!after.empty())
 					{
@@ -326,7 +326,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 
 			if (allDigits)
 			{
-				if (entry.group.empty())
+				if (entry.groups.empty())
 				{
 					entry.immunity = std::atoi(tokens[2].c_str());
 				}
@@ -346,9 +346,9 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			{
 				existing->second.immunity = entry.immunity;
 			}
-			if (existing->second.group.empty() && !entry.group.empty())
+			for (const std::string &groupName : entry.groups)
 			{
-				existing->second.group = entry.group;
+				AddGroup(existing->second.groups, groupName);
 			}
 		}
 		else
@@ -521,12 +521,12 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			// Determine type: if name starts with '@', it's a command group
 			if (cmdName[0] == '@')
 			{
-				std::string key = "grp:" + cmdName.substr(1);
+				std::string key = GroupOverrideKey(cmdName.substr(1));
 				currentGroup.overrides[key] = rule;
 			}
 			else
 			{
-				std::string key = "cmd:" + StripCommandPrefix(cmdName);
+				std::string key = CommandOverrideKey(cmdName);
 				currentGroup.overrides[key] = rule;
 			}
 		}
@@ -605,11 +605,11 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 					std::string key;
 					if (typeLower == "group")
 					{
-						key = "grp:" + currentName;
+						key = GroupOverrideKey(currentName);
 					}
 					else
 					{
-						key = "cmd:" + StripCommandPrefix(currentName);
+						key = CommandOverrideKey(currentName);
 					}
 
 					// First entry for a key wins. The DB load runs later and overwrites it.
@@ -646,11 +646,11 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				std::string key;
 				if (name[0] == '@')
 				{
-					key = "grp:" + name.substr(1);
+					key = GroupOverrideKey(name.substr(1));
 				}
 				else
 				{
-					key = "cmd:" + StripCommandPrefix(name);
+					key = CommandOverrideKey(name);
 				}
 
 				if (m_loadingGlobalOverrides.find(key) == m_loadingGlobalOverrides.end())

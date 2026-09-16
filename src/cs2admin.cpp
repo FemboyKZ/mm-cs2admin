@@ -84,7 +84,7 @@ CS2APlugin::CS2APlugin()
 	  m_ClientActive(&IServerGameClients::ClientActive, this, nullptr, &CS2APlugin::Hook_ClientActive),
 	  m_ClientDisconnect(&IServerGameClients::ClientDisconnect, this, nullptr, &CS2APlugin::Hook_ClientDisconnect),
 	  m_ClientPutInServer(&IServerGameClients::ClientPutInServer, this, nullptr, &CS2APlugin::Hook_ClientPutInServer),
-	  m_ClientSettingsChanged(&IServerGameClients::ClientSettingsChanged, this, &CS2APlugin::Hook_ClientSettingsChanged, nullptr),
+	  m_ClientSettingsChanged(&IServerGameClients::ClientSettingsChanged, this, nullptr, &CS2APlugin::Hook_ClientSettingsChanged),
 	  m_OnClientConnected(&IServerGameClients::OnClientConnected, this, &CS2APlugin::Hook_OnClientConnected, nullptr),
 	  m_ClientConnect(&IServerGameClients::ClientConnect, this, &CS2APlugin::Hook_ClientConnect, nullptr),
 	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &CS2APlugin::Hook_DispatchConCommand, &CS2APlugin::Hook_DispatchConCommandPost),
@@ -933,7 +933,20 @@ KHook::Return<void> CS2APlugin::Hook_PostEventFilter(IGameEventSystem *, CSplitS
 
 KHook::Return<void> CS2APlugin::Hook_ClientSettingsChanged(IServerGameClients *, CPlayerSlot slot)
 {
-	// Could track name changes here if needed
+	// Without this, announcements, logs and ban rows keep the name the player joined with.
+	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot.Get());
+	if (!player || player->fakePlayer)
+	{
+		return {KHook::Action::Ignore};
+	}
+	// A post hook, so the game has applied the new settings to the controller by now.
+	CCSPlayerController *controller = CCSPlayerController::FromSlot(slot.Get());
+	const char *name = controller ? controller->GetPlayerName() : nullptr;
+	if (name && *name && player->name != name)
+	{
+		MMU_LOG_INFO("Player \"%s\" (%s) is now \"%s\".\n", player->name.c_str(), player->authid.c_str(), name);
+		player->name = name;
+	}
 	return {KHook::Action::Ignore};
 }
 

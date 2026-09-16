@@ -13,9 +13,6 @@ public:
 	void Init();
 	void Shutdown();
 
-	// Send a plain text message to the configured webhook.
-	void SendTextMessage(const char *content);
-
 	// Send a rich embed to the configured webhook.
 	void SendEmbedMessage(const char *title, const char *description, int color = 0x3498DB, const char *footer = nullptr);
 
@@ -28,9 +25,6 @@ public:
 					  uint64_t targetSteamid64 = 0);
 
 	bool IsEnabled() const;
-
-private:
-	void SendPayload(const std::string &json);
 };
 
 extern CS2ADiscord g_CS2ADiscord;

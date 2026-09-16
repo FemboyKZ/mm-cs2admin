@@ -56,16 +56,6 @@ bool CS2ADiscord::IsEnabled() const
 	return !g_CS2AConfig.discordWebhookUrl.empty();
 }
 
-void CS2ADiscord::SendTextMessage(const char *content)
-{
-	if (!IsEnabled() || !content || !*content)
-	{
-		return;
-	}
-
-	mmu::discord::SendText(g_CS2AConfig.discordWebhookUrl, content);
-}
-
 void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, int color, const char *footer)
 {
 	if (!IsEnabled())
@@ -209,9 +199,4 @@ void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName,
 	desc += "**Reason:** " + Code(reason ? reason : "") + "\n";
 
 	SendEmbedMessage("Player Report", desc.c_str(), 0xF39C12, g_CS2AConfig.discordFooterText.c_str());
-}
-
-void CS2ADiscord::SendPayload(const std::string &json)
-{
-	mmu::discord::SendPayload(g_CS2AConfig.discordWebhookUrl, json);
 }

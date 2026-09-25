@@ -482,6 +482,30 @@ void CS2ATagManager::RestoreClan(int slot)
 	m_clanCaptured[slot] = false;
 }
 
+// The server overwrites m_szClan with the player's Steam group tag once their GC persona data arrives, which can land after ours.
+void CS2ATagManager::ReassertClanTags()
+{
+	if (g_CS2AForeignPlugins.CS2KZ())
+	{
+		return;
+	}
+	for (int slot = 0; slot <= MAXPLAYERS; slot++)
+	{
+		if (!m_clanTag[slot][0])
+		{
+			continue;
+		}
+		CCSPlayerController *controller = CCSPlayerController::FromSlot(slot);
+		if (!controller || controller->m_szClan().String() == m_clanTag[slot])
+		{
+			continue;
+		}
+		// What the engine just wrote is the player's real tag, so clearing ours later should put that back.
+		m_originalClan[slot] = controller->m_szClan();
+		controller->SetClan(m_clanTag[slot]);
+	}
+}
+
 void CS2ATagManager::UpdateAllClanTags()
 {
 	for (int slot = 0; slot <= MAXPLAYERS; slot++)

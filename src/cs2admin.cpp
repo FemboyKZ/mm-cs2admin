@@ -971,6 +971,7 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	float curtime = globals->curtime;
 
 	g_CS2AMapManager.Tick(curtime);
+	g_CS2ATagManager.ReassertClanTags();
 
 	const double now = Plat_FloatTime();
 

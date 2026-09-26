@@ -320,6 +320,11 @@ public:
 		return g_CS2ACommManager.IsGagged(slot);
 	}
 
+	bool IsChatHidden(int slot) override
+	{
+		return g_CS2ACommandSystem.IsChatHidden(slot);
+	}
+
 	// Programmatic admin actions
 
 	void BanPlayer(int targetSlot, int adminSlot, int timeMinutes, const char *reason) override
@@ -822,6 +827,12 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 	const char *message = args.ArgC() > 1 ? args.Arg(1) : "";
 
+	// Text an admin types for a prompt, like a custom ban reason, is never shown to anyone.
+	if (g_CS2ACommandSystem.ConsumePromptedText(slotIdx, message))
+	{
+		return {KHook::Action::Supersede};
+	}
+
 	// Chat flood detection (before command processing)
 	if (g_CS2AConfig.chatFloodCooldown > 0.0f)
 	{
@@ -892,6 +903,7 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommandPost(ICvar *, ConCommandR
 	if (IsTrackedSay(cmd, ctx))
 	{
 		g_CS2AChatProcessor.PopSay();
+		g_CS2ACommandSystem.EndSay(ctx.GetPlayerSlot().Get());
 	}
 	return {KHook::Action::Ignore};
 }

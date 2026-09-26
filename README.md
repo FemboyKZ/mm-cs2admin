@@ -37,7 +37,10 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 - [sql_mm](https://github.com/zer0k-z/sql_mm)
 - (Optional) MySQL Database
 - (Optional) [SB++ Web Panel](https://github.com/sbpp/sourcebans-pp) (Tested only on 1.8+)
-- (Optional) [mm-cs2menus](https://github.com/FemboyKZ/mm-cs2menus) - when loaded, targeting commands typed with no arguments (e.g. `!ban`, `!kick`, `!mute`, `!map`) open an in-game picker instead of printing usage.
+- (Optional) [mm-cs2menus](https://github.com/FemboyKZ/mm-cs2menus) - when loaded, targeting commands typed with no arguments (e.g. `!ban`, `!kick`, `!mute`, `!report`, `!map`) open an in-game picker instead of printing usage.
+  Players are grouped by team, and the ban/mute/gag/silence/kick/report form sets duration and reason on one screen.
+  Its "Other" reason takes the next chat line, hidden from everyone. `!addban` picks from recently disconnected players.
+- (Optional) [mm-cs2rockthevote](https://github.com/FemboyKZ/mm-cs2rockthevote) - `!map` shows the same list as `!nominate`, with KZ tiers.
 
 ### How to
 

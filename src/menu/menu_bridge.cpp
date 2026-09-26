@@ -120,13 +120,64 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 	{
 		m_menus->SetMenuLayout(h, MenuLayout::Grid);
 	}
-	m_menus->SetExitButton(h, true);
-	m_menus->SetCloseOnSelect(h, true);
 	if (mapList)
 	{
 		m_menus->SetMenuStyle(h, MenuStyle::PagePrefixDelimiter, "_");
 	}
+	return Present(slot, h);
+}
 
+bool AdminMenuBridge::ShowForm(int slot, const char *title, const std::vector<AdminFormField> &fields, const char *confirmText, ConfirmFn onConfirm)
+{
+	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
+	{
+		return false;
+	}
+
+	const int confirmItem = static_cast<int>(fields.size());
+	const int fieldCount = confirmItem;
+	// Fields change in place and never fire this, so only the Confirm row gets here.
+	MenuHandle h = m_menus->CreateMenu(g_CS2AConfig.menu.Type(), title,
+									   [this, onConfirm, confirmItem, fieldCount](MenuHandle menu, int s, int item)
+									   {
+										   if (item != confirmItem || !onConfirm || !m_menus)
+										   {
+											   return;
+										   }
+										   std::vector<int> values;
+										   for (int f = 0; f < fieldCount; f++)
+										   {
+											   values.push_back(m_menus->GetItemValue(menu, f));
+										   }
+										   onConfirm(s, values);
+									   });
+	if (h == kInvalidMenuHandle)
+	{
+		return false;
+	}
+
+	for (const AdminFormField &field : fields)
+	{
+		if (field.options.empty())
+		{
+			m_menus->AddToggle(h, field.text.c_str(), field.value != 0, "");
+			continue;
+		}
+		std::vector<const char *> options;
+		for (const std::string &option : field.options)
+		{
+			options.push_back(option.c_str());
+		}
+		m_menus->AddChoice(h, field.text.c_str(), options.data(), static_cast<int>(options.size()), field.value, "");
+	}
+	m_menus->AddItem(h, confirmText, "", false);
+	return Present(slot, h);
+}
+
+bool AdminMenuBridge::Present(int slot, MenuHandle h)
+{
+	m_menus->SetExitButton(h, true);
+	m_menus->SetCloseOnSelect(h, true);
 	g_CS2AConfig.menu.ApplyKeys(m_menus.Get(), h);
 
 	// One-shot: free the menu when its display ends, and forget the handle.

@@ -771,4 +771,20 @@
 	{
 		"en"	"You cannot lift a block placed by an admin with higher immunity.\n"
 	}
+	"Type the reason in chat, or cancel to stop.\n"
+	{
+		"en"	"Type the reason in chat, or cancel to stop.\n"
+	}
+	"Cancelled.\n"
+	{
+		"en"	"Cancelled.\n"
+	}
+	"No menu durations configured. Check Menu > Durations in core.cfg\n"
+	{
+		"en"	"No menu durations configured. Check Menu > Durations in core.cfg\n"
+	}
+	"[current]"
+	{
+		"en"	"[current]"
+	}
 }

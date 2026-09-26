@@ -92,8 +92,8 @@ struct CS2AConfig
 	MenuStyleBlock menu;
 	// Comma-separated duration presets (minutes, 0 = permanent) for the ban/mute/gag/silence picker.
 	std::string menuDurations = "30,60,180,1440,10080,0";
-	// Comma-separated reason presets for the ban/mute/gag/silence/kick picker.
-	std::string menuReasons = "Cheating,Toxicity,Spam,Advertising,Ban Evasion,Other";
+	// Comma-separated reason presets for the ban/mute/gag/silence/kick/report picker. It always adds "Other", a reason typed in chat.
+	std::string menuReasons = "Cheating,Toxicity,Spam,Advertising,Ban Evasion";
 };
 
 // Load and parse core.cfg from the given path.

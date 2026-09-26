@@ -709,43 +709,25 @@ namespace
 		{"weapon_knife", "Knife", "Equipment"},
 	};
 
-	// Distinct categories in table order.
-	std::vector<AdminMenuItem> BuildWeaponCategoryItems()
+	// Every weapon, one section per category. The table stays grouped by category, so each section is one run.
+	std::vector<AdminMenuItem> BuildWeaponItems()
 	{
 		std::vector<AdminMenuItem> items;
 		for (const WeaponEntry &w : kWeapons)
 		{
-			bool seen = false;
-			for (const AdminMenuItem &existing : items)
-			{
-				if (existing.info == w.category)
-				{
-					seen = true;
-					break;
-				}
-			}
-			if (!seen)
-			{
-				items.push_back({w.category, w.category, false});
-			}
+			AdminMenuItem item;
+			item.text = w.display;
+			item.info = w.classname;
+			item.section = w.category;
+			// The game's equipment icons are named after the classname without its prefix.
+			const std::string classname = w.classname;
+			item.image = classname.substr(classname.find('_') + 1);
+			items.push_back(std::move(item));
 		}
 		return items;
 	}
 
-	std::vector<AdminMenuItem> BuildWeaponItems(const std::string &category)
-	{
-		std::vector<AdminMenuItem> items;
-		for (const WeaponEntry &w : kWeapons)
-		{
-			if (category == w.category)
-			{
-				items.push_back({w.display, w.classname, false});
-			}
-		}
-		return items;
-	}
-
-	// player -> category -> weapon -> !give <target> <classname>
+	// player -> weapon -> !give <target> <classname>
 	void StartGiveFlow(int slot)
 	{
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, true, false);
@@ -758,18 +740,14 @@ namespace
 		g_AdminMenus.ShowMenu(slot, "Give: select player", players,
 							  [](int s, int, const std::string &target)
 							  {
-								  std::vector<AdminMenuItem> categories = BuildWeaponCategoryItems();
-								  g_AdminMenus.ShowMenu(s, "Give: select category", categories,
-														[target](int s2, int, const std::string &category)
-														{
-															std::vector<AdminMenuItem> weapons = BuildWeaponItems(category);
-															g_AdminMenus.ShowMenu(s2, "Give: select weapon", weapons,
-																				  [target](int s3, int, const std::string &classname)
-																				  {
-																					  std::vector<std::string> args = {target, classname};
-																					  g_CS2ACommandSystem.DispatchConsoleCommand("give", args, s3);
-																				  });
-														});
+								  g_AdminMenus.ShowMenu(
+									  s, "Give: select weapon", BuildWeaponItems(),
+									  [target](int s2, int, const std::string &classname)
+									  {
+										  std::vector<std::string> args = {target, classname};
+										  g_CS2ACommandSystem.DispatchConsoleCommand("give", args, s2);
+									  },
+									  false, true);
 							  });
 	}
 

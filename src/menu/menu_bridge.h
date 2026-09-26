@@ -19,6 +19,11 @@ struct AdminMenuItem
 	std::string text;
 	std::string info; // opaque tag echoed back on select (e.g. a "$<steamid64>")
 	bool disabled = false;
+	// Consecutive items with the same section are grouped under it. Empty for none.
+	std::string section;
+	// Grid tile icon from the game's panorama/images/icons/equipment, like "ak47".
+	std::string image;
+	std::string subtext;
 };
 
 class AdminMenuBridge
@@ -44,7 +49,8 @@ public:
 	// No-op (returns false) when menus are unavailable.
 	// Chain another ShowMenu from onSelect to build multi-step flows.
 	// mapList makes panorama page labels skip map prefixes like "kz_", to match CS2AMapManager::GetSortedMaps.
-	bool ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList = false);
+	// grid shows panorama menus as image tiles.
+	bool ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList = false, bool grid = false);
 
 	// Close whatever menu the slot has open.
 	void CancelMenu(int slot);

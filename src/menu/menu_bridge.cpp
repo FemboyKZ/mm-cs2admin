@@ -70,7 +70,7 @@ void AdminMenuBridge::CancelMenu(int slot)
 	}
 }
 
-bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList)
+bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList, bool grid)
 {
 	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
 	{
@@ -98,9 +98,27 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 		return false;
 	}
 
+	const std::string *section = nullptr;
 	for (const auto &item : items)
 	{
-		m_menus->AddItem(h, item.text.c_str(), item.info.c_str(), item.disabled);
+		if (!item.section.empty() && (!section || *section != item.section))
+		{
+			m_menus->AddSection(h, item.section.c_str());
+			section = &item.section;
+		}
+		int added = m_menus->AddItem(h, item.text.c_str(), item.info.c_str(), item.disabled);
+		if (!item.image.empty())
+		{
+			m_menus->SetItemImage(h, added, item.image.c_str());
+		}
+		if (!item.subtext.empty())
+		{
+			m_menus->SetItemSubtext(h, added, item.subtext.c_str());
+		}
+	}
+	if (grid)
+	{
+		m_menus->SetMenuLayout(h, MenuLayout::Grid);
 	}
 	m_menus->SetExitButton(h, true);
 	m_menus->SetCloseOnSelect(h, true);

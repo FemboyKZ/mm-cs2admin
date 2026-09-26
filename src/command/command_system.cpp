@@ -575,7 +575,6 @@ namespace
 		return ADMIN_FormatDuration((std::max)(1, minutes)) + " left";
 	}
 
-	// Picker sections, in this order.
 	struct TeamSection
 	{
 		int team;
@@ -584,9 +583,9 @@ namespace
 
 	constexpr TeamSection kTeamSections[] = {{3, "Counter-Terrorists"}, {2, "Terrorists"}, {1, "Spectators"}, {0, "Unassigned"}};
 
-	// Build picker items for the currently connected players, one section per team.
+	// Picker items for connected players, a section per team.
 	// info = "$<steamid64>" for real players, "#<slot>" for bots.
-	// commFilter (COMM_MUTE / COMM_GAG bits) greys out players without one of those blocks and shows the time left on the rest.
+	// commFilter (COMM_MUTE / COMM_GAG bits) greys out players without those blocks and shows the time left.
 	std::vector<AdminMenuItem> BuildPlayerItems(int callerSlot, bool includeBots, bool excludeSelf, int commFilter = 0)
 	{
 		std::vector<AdminMenuItem> items;
@@ -674,7 +673,7 @@ namespace
 		return items;
 	}
 
-	// Reason presets with "Other" last, which asks for the reason in chat instead.
+	// Reason presets with "Other" last, which asks in chat.
 	std::vector<std::string> ReasonOptions()
 	{
 		std::vector<std::string> reasons;
@@ -694,8 +693,7 @@ namespace
 	// minutes is "" for an untimed action.
 	using PunishFn = std::function<void(int slot, const std::string &minutes, const std::string &reason)>;
 
-	// The whole action on one form: Duration when timed, Reason, then a confirm row.
-	// "Other" closes the menu and takes the reason from the admin's next chat line, hidden from everyone.
+	// Duration when timed, Reason and a confirm row. "Other" takes the reason from the admin's next chat line.
 	void ShowPunishForm(int slot, const std::string &title, const std::string &confirm, bool timed, PunishFn apply)
 	{
 		std::vector<AdminMenuItem> durations = timed ? BuildDurationItems() : std::vector<AdminMenuItem>();
@@ -819,7 +817,7 @@ namespace
 		return std::to_string(secs / 3600) + "h ago";
 	}
 
-	// recently disconnected player -> duration and reason -> !addban <minutes> <steamid64> <reason>
+	// recently disconnected -> duration and reason -> !addban <minutes> <steamid64> <reason>
 	void StartOfflineBanFlow(int slot)
 	{
 		const auto &disconnected = g_CS2APlayerManager.GetDisconnectedPlayers();
@@ -858,7 +856,7 @@ namespace
 	}
 
 	// player -> !<cmd> <target>
-	// commFilter as in BuildPlayerItems, for the commands that lift a block.
+	// commFilter as in BuildPlayerItems.
 	void StartTargetOnlyFlow(int slot, std::string cmd, std::string verb, bool includeBots, bool excludeSelf, int commFilter = 0)
 	{
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, includeBots, excludeSelf, commFilter);
@@ -877,10 +875,10 @@ namespace
 							  });
 	}
 
-	// rtv's !nominate list, with its tier labels and the current map disabled. Empty without rtv or its maps.
+	// rtv's !nominate list, empty without rtv.
 	std::vector<AdminMenuItem> BuildRtvMapItems(int slot)
 	{
-		// Looked up per use rather than cached, so an unloaded rtv never leaves a dangling pointer.
+		// Not cached, rtv may unload.
 		ICS2RTV *rtv = static_cast<ICS2RTV *>(g_SMAPI->MetaFactory(CS2RTV_INTERFACE, nullptr, nullptr));
 		std::vector<AdminMenuItem> items;
 		if (!rtv)
@@ -1011,7 +1009,7 @@ namespace
 		{"weapon_knife", "Knife", "Equipment"},
 	};
 
-	// The carry slot a table weapon takes: 0 primary, 1 pistol, -1 for anything else.
+	// 0 primary, 1 pistol, -1 anything else.
 	int WeaponGearSlot(const char *classname)
 	{
 		for (const WeaponEntry &w : kWeapons)
@@ -1033,7 +1031,7 @@ namespace
 		return -1;
 	}
 
-	// Every weapon, one section per category. The table stays grouped by category, so each section is one run.
+	// A section per category, kWeapons keeps each one contiguous.
 	std::vector<AdminMenuItem> BuildWeaponItems()
 	{
 		std::vector<AdminMenuItem> items;
@@ -1043,7 +1041,7 @@ namespace
 			item.text = w.display;
 			item.info = w.classname;
 			item.section = w.category;
-			// The game's equipment icons are named after the classname without its prefix.
+			// Icons are named after the classname without its prefix.
 			const std::string classname = w.classname;
 			item.image = classname.substr(classname.find('_') + 1);
 			items.push_back(std::move(item));
@@ -1075,7 +1073,7 @@ namespace
 							  });
 	}
 
-	// The slot behind a picker's "$<steamid64>" / "#<slot>" info, or -1 once that player is gone.
+	// The slot behind a picker's info, or -1 once that player is gone.
 	int SlotFromTargetInfo(const std::string &info)
 	{
 		if (info.size() < 2)
@@ -1095,7 +1093,7 @@ namespace
 		return -1;
 	}
 
-	// player -> the comm actions that apply to them -> the punish form for a new block, or straight to the lift.
+	// player -> applicable comm actions -> punish form, or the lift directly.
 	void StartCommsFlow(int slot)
 	{
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, false);
@@ -1168,7 +1166,7 @@ namespace
 							  });
 	}
 
-	// cfg/cs2admin/adminmenu_cfgs.txt, SourceMod's file as is: "Configs" { "cfg/<file>" "<label>" }, paths relative to the mod folder.
+	// cfg/cs2admin/adminmenu_cfgs.txt, SourceMod's format.
 	std::vector<AdminMenuItem> LoadMenuConfigs()
 	{
 		std::vector<AdminMenuItem> items;
@@ -1178,7 +1176,7 @@ namespace
 			path,
 			[](const std::string &, const std::string &key, const std::string &value, void *userdata)
 			{
-				// exec runs from cfg/, so the entry becomes the !execcfg argument without that prefix, as SourceMod's does.
+				// Entries include cfg/, exec runs from there.
 				std::string file = key.rfind("cfg/", 0) == 0 ? key.substr(4) : key;
 				static_cast<std::vector<AdminMenuItem> *>(userdata)->push_back({value.empty() ? key : value, file, false});
 			},
@@ -1203,12 +1201,12 @@ namespace
 							  });
 	}
 
-	// SourceMod's sm_admin: every admin tool the caller may use, grouped the way SourceMod's admin menu groups them.
+	// SourceMod's sm_admin: every admin tool the caller may use, in SourceMod's categories.
 	struct AdminMenuEntry
 	{
 		const char *section;
 		const char *label;
-		const char *command; // the chat command whose permission shows or hides the entry
+		const char *command; // its permission shows or hides the entry
 		void (*open)(int slot);
 	};
 
@@ -2032,7 +2030,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 					});
 
-	// !admin - SourceMod's admin menu, every admin tool the caller may use
+	// !admin - Admin menu
 	RegisterCommand("admin", "adminmenu", ADMFLAG_GENERIC,
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
@@ -2044,7 +2042,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						StartAdminMenu(slot);
 					});
 
-	// !reloadadmins - Rebuild the admin cache from the flat files and database
+	// !reloadadmins - Rebuild the admin cache
 	RegisterCommand("reloadadmins", "basecommands", ADMFLAG_BAN,
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
@@ -2053,7 +2051,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						ADMIN_LogAction(slot, "Reloaded admins");
 					});
 
-	// !execcfg <file> - Execute a config file under cfg/, or pick one from adminmenu_cfgs.txt
+	// !execcfg [file] - Execute a config under cfg/
 	RegisterCommand("execcfg", "basecommands", ADMFLAG_CONFIG,
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
@@ -2067,7 +2065,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							ADMIN_ReplyToCommandT(slot, "Usage: !execcfg <file>\n");
 							return;
 						}
-						// It goes into a server command line, so only a plain relative path.
+						// Only a plain relative path, it goes on a server command line.
 						const std::string &file = args[0];
 						bool valid = !file.empty() && file.find("..") == std::string::npos && file[0] != '/' && file[0] != '\\';
 						for (char c : file)
@@ -2079,7 +2077,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							ADMIN_ReplyToCommandT(slot, "Invalid config file '%s'.\n", file.c_str());
 							return;
 						}
-						// exec prints its own error to the server console only, so check first, like sm_execcfg.
+						// exec only reports to the server console.
 						if (!std::ifstream(std::string(g_SMAPI->GetBaseDir()) + "/cfg/" + file).good())
 						{
 							ADMIN_ReplyToCommandT(slot, "Config not found: %s\n", file.c_str());
@@ -2090,7 +2088,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						ADMIN_LogAction(slot, ("Executed config " + file).c_str());
 					});
 
-	// !who [target] - List all online admins and their flags, or show one player's
+	// !who [target] - List online admins, or one player's admin info
 	RegisterCommand("who", "basecommands", ADMFLAG_GENERIC,
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
@@ -2752,7 +2750,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 								continue;
 							}
 
-							// A given weapon lands on the floor when its slot is taken, so drop the held one first, like buying does.
+							// A weapon given into a taken slot drops to the floor, so drop the held one first like buying does.
 							const int gearSlot = WeaponGearSlot(weapon.c_str());
 							CPlayer_WeaponServices *weaponServices = pawn->m_pWeaponServices();
 							if (gearSlot >= 0 && weaponServices && g_pEntitySystem)

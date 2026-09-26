@@ -136,7 +136,7 @@ bool AdminMenuBridge::ShowForm(int slot, const char *title, const std::vector<Ad
 
 	const int confirmItem = static_cast<int>(fields.size());
 	const int fieldCount = confirmItem;
-	// Fields change in place and never fire this, so only the Confirm row gets here.
+	// Only the Confirm row selects, fields change in place.
 	MenuHandle h = m_menus->CreateMenu(g_CS2AConfig.menu.Type(), title,
 									   [this, onConfirm, confirmItem, fieldCount](MenuHandle menu, int s, int item)
 									   {

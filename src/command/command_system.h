@@ -50,15 +50,15 @@ public:
 	// Check if a gagged player should have their message blocked.
 	bool ShouldBlockChat(int slot);
 
-	// Whether the slot may run a registered chat command, the check its dispatch makes. False for an unknown name.
+	// The permission check dispatch makes. False for an unknown name.
 	bool CanRun(int slot, const char *name) const;
 
-	// Take the slot's next chat line as text for onText, like a typed ban reason. Replaces a prompt already waiting.
-	// "cancel" drops it, a command still runs as one, and it expires after a minute.
+	// Hands the slot's next chat line to onText, like a typed ban reason.
+	// "cancel" drops it, commands still run, and it expires after a minute.
 	void PromptText(int slot, std::function<void(int slot, const std::string &text)> onText);
-	// True when a waiting prompt took the line, so the say hook hides it from everyone.
+	// True when a waiting prompt took the line.
 	bool ConsumePromptedText(int slot, const char *message);
-	// While a prompt waits, and for the rest of the say that answered it. See ICS2Admin::IsChatHidden.
+	// See ICS2Admin::IsChatHidden.
 	bool IsChatHidden(int slot);
 	// Say post-hook.
 	void EndSay(int slot);
@@ -69,7 +69,7 @@ private:
 
 	struct Prompt
 	{
-		uint64_t steamid64 = 0; // so a prompt never passes to whoever takes the slot next
+		uint64_t steamid64 = 0; // so a prompt never passes to the slot's next player
 		double expires = 0.0;
 		std::function<void(int, const std::string &)> onText;
 	};

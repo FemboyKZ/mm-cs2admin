@@ -827,7 +827,7 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 	const char *message = args.ArgC() > 1 ? args.Arg(1) : "";
 
-	// Text an admin types for a prompt, like a custom ban reason, is never shown to anyone.
+	// Prompt answers, like a typed ban reason, are hidden.
 	if (g_CS2ACommandSystem.ConsumePromptedText(slotIdx, message))
 	{
 		return {KHook::Action::Supersede};

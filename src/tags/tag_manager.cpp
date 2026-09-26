@@ -401,7 +401,7 @@ void CS2ATagManager::UpdateClanTag(int slot)
 	char before[sizeof(m_clanTag[0])];
 	memcpy(before, m_clanTag[slot], sizeof(before));
 	ApplyClanTag(slot);
-	// Clients only redraw a scoreboard row for a name change, so a changed clan tag alone would sit unseen until then.
+	// See RefreshScoreboardRow.
 	if (strcmp(before, m_clanTag[slot]) != 0)
 	{
 		if (CCSPlayerController *controller = CCSPlayerController::FromSlot(slot))

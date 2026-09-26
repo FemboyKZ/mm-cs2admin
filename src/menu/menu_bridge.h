@@ -19,9 +19,9 @@ struct AdminMenuItem
 	std::string text;
 	std::string info; // opaque tag echoed back on select (e.g. a "$<steamid64>")
 	bool disabled = false;
-	// Consecutive items with the same section are grouped under it. Empty for none.
+	// Consecutive items with the same section share it. Empty for none.
 	std::string section;
-	// Grid tile icon from the game's panorama/images/icons/equipment, like "ak47".
+	// Grid tile icon, like "ak47".
 	std::string image;
 	std::string subtext;
 };
@@ -62,14 +62,14 @@ public:
 	// grid shows panorama menus as image tiles.
 	bool ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList = false, bool grid = false);
 
-	// Display fields the player sets in place, then a confirmText row that fires onConfirm and closes the menu.
+	// Fields set in place, then a confirmText row that fires onConfirm.
 	bool ShowForm(int slot, const char *title, const std::vector<AdminFormField> &fields, const char *confirmText, ConfirmFn onConfirm);
 
 	// Close whatever menu the slot has open.
 	void CancelMenu(int slot);
 
 private:
-	// Shared tail of ShowMenu/ShowForm: exit button, keys, one-shot cleanup and display. Frees h when refused.
+	// Frees h when the display is refused.
 	bool Present(int slot, uint32_t h);
 
 	mmu::InterfaceBridge<ICS2Menus> m_menus;

@@ -180,6 +180,11 @@ TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 	{
 		std::string group = str::ToLower(pat.substr(1));
 		result.isMultiTarget = true;
+		// SourceMod's spellings.
+		if (group == "bots" || group == "humans")
+		{
+			group.pop_back();
+		}
 
 		if (group == "me")
 		{

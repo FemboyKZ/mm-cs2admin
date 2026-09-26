@@ -455,6 +455,14 @@ void CS2ATagManager::ApplyClanTag(int slot)
 		}
 		snprintf(m_clanTag[slot], sizeof(m_clanTag[slot]), "%s", text);
 		cs2kz->SetClanTagOverride(slot, text);
+		// cs2kz points m_szClan at its override buffer.
+		if (!*text)
+		{
+			if (CCSPlayerController *controller = CCSPlayerController::FromSlot(slot))
+			{
+				controller->SetClan("");
+			}
+		}
 		return;
 	}
 

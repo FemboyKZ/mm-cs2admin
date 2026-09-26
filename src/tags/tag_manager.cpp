@@ -16,6 +16,7 @@
 
 #include <algorithm>
 #include <cstdio>
+#include <cstring>
 #include <cstdlib>
 #include <fstream>
 #include <string>
@@ -397,7 +398,21 @@ void CS2ATagManager::UpdateClanTag(int slot)
 	{
 		return;
 	}
+	char before[sizeof(m_clanTag[0])];
+	memcpy(before, m_clanTag[slot], sizeof(before));
+	ApplyClanTag(slot);
+	// Clients only redraw a scoreboard row for a name change, so a changed clan tag alone would sit unseen until then.
+	if (strcmp(before, m_clanTag[slot]) != 0)
+	{
+		if (CCSPlayerController *controller = CCSPlayerController::FromSlot(slot))
+		{
+			controller->RefreshScoreboardRow();
+		}
+	}
+}
 
+void CS2ATagManager::ApplyClanTag(int slot)
+{
 	ICS2KZ *cs2kz = g_CS2AForeignPlugins.CS2KZ();
 
 	// ADMIN_BoardTagsActive is false when another plugin owns the clan tag.

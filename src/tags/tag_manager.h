@@ -79,6 +79,8 @@ public:
 
 	// Put the pre-override clan symbol back, see m_originalClan.
 	void RestoreClan(int slot);
+	// UpdateClanTag without the scoreboard refresh.
+	void ApplyClanTag(int slot);
 
 	// Create the prefs table when missing. Call once the DB is connected.
 	void EnsureSchema();

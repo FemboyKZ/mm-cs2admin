@@ -709,6 +709,28 @@ namespace
 		{"weapon_knife", "Knife", "Equipment"},
 	};
 
+	// The carry slot a table weapon takes: 0 primary, 1 pistol, -1 for anything else.
+	int WeaponGearSlot(const char *classname)
+	{
+		for (const WeaponEntry &w : kWeapons)
+		{
+			if (strcmp(w.classname, classname) != 0)
+			{
+				continue;
+			}
+			if (!strcmp(w.category, "Pistols"))
+			{
+				return 1;
+			}
+			if (!strcmp(w.category, "Rifles") || !strcmp(w.category, "Snipers") || !strcmp(w.category, "SMGs") || !strcmp(w.category, "Heavy"))
+			{
+				return 0;
+			}
+			return -1;
+		}
+		return -1;
+	}
+
 	// Every weapon, one section per category. The table stays grouped by category, so each section is one run.
 	std::vector<AdminMenuItem> BuildWeaponItems()
 	{
@@ -2168,6 +2190,24 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							if (!itemServices)
 							{
 								continue;
+							}
+
+							// A given weapon lands on the floor when its slot is taken, so drop the held one first, like buying does.
+							const int gearSlot = WeaponGearSlot(weapon.c_str());
+							CPlayer_WeaponServices *weaponServices = pawn->m_pWeaponServices();
+							if (gearSlot >= 0 && weaponServices && g_pEntitySystem)
+							{
+								const CUtlVector<CEntityHandle> &held = weaponServices->m_hMyWeapons();
+								for (int i = 0; i < held.Count(); i++)
+								{
+									CEntityInstance *heldWeapon = g_pEntitySystem->GetEntityInstance(held[i]);
+									if (heldWeapon && WeaponGearSlot(heldWeapon->GetClassname()) == gearSlot)
+									{
+										// Changes m_hMyWeapons, so stop here.
+										weaponServices->DropWeapon(heldWeapon);
+										break;
+									}
+								}
 							}
 
 							itemServices->GiveNamedItem(weapon.c_str());

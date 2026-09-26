@@ -112,24 +112,10 @@ std::string CS2AAdminManager::NormalizeSteamID(const char *input)
 		return "";
 	}
 
-	// If it's STEAM_X:Y:Z, normalize to STEAM_0:Y:Z
-	unsigned int x, y, z;
-	if (sscanf(input, "STEAM_%u:%u:%u", &x, &y, &z) == 3)
+	std::string authid = SteamID2Or3ToAuthId(input);
+	if (!authid.empty())
 	{
-		char buf[64];
-		snprintf(buf, sizeof(buf), "STEAM_0:%u:%u", y, z);
-		return buf;
-	}
-
-	// If it's SteamID3 format [U:1:AccountID]
-	unsigned int universe, accountId;
-	if (sscanf(input, "[U:%u:%u]", &universe, &accountId) == 2)
-	{
-		unsigned int authY = accountId & 1;
-		unsigned int authZ = accountId >> 1;
-		char buf[64];
-		snprintf(buf, sizeof(buf), "STEAM_0:%u:%u", authY, authZ);
-		return buf;
+		return authid;
 	}
 
 	// If it's a raw SteamID64 number

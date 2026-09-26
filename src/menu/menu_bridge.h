@@ -4,15 +4,13 @@
 // Optional integration with the mm-cs2menus plugin (ICS2Menus).
 // There is no built-in menu backend, this bridge only wraps the external plugin.
 
-#include "mmu/interface_bridge.h"
+#include "interfaces/cs2menus/menus_client.h"
 #include "src/common.h"
 
 #include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
-
-class ICS2Menus;
 
 struct AdminMenuItem
 {
@@ -42,9 +40,6 @@ public:
 	// Fired when a form is confirmed, with each field's value in order.
 	using ConfirmFn = std::function<void(int slot, const std::vector<int> &values)>;
 
-	// In the .cpp to keep ics2menus.h out of this header.
-	AdminMenuBridge();
-
 	// Acquire the ICS2Menus interface. Call from AllPluginsLoaded().
 	void Init();
 	// Re-resolve the interface. Call from OnPluginLoad / OnPluginUnload.
@@ -69,12 +64,9 @@ public:
 	void CancelMenu(int slot);
 
 private:
-	// Frees h when the display is refused.
-	bool Present(int slot, uint32_t h);
+	bool Present(int slot, MenuHandle h);
 
-	mmu::InterfaceBridge<ICS2Menus> m_menus;
-	// External menu handle currently displayed to each slot (0 = none).
-	uint32_t m_extHandle[MAXPLAYERS + 1] = {};
+	CS2MenusClient m_menus;
 };
 
 extern AdminMenuBridge g_AdminMenus;

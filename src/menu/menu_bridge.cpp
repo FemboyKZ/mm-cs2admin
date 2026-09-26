@@ -2,14 +2,10 @@
 #include "mmu/log.h"
 #include "src/config/config.h"
 
-#include "interfaces/cs2menus/ics2menus.h"
-
 AdminMenuBridge g_AdminMenus;
 
 // How long an admin menu stays on screen before timing out (seconds).
 static constexpr float kMenuDuration = 30.0f;
-
-AdminMenuBridge::AdminMenuBridge() : m_menus(CS2MENUS_INTERFACE) {}
 
 void AdminMenuBridge::Init()
 {
@@ -21,11 +17,6 @@ void AdminMenuBridge::Refresh()
 	switch (m_menus.Refresh())
 	{
 		case mmu::BridgeChange::Unloaded:
-			// Handles belonged to the unloaded instance.
-			for (int i = 0; i <= MAXPLAYERS; i++)
-			{
-				m_extHandle[i] = kInvalidMenuHandle;
-			}
 			MMU_LOG_WARN("mm-cs2menus unloaded - admin menus disabled.\n");
 			break;
 		case mmu::BridgeChange::Loaded:
@@ -38,23 +29,7 @@ void AdminMenuBridge::Refresh()
 
 void AdminMenuBridge::Shutdown()
 {
-	// meta clear unloads plugins without firing OnPluginUnload, so the cached pointer can already be a freed library.
-	if (m_menus.Revalidate())
-	{
-		for (int i = 0; i <= MAXPLAYERS; i++)
-		{
-			if (m_extHandle[i] != kInvalidMenuHandle)
-			{
-				m_menus->CancelMenu(i);
-			}
-		}
-	}
-
 	m_menus.Shutdown();
-	for (int i = 0; i <= MAXPLAYERS; i++)
-	{
-		m_extHandle[i] = kInvalidMenuHandle;
-	}
 }
 
 bool AdminMenuBridge::Available() const
@@ -179,31 +154,5 @@ bool AdminMenuBridge::Present(int slot, MenuHandle h)
 	m_menus->SetExitButton(h, true);
 	m_menus->SetCloseOnSelect(h, true);
 	g_CS2AConfig.menu.ApplyKeys(m_menus.Get(), h);
-
-	// One-shot: free the menu when its display ends, and forget the handle.
-	m_menus->SetMenuEndCallback(h,
-								[this](MenuHandle menu, int s, MenuEndReason)
-								{
-									if (s >= 0 && s <= MAXPLAYERS && m_extHandle[s] == menu)
-									{
-										m_extHandle[s] = kInvalidMenuHandle;
-									}
-									if (m_menus)
-									{
-										m_menus->DestroyMenu(menu);
-									}
-								});
-
-	// Record before DisplayMenu: a chained ShowMenu replaces the current menu for
-	// the slot and fires its end callback, which must not clear the handle we just set.
-	m_extHandle[slot] = h;
-	if (!m_menus->DisplayMenu(h, slot, kMenuDuration))
-	{
-		// Refused (a host menu owns the slot), so no end callback will ever free it
-		// and its lambdas would outlive this plugin.
-		m_extHandle[slot] = kInvalidMenuHandle;
-		m_menus->DestroyMenu(h);
-		return false;
-	}
-	return true;
+	return m_menus.Present(slot, h, kMenuDuration);
 }

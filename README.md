@@ -64,36 +64,39 @@ This means the following articles are valid here too:
 
 #### Chat Commands (in-game)
 
-| Command      | Usage                               | Permissions     | Description                                                                                  |
-| ------------ | ----------------------------------- | --------------- | -------------------------------------------------------------------------------------------- |
-| `!ban`       | `!ban <target> <time> [reason]`     | `d` (Ban)       | Ban a connected player. Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.         |
-| `!unban`     | `!unban <steamid>`                  | `e` (Unban)     | Unban a player by SteamID. Off when `Unban` is 0.                                            |
-| `!addban`    | `!addban <time> <steamid> [reason]` | `d` (Ban)       | Ban a SteamID, online or not. Off when `Addban` is 0.                                        |
-| `!banip`     | `!banip <ip> <time> [reason]`       | `d` (Ban)       | Ban an IP address. Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.              |
-| `!kick`      | `!kick <target> [reason]`           | `c` (Kick)      | Kick a connected player from the server.                                                     |
-| `!slay`      | `!slay <target>`                    | `f` (Slay)      | Slay a player. Supports multi-target selectors (@all, @t, @ct, etc.).                        |
-| `!mute`      | `!mute <target> [time] [reason]`    | `j` (Chat)      | Mute a player (block voice). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.    |
-| `!unmute`    | `!unmute <target>`                  | `j` (Chat)      | Unmute a player.                                                                             |
-| `!gag`       | `!gag <target> [time] [reason]`     | `j` (Chat)      | Gag a player (block text chat). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent. |
-| `!ungag`     | `!ungag <target>`                   | `j` (Chat)      | Ungag a player.                                                                              |
-| `!silence`   | `!silence <target> [time] [reason]` | `j` (Chat)      | Silence a player (mute + gag). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.  |
-| `!unsilence` | `!unsilence <target>`               | `j` (Chat)      | Unsilence a player (unmute + ungag).                                                         |
-| `!comms`     | `!comms [target]`                   | `j` (Chat)      | Show comm restriction status for a player (defaults to self).                                |
-| `!listbans`  | `!listbans <target\|steamid>`       | `d` (Ban)       | Last 10 bans for a player, online or by SteamID.                                             |
-| `!listcomms` | `!listcomms <target\|steamid>`      | `j` (Chat)      | Last 10 comm blocks for a player, online or by SteamID.                                      |
-| `!who`       | `!who`                              | `b` (Generic)   | List all online admins with their flags, group, and immunity level.                          |
-| `!listdc`    | `!listdc`                           | `d` (Ban)       | Show recently disconnected players (name, SteamID, IP, time ago).                            |
-| `!give`      | `!give <target> <weapon>`           | `n` (Cheats)    | Give a weapon to player(s). Auto-prepends `weapon_` if missing. Supports multi-target.       |
-| `!strip`     | `!strip <target>`                   | `n` (Cheats)    | Strip all weapons from player(s). Supports multi-target selectors.                           |
-| `!rcon`      | `!rcon <command>`                   | `m` (RCON)      | Execute a server console command.                                                            |
-| `!map`       | `!map <mapname\|workshopid>`        | `g` (Changemap) | Change the current map. Supports partial name match from maplist or raw workshop IDs.        |
-| `!maps`      | `!maps [page]`                      | `g` (Changemap) | List available maps from the maplist (paginated).                                            |
-| `!pm`        | `!pm <target> <message>`            | `j` (Chat)      | Private message a player. Echoes to all online admins.                                       |
-| `!entfire`   | `!entfire <entity> <input> [value]` | `n` (Cheats)    | Fire an input on a map entity via `ent_fire`.                                                |
-| `!report`    | `!report <target> <reason>`         | open            | Report a player to online admins. Subject to cooldown.                                       |
-| `!adminhelp` | `!adminhelp [page]`                 | open            | List the commands you can use (paginated).                                                   |
-| `!find`      | `!find <text>`                      | open            | Search the commands you can use by name.                                                     |
-| `!tag`       | `!tag [id\|none]`                   | open            | Pick which of your matched tags is displayed, or open a picker.                              |
+| Command         | Usage                               | Permissions     | Description                                                                                  |
+| --------------- | ----------------------------------- | --------------- | -------------------------------------------------------------------------------------------- |
+| `!ban`          | `!ban <target> <time> [reason]`     | `d` (Ban)       | Ban a connected player. Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.         |
+| `!unban`        | `!unban <steamid>`                  | `e` (Unban)     | Unban a player by SteamID. Off when `Unban` is 0.                                            |
+| `!addban`       | `!addban <time> <steamid> [reason]` | `d` (Ban)       | Ban a SteamID, online or not. Off when `Addban` is 0.                                        |
+| `!banip`        | `!banip <ip> <time> [reason]`       | `d` (Ban)       | Ban an IP address. Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.              |
+| `!kick`         | `!kick <target> [reason]`           | `c` (Kick)      | Kick a connected player from the server.                                                     |
+| `!slay`         | `!slay <target>`                    | `f` (Slay)      | Slay a player. Supports multi-target selectors (@all, @t, @ct, etc.).                        |
+| `!mute`         | `!mute <target> [time] [reason]`    | `j` (Chat)      | Mute a player (block voice). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.    |
+| `!unmute`       | `!unmute <target>`                  | `j` (Chat)      | Unmute a player.                                                                             |
+| `!gag`          | `!gag <target> [time] [reason]`     | `j` (Chat)      | Gag a player (block text chat). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent. |
+| `!ungag`        | `!ungag <target>`                   | `j` (Chat)      | Ungag a player.                                                                              |
+| `!silence`      | `!silence <target> [time] [reason]` | `j` (Chat)      | Silence a player (mute + gag). Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.  |
+| `!unsilence`    | `!unsilence <target>`               | `j` (Chat)      | Unsilence a player (unmute + ungag).                                                         |
+| `!comms`        | `!comms [target]`                   | `j` (Chat)      | Show comm restriction status for a player (defaults to self).                                |
+| `!listbans`     | `!listbans <target\|steamid>`       | `d` (Ban)       | Last 10 bans for a player, online or by SteamID.                                             |
+| `!listcomms`    | `!listcomms <target\|steamid>`      | `j` (Chat)      | Last 10 comm blocks for a player, online or by SteamID.                                      |
+| `!admin`        | `!admin`                            | `b` (Generic)   | SourceMod-style admin menu with every admin tool you can use. Needs mm-cs2menus.             |
+| `!who`          | `!who [target]`                     | `b` (Generic)   | List online admins with their flags, group and immunity, or show one player's.               |
+| `!reloadadmins` | `!reloadadmins`                     | `d` (Ban)       | Rebuild the admin cache from the flat files and database.                                    |
+| `!execcfg`      | `!execcfg [file]`                   | `i` (Config)    | Execute a config under `cfg/`, or pick one listed in `cfg/cs2admin/adminmenu_cfgs.txt`.      |
+| `!listdc`       | `!listdc`                           | `d` (Ban)       | Show recently disconnected players (name, SteamID, IP, time ago).                            |
+| `!give`         | `!give <target> <weapon>`           | `n` (Cheats)    | Give a weapon to player(s). Auto-prepends `weapon_` if missing. Supports multi-target.       |
+| `!strip`        | `!strip <target>`                   | `n` (Cheats)    | Strip all weapons from player(s). Supports multi-target selectors.                           |
+| `!rcon`         | `!rcon <command>`                   | `m` (RCON)      | Execute a server console command.                                                            |
+| `!map`          | `!map <mapname\|workshopid>`        | `g` (Changemap) | Change the current map. Supports partial name match from maplist or raw workshop IDs.        |
+| `!maps`         | `!maps [page]`                      | `g` (Changemap) | List available maps from the maplist (paginated).                                            |
+| `!pm`           | `!pm <target> <message>`            | `j` (Chat)      | Private message a player. Echoes to all online admins.                                       |
+| `!entfire`      | `!entfire <entity> <input> [value]` | `n` (Cheats)    | Fire an input on a map entity via `ent_fire`.                                                |
+| `!report`       | `!report <target> <reason>`         | open            | Report a player to online admins. Subject to cooldown.                                       |
+| `!adminhelp`    | `!adminhelp [page]`                 | open            | List the commands you can use (paginated).                                                   |
+| `!find`         | `!find <text>`                      | open            | Search the commands you can use by name.                                                     |
+| `!tag`          | `!tag [id\|none]`                   | open            | Pick which of your matched tags is displayed, or open a picker.                              |
 
 Every chat command is also a console command as `mm_<name>`.
 

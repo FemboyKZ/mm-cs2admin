@@ -128,6 +128,7 @@ for task in MMSPlugin.binaries:
         "admins_simple.ini",
         "admin_groups.cfg",
         "admin_overrides.cfg",
+        "adminmenu_cfgs.txt",
     ]:
         src = os.path.join(builder.sourcePath, "configs", cfg)
         if os.path.isfile(src):

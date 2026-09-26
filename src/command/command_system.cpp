@@ -1,5 +1,6 @@
 #include "command_system.h"
 #include "mmu/chat_command.h"
+#include "mmu/kv_parser.h"
 #include "mmu/log.h"
 #include "map_manager.h"
 #include "src/chat/chat_processor.h"
@@ -27,6 +28,8 @@
 #include <ctime>
 #include <cctype>
 #include <cmath>
+#include <cstdlib>
+#include <fstream>
 #include <functional>
 
 // Join args from startIdx into a single string, or return defaultVal if not enough args.
@@ -401,6 +404,12 @@ void CS2ACommandSystem::RegisterCommand(const char *name, const char *group, uin
 bool CS2ACommandSystem::CanUse(int slot, const std::string &name, const Command &command) const
 {
 	return g_CS2AAdminManager.CanPlayerUseCommand(slot, name.c_str(), command.group, command.defaultFlag);
+}
+
+bool CS2ACommandSystem::CanRun(int slot, const char *name) const
+{
+	auto it = m_commands.find(name);
+	return it != m_commands.end() && CanUse(slot, it->first, it->second);
 }
 
 void CS2ACommandSystem::Run(const std::string &name, const Command &command, int slot, const std::vector<std::string> &args, bool silent)
@@ -1064,6 +1073,185 @@ namespace
 									  },
 									  false, true);
 							  });
+	}
+
+	// The slot behind a picker's "$<steamid64>" / "#<slot>" info, or -1 once that player is gone.
+	int SlotFromTargetInfo(const std::string &info)
+	{
+		if (info.size() < 2)
+		{
+			return -1;
+		}
+		if (info[0] == '$')
+		{
+			return g_CS2APlayerManager.FindSlotBySteamID64(strtoull(info.c_str() + 1, nullptr, 10));
+		}
+		if (info[0] == '#')
+		{
+			int slot = atoi(info.c_str() + 1);
+			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+			return p && p->connected ? slot : -1;
+		}
+		return -1;
+	}
+
+	// player -> the comm actions that apply to them -> the punish form for a new block, or straight to the lift.
+	void StartCommsFlow(int slot)
+	{
+		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, false);
+		if (players.empty())
+		{
+			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			return;
+		}
+
+		g_AdminMenus.ShowMenu(slot, "Gag / Mute: select player", players,
+							  [players](int s, int item, const std::string &target)
+							  {
+								  PlayerInfo *p = g_CS2APlayerManager.GetPlayer(SlotFromTargetInfo(target));
+								  if (!p)
+								  {
+									  ADMIN_ReplyToCommandT(s, "No valid targets online.\n");
+									  return;
+								  }
+								  const bool muted = p->isMuted || p->isSessionMuted;
+								  const bool gagged = p->isGagged || p->isSessionGagged;
+
+								  struct Action
+								  {
+									  const char *cmd;
+									  const char *verb;
+									  bool timed;
+									  bool show;
+								  };
+								  const Action actions[] = {
+									  {"mute", "Mute", true, !muted},
+									  {"unmute", "Unmute", false, muted},
+									  {"gag", "Gag", true, !gagged},
+									  {"ungag", "Ungag", false, gagged},
+									  {"silence", "Silence", true, !muted || !gagged},
+									  {"unsilence", "Unsilence", false, muted && gagged},
+								  };
+								  std::vector<AdminMenuItem> items;
+								  for (const Action &action : actions)
+								  {
+									  if (action.show && g_CS2ACommandSystem.CanRun(s, action.cmd))
+									  {
+										  items.push_back({action.verb, action.cmd, false});
+									  }
+								  }
+								  if (items.empty())
+								  {
+									  ADMIN_ReplyToCommandT(s, "You do not have permission to use this command.\n");
+									  return;
+								  }
+
+								  const std::string name = players[item].text;
+								  g_AdminMenus.ShowMenu(s, ("Gag / Mute: " + name).c_str(), items,
+														[name, target](int s2, int, const std::string &cmd)
+														{
+															if (cmd != "mute" && cmd != "gag" && cmd != "silence")
+															{
+																std::vector<std::string> args = {target};
+																g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s2);
+																return;
+															}
+															std::string verb = cmd == "mute" ? "Mute" : (cmd == "gag" ? "Gag" : "Silence");
+															ShowPunishForm(
+																s2, verb + ": " + name, verb, true,
+																[cmd, target](int s3, const std::string &minutes, const std::string &reason)
+																{
+																	std::vector<std::string> args = {target, minutes, reason};
+																	g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s3);
+																});
+														});
+							  });
+	}
+
+	// cfg/cs2admin/adminmenu_cfgs.txt, SourceMod's file as is: "Configs" { "cfg/<file>" "<label>" }, paths relative to the mod folder.
+	std::vector<AdminMenuItem> LoadMenuConfigs()
+	{
+		std::vector<AdminMenuItem> items;
+		char path[512];
+		snprintf(path, sizeof(path), "%s/cfg/cs2admin/adminmenu_cfgs.txt", g_SMAPI->GetBaseDir());
+		kv::LoadFile(
+			path,
+			[](const std::string &, const std::string &key, const std::string &value, void *userdata)
+			{
+				// exec runs from cfg/, so the entry becomes the !execcfg argument without that prefix, as SourceMod's does.
+				std::string file = key.rfind("cfg/", 0) == 0 ? key.substr(4) : key;
+				static_cast<std::vector<AdminMenuItem> *>(userdata)->push_back({value.empty() ? key : value, file, false});
+			},
+			&items);
+		return items;
+	}
+
+	// config list -> !execcfg <file>
+	void StartExecCfgFlow(int slot)
+	{
+		std::vector<AdminMenuItem> items = LoadMenuConfigs();
+		if (items.empty())
+		{
+			ADMIN_ReplyToCommandT(slot, "No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n");
+			return;
+		}
+		g_AdminMenus.ShowMenu(slot, "Execute Config", items,
+							  [](int s, int, const std::string &file)
+							  {
+								  std::vector<std::string> args = {file};
+								  g_CS2ACommandSystem.DispatchConsoleCommand("execcfg", args, s);
+							  });
+	}
+
+	// SourceMod's sm_admin: every admin tool the caller may use, grouped the way SourceMod's admin menu groups them.
+	struct AdminMenuEntry
+	{
+		const char *section;
+		const char *label;
+		const char *command; // the chat command whose permission shows or hides the entry
+		void (*open)(int slot);
+	};
+
+	const AdminMenuEntry kAdminMenu[] = {
+		{"Player Commands", "Ban", "ban", [](int s) { StartTimedActionFlow(s, "ban", "Ban"); }},
+		{"Player Commands", "Kick", "kick", [](int s) { StartKickFlow(s); }},
+		{"Player Commands", "Slay", "slay", [](int s) { StartTargetOnlyFlow(s, "slay", "Slay", true, false); }},
+		{"Player Commands", "Gag / Mute", "gag", [](int s) { StartCommsFlow(s); }},
+		{"Player Commands", "Who", "who", [](int s) { StartTargetOnlyFlow(s, "who", "Who", false, false); }},
+		{"Player Commands", "Give Weapon", "give", [](int s) { StartGiveFlow(s); }},
+		{"Player Commands", "Strip Weapons", "strip", [](int s) { StartTargetOnlyFlow(s, "strip", "Strip", true, false); }},
+		{"Player Commands", "Ban History", "listbans", [](int s) { StartTargetOnlyFlow(s, "listbans", "List Bans", false, false); }},
+		{"Player Commands", "Comm History", "listcomms", [](int s) { StartTargetOnlyFlow(s, "listcomms", "List Comms", false, false); }},
+		{"Player Commands", "Ban Disconnected", "addban", [](int s) { StartOfflineBanFlow(s); }},
+		{"Server Commands", "Change Map", "map", [](int s) { StartMapFlow(s); }},
+		{"Server Commands", "Reload Admins", "reloadadmins",
+		 [](int s) { g_CS2ACommandSystem.DispatchConsoleCommand("reloadadmins", std::vector<std::string>(), s); }},
+		{"Server Commands", "Execute Config", "execcfg", [](int s) { StartExecCfgFlow(s); }},
+	};
+
+	void StartAdminMenu(int slot)
+	{
+		std::vector<AdminMenuItem> items;
+		for (int i = 0; i < static_cast<int>(sizeof(kAdminMenu) / sizeof(kAdminMenu[0])); i++)
+		{
+			const AdminMenuEntry &entry = kAdminMenu[i];
+			// Offline bans can be switched off server-wide.
+			if (!g_CS2ACommandSystem.CanRun(slot, entry.command) || (!strcmp(entry.command, "addban") && !g_CS2AConfig.addban))
+			{
+				continue;
+			}
+			AdminMenuItem item;
+			item.text = entry.label;
+			item.info = std::to_string(i);
+			item.section = entry.section;
+			items.push_back(std::move(item));
+		}
+		if (items.empty())
+		{
+			ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+		g_AdminMenus.ShowMenu(slot, "Admin Menu", items, [](int s, int, const std::string &info) { kAdminMenu[atoi(info.c_str())].open(s); });
 	}
 
 	// True when slot is a real player and the menu plugin can render a picker.
@@ -1844,10 +2032,93 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 					});
 
-	// !who - List all online admins and their flags
+	// !admin - SourceMod's admin menu, every admin tool the caller may use
+	RegisterCommand("admin", "adminmenu", ADMFLAG_GENERIC,
+					[](int slot, const std::vector<std::string> &args, bool silent)
+					{
+						if (!MenuPickerAvailable(slot))
+						{
+							ADMIN_ReplyToCommandT(slot, "The admin menu needs the mm-cs2menus plugin.\n");
+							return;
+						}
+						StartAdminMenu(slot);
+					});
+
+	// !reloadadmins - Rebuild the admin cache from the flat files and database
+	RegisterCommand("reloadadmins", "basecommands", ADMFLAG_BAN,
+					[](int slot, const std::vector<std::string> &args, bool silent)
+					{
+						g_CS2AAdminManager.ReloadAdmins();
+						ADMIN_ReplyToCommandT(slot, "Admin cache has been refreshed.\n");
+						ADMIN_LogAction(slot, "Reloaded admins");
+					});
+
+	// !execcfg <file> - Execute a config file under cfg/, or pick one from adminmenu_cfgs.txt
+	RegisterCommand("execcfg", "basecommands", ADMFLAG_CONFIG,
+					[](int slot, const std::vector<std::string> &args, bool silent)
+					{
+						if (args.empty())
+						{
+							if (MenuPickerAvailable(slot))
+							{
+								StartExecCfgFlow(slot);
+								return;
+							}
+							ADMIN_ReplyToCommandT(slot, "Usage: !execcfg <file>\n");
+							return;
+						}
+						// It goes into a server command line, so only a plain relative path.
+						const std::string &file = args[0];
+						bool valid = !file.empty() && file.find("..") == std::string::npos && file[0] != '/' && file[0] != '\\';
+						for (char c : file)
+						{
+							valid = valid && (std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '-' || c == '.' || c == '/');
+						}
+						if (!valid)
+						{
+							ADMIN_ReplyToCommandT(slot, "Invalid config file '%s'.\n", file.c_str());
+							return;
+						}
+						// exec prints its own error to the server console only, so check first, like sm_execcfg.
+						if (!std::ifstream(std::string(g_SMAPI->GetBaseDir()) + "/cfg/" + file).good())
+						{
+							ADMIN_ReplyToCommandT(slot, "Config not found: %s\n", file.c_str());
+							return;
+						}
+						g_pEngine->ServerCommand(("exec " + file + "\n").c_str());
+						ADMIN_ReplyToCommandT(slot, "Executed config %s.\n", file.c_str());
+						ADMIN_LogAction(slot, ("Executed config " + file).c_str());
+					});
+
+	// !who [target] - List all online admins and their flags, or show one player's
 	RegisterCommand("who", "basecommands", ADMFLAG_GENERIC,
 					[](int slot, const std::vector<std::string> &args, bool silent)
 					{
+						if (!args.empty())
+						{
+							int target = ADMIN_FindTarget(slot, args[0].c_str());
+							PlayerInfo *p = target >= 0 ? g_CS2APlayerManager.GetPlayer(target) : nullptr;
+							if (!p)
+							{
+								return;
+							}
+							const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(target);
+							if (!admin)
+							{
+								ADMIN_ReplyToCommandT(slot, "%s is not an admin.\n", p->name.c_str());
+								return;
+							}
+							std::string group;
+							for (const std::string &groupName : admin->groups)
+							{
+								group += (group.empty() ? "" : ", ") + groupName;
+							}
+							ADMIN_ReplyToCommandT(slot, "  %s [%s] flags: %s imm: %d\n", p->name.c_str(),
+												  group.empty() ? "(no group)" : group.c_str(), CS2AAdminManager::FlagsToString(admin->flags).c_str(),
+												  admin->immunity);
+							return;
+						}
+
 						CGlobalVars *globals = GetGameGlobals();
 						int maxClients = globals ? globals->maxClients : MAXPLAYERS;
 

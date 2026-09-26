@@ -787,4 +787,36 @@
 	{
 		"en"	"[current]"
 	}
+	"The admin menu needs the mm-cs2menus plugin.\n"
+	{
+		"en"	"The admin menu needs the mm-cs2menus plugin.\n"
+	}
+	"Admin cache has been refreshed.\n"
+	{
+		"en"	"Admin cache has been refreshed.\n"
+	}
+	"Usage: !execcfg <file>\n"
+	{
+		"en"	"Usage: !execcfg <file>\n"
+	}
+	"Invalid config file '%s'.\n"
+	{
+		"en"	"Invalid config file '%s'.\n"
+	}
+	"Executed config %s.\n"
+	{
+		"en"	"Executed config %s.\n"
+	}
+	"%s is not an admin.\n"
+	{
+		"en"	"%s is not an admin.\n"
+	}
+	"No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n"
+	{
+		"en"	"No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n"
+	}
+	"Config not found: %s\n"
+	{
+		"en"	"Config not found: %s\n"
+	}
 }

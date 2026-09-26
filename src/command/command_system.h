@@ -50,6 +50,9 @@ public:
 	// Check if a gagged player should have their message blocked.
 	bool ShouldBlockChat(int slot);
 
+	// Whether the slot may run a registered chat command, the check its dispatch makes. False for an unknown name.
+	bool CanRun(int slot, const char *name) const;
+
 	// Take the slot's next chat line as text for onText, like a typed ban reason. Replaces a prompt already waiting.
 	// "cancel" drops it, a command still runs as one, and it expires after a minute.
 	void PromptText(int slot, std::function<void(int slot, const std::string &text)> onText);

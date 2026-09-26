@@ -16,7 +16,7 @@ struct CS2AConfig
 	std::string defaultLanguage = "en";
 
 	mmu::config::LogBlock log;
-	mmu::config::DatabaseBlock database = mmu::config::DatabaseBlock::Defaults("sourcemod", "addons/cs2admin/cs2admin.db", "sb");
+	mmu::config::DatabaseBlock database = mmu::config::DatabaseBlock::Defaults("sourcemod", "addons/cs2admin/data/cs2admin.db", "sb");
 
 	int serverID = -1;
 	bool addban = true;

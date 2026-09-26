@@ -1,5 +1,6 @@
 #include "admin_manager.h"
 #include "mmu/log.h"
+#include "mmu/str_utils.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -7,7 +8,6 @@
 #include "src/tags/tag_manager.h"
 
 #include <algorithm>
-#include <cctype>
 #include <cstring>
 #include <cstdio>
 
@@ -62,15 +62,9 @@ bool CS2AAdminManager::HasFlag(uint32_t playerFlags, uint32_t requiredFlag)
 	return (playerFlags & requiredFlag) != 0;
 }
 
-static std::string ToLowerCopy(std::string s)
-{
-	std::transform(s.begin(), s.end(), s.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-	return s;
-}
-
 std::string CS2AAdminManager::CommandOverrideKey(const std::string &name)
 {
-	std::string lower = ToLowerCopy(name);
+	std::string lower = str::ToLower(name);
 	if (lower.size() > 3 && (lower.compare(0, 3, "sm_") == 0 || lower.compare(0, 3, "mm_") == 0))
 	{
 		lower.erase(0, 3);
@@ -80,7 +74,7 @@ std::string CS2AAdminManager::CommandOverrideKey(const std::string &name)
 
 std::string CS2AAdminManager::GroupOverrideKey(const std::string &name)
 {
-	return "grp:" + ToLowerCopy(name);
+	return "grp:" + str::ToLower(name);
 }
 
 void CS2AAdminManager::AddGroup(std::vector<std::string> &groups, const std::string &name)

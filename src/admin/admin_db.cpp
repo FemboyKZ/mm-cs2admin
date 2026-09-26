@@ -10,6 +10,51 @@
 #include <cstring>
 #include <cstdio>
 
+void CS2AAdminManager::RunLoadQuery(uint32_t generation, const char *query, const char *what, std::function<void(ISQLResult *)> readRows,
+									std::function<void()> onComplete)
+{
+	g_CS2ADatabase.Query(query,
+						 [this, generation, what, readRows, onComplete](ISQLQuery *result)
+						 {
+							 // An abandoned reload chain must not write into the staging set a newer one is filling.
+							 if (generation != m_reloadGeneration)
+							 {
+								 return;
+							 }
+
+							 ISQLResult *rs = result ? result->GetResultSet() : nullptr;
+							 if (rs)
+							 {
+								 readRows(rs);
+							 }
+							 else
+							 {
+								 if (!result)
+								 {
+									 MMU_LOG_WARN("Failed to load %s from database.\n", what);
+								 }
+								 m_loadingDbFailed = true;
+							 }
+							 if (onComplete)
+							 {
+								 onComplete();
+							 }
+						 });
+}
+
+std::string CS2AAdminManager::OverrideKeyForType(const char *type, const char *name)
+{
+	if (strcmp(type, "command") == 0)
+	{
+		return CommandOverrideKey(name);
+	}
+	if (strcmp(type, "group") == 0)
+	{
+		return GroupOverrideKey(name);
+	}
+	return "";
+}
+
 void CS2AAdminManager::LoadGroups(uint32_t generation, std::function<void()> onComplete)
 {
 	if (!g_CS2ADatabase.IsConnected())
@@ -25,82 +70,51 @@ void CS2AAdminManager::LoadGroups(uint32_t generation, std::function<void()> onC
 	char query[512];
 	snprintf(query, sizeof(query), "SELECT id, name, flags, immunity FROM %s_srvgroups ORDER BY id", prefix.c_str());
 
-	g_CS2ADatabase.Query(query,
-						 [this, generation, onComplete](ISQLQuery *result)
-						 {
-							 // An abandoned reload chain must not write into the staging set a newer one is filling.
-							 if (generation != m_reloadGeneration)
-							 {
-								 return;
-							 }
+	RunLoadQuery(
+		generation, query, "admin groups",
+		[this](ISQLResult *rs)
+		{
+			int count = 0;
+			while (rs->MoreRows())
+			{
+				ISQLRow *row = rs->FetchRow();
+				if (!row)
+				{
+					break;
+				}
 
-							 if (!result)
-							 {
-								 MMU_LOG_WARN("Failed to load admin groups from database.\n");
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
+				AdminGroup group;
+				group.id = rs->GetInt(0);
+				const char *name = rs->GetString(1);
+				const char *flags = rs->GetString(2);
+				group.name = name ? name : "";
+				group.flags = FlagsFromString(flags);
+				group.immunity = rs->GetInt(3);
 
-							 ISQLResult *rs = result->GetResultSet();
-							 if (!rs)
-							 {
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
-
-							 int count = 0;
-							 while (rs->MoreRows())
-							 {
-								 ISQLRow *row = rs->FetchRow();
-								 if (!row)
-								 {
-									 break;
-								 }
-
-								 AdminGroup group;
-								 group.id = rs->GetInt(0);
-								 const char *name = rs->GetString(1);
-								 const char *flags = rs->GetString(2);
-								 group.name = name ? name : "";
-								 group.flags = FlagsFromString(flags);
-								 group.immunity = rs->GetInt(3);
-
-								 if (!group.name.empty())
-								 {
-									 // Merge with existing group
-									 auto existing = m_loadingGroups.find(group.name);
-									 if (existing != m_loadingGroups.end())
-									 {
-										 existing->second.flags |= group.flags;
-										 if (group.immunity > existing->second.immunity)
-										 {
-											 existing->second.immunity = group.immunity;
-										 }
-										 existing->second.id = group.id;
-									 }
-									 else
-									 {
-										 m_loadingGroups[group.name] = group;
-									 }
-									 m_loadingGroupIdToName[group.id] = group.name;
-									 count++;
-								 }
-							 }
-
-							 MMU_LOG_INFO("Loaded %d admin group(s) from database.\n", count);
-							 if (onComplete)
-							 {
-								 onComplete();
-							 }
-						 });
+				if (!group.name.empty())
+				{
+					// Merge with existing group
+					auto existing = m_loadingGroups.find(group.name);
+					if (existing != m_loadingGroups.end())
+					{
+						existing->second.flags |= group.flags;
+						if (group.immunity > existing->second.immunity)
+						{
+							existing->second.immunity = group.immunity;
+						}
+						existing->second.id = group.id;
+					}
+					else
+					{
+						m_loadingGroups[group.name] = group;
+					}
+					m_loadingGroupIdToName[group.id] = group.name;
+					count++;
+				}
+			}
+			MMU_LOG_INFO("Loaded %d admin group(s) from database.\n", count);
+		},
+		std::move(onComplete));
 }
 
 void CS2AAdminManager::LoadGroupOverrides(uint32_t generation, std::function<void()> onComplete)
@@ -122,95 +136,55 @@ void CS2AAdminManager::LoadGroupOverrides(uint32_t generation, std::function<voi
 			 "ORDER BY so.group_id",
 			 prefix.c_str());
 
-	g_CS2ADatabase.Query(query,
-						 [this, generation, onComplete](ISQLQuery *result)
-						 {
-							 // An abandoned reload chain must not write into the staging set a newer one is filling.
-							 if (generation != m_reloadGeneration)
-							 {
-								 return;
-							 }
+	RunLoadQuery(
+		generation, query, "group overrides",
+		[this](ISQLResult *rs)
+		{
+			int count = 0;
+			while (rs->MoreRows())
+			{
+				ISQLRow *row = rs->FetchRow();
+				if (!row)
+				{
+					break;
+				}
 
-							 if (!result)
-							 {
-								 MMU_LOG_WARN("Failed to load group overrides from database.\n");
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
+				int groupId = rs->GetInt(0);
+				const char *type = rs->GetString(1);
+				const char *name = rs->GetString(2);
+				const char *access = rs->GetString(3);
 
-							 ISQLResult *rs = result->GetResultSet();
-							 if (!rs)
-							 {
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
+				if (!type || !name || !access)
+				{
+					continue;
+				}
 
-							 int count = 0;
-							 while (rs->MoreRows())
-							 {
-								 ISQLRow *row = rs->FetchRow();
-								 if (!row)
-								 {
-									 break;
-								 }
+				// Find the group by DB id
+				auto it = m_loadingGroupIdToName.find(groupId);
+				if (it == m_loadingGroupIdToName.end())
+				{
+					continue;
+				}
 
-								 int groupId = rs->GetInt(0);
-								 const char *type = rs->GetString(1);
-								 const char *name = rs->GetString(2);
-								 const char *access = rs->GetString(3);
+				auto grpIt = m_loadingGroups.find(it->second);
+				if (grpIt == m_loadingGroups.end())
+				{
+					continue;
+				}
 
-								 if (!type || !name || !access)
-								 {
-									 continue;
-								 }
+				std::string key = OverrideKeyForType(type, name);
+				if (key.empty())
+				{
+					continue;
+				}
 
-								 // Find the group by DB id
-								 auto it = m_loadingGroupIdToName.find(groupId);
-								 if (it == m_loadingGroupIdToName.end())
-								 {
-									 continue;
-								 }
-
-								 auto grpIt = m_loadingGroups.find(it->second);
-								 if (grpIt == m_loadingGroups.end())
-								 {
-									 continue;
-								 }
-
-								 // Build override key: "cmd:<name>" or "grp:<name>"
-								 std::string key;
-								 if (strcmp(type, "command") == 0)
-								 {
-									 key = CommandOverrideKey(name);
-								 }
-								 else if (strcmp(type, "group") == 0)
-								 {
-									 key = GroupOverrideKey(name);
-								 }
-								 else
-								 {
-									 continue;
-								 }
-
-								 OverrideRule rule = (strcmp(access, "allow") == 0) ? Command_Allow : Command_Deny;
-								 grpIt->second.overrides[key] = rule;
-								 count++;
-							 }
-
-							 MMU_LOG_INFO("Loaded %d group override(s) from database.\n", count);
-							 if (onComplete)
-							 {
-								 onComplete();
-							 }
-						 });
+				OverrideRule rule = (strcmp(access, "allow") == 0) ? Command_Allow : Command_Deny;
+				grpIt->second.overrides[key] = rule;
+				count++;
+			}
+			MMU_LOG_INFO("Loaded %d group override(s) from database.\n", count);
+		},
+		std::move(onComplete));
 }
 
 void CS2AAdminManager::LoadGlobalOverrides(uint32_t generation, std::function<void()> onComplete)
@@ -228,80 +202,41 @@ void CS2AAdminManager::LoadGlobalOverrides(uint32_t generation, std::function<vo
 	char query[512];
 	snprintf(query, sizeof(query), "SELECT type, name, flags FROM %s_overrides ORDER BY id", prefix.c_str());
 
-	g_CS2ADatabase.Query(query,
-						 [this, generation, onComplete](ISQLQuery *result)
-						 {
-							 // An abandoned reload chain must not write into the staging set a newer one is filling.
-							 if (generation != m_reloadGeneration)
-							 {
-								 return;
-							 }
+	RunLoadQuery(
+		generation, query, "global overrides",
+		[this](ISQLResult *rs)
+		{
+			int count = 0;
+			while (rs->MoreRows())
+			{
+				ISQLRow *row = rs->FetchRow();
+				if (!row)
+				{
+					break;
+				}
 
-							 if (!result)
-							 {
-								 MMU_LOG_WARN("Failed to load global overrides from database.\n");
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
+				const char *type = rs->GetString(0);
+				const char *name = rs->GetString(1);
+				const char *flags = rs->GetString(2);
 
-							 ISQLResult *rs = result->GetResultSet();
-							 if (!rs)
-							 {
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
+				if (!type || !name || !flags)
+				{
+					continue;
+				}
 
-							 int count = 0;
-							 while (rs->MoreRows())
-							 {
-								 ISQLRow *row = rs->FetchRow();
-								 if (!row)
-								 {
-									 break;
-								 }
+				std::string key = OverrideKeyForType(type, name);
+				if (key.empty())
+				{
+					continue;
+				}
 
-								 const char *type = rs->GetString(0);
-								 const char *name = rs->GetString(1);
-								 const char *flags = rs->GetString(2);
-
-								 if (!type || !name || !flags)
-								 {
-									 continue;
-								 }
-
-								 std::string key;
-								 if (strcmp(type, "command") == 0)
-								 {
-									 key = CommandOverrideKey(name);
-								 }
-								 else if (strcmp(type, "group") == 0)
-								 {
-									 key = GroupOverrideKey(name);
-								 }
-								 else
-								 {
-									 continue;
-								 }
-
-								 // DB overrides win over a flat-file entry for the same key
-								 m_loadingGlobalOverrides[key] = FlagsFromString(flags);
-								 count++;
-							 }
-
-							 MMU_LOG_INFO("Loaded %d global override(s) from database.\n", count);
-							 if (onComplete)
-							 {
-								 onComplete();
-							 }
-						 });
+				// DB overrides win over a flat-file entry for the same key
+				m_loadingGlobalOverrides[key] = FlagsFromString(flags);
+				count++;
+			}
+			MMU_LOG_INFO("Loaded %d global override(s) from database.\n", count);
+		},
+		std::move(onComplete));
 }
 
 void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void()> onComplete)
@@ -375,112 +310,82 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 				 g_CS2AConfig.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
 	}
 
-	g_CS2ADatabase.Query(query,
-						 [this, generation, onComplete](ISQLQuery *result)
-						 {
-							 // An abandoned reload chain must not write into the staging set a newer one is filling.
-							 if (generation != m_reloadGeneration)
-							 {
-								 return;
-							 }
+	RunLoadQuery(
+		generation, query, "admins",
+		[this](ISQLResult *rs)
+		{
+			while (rs->MoreRows())
+			{
+				ISQLRow *row = rs->FetchRow();
+				if (!row)
+				{
+					break;
+				}
 
-							 if (!result)
-							 {
-								 MMU_LOG_WARN("Failed to load admins from database.\n");
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
+				AdminEntry entry;
+				entry.fromDatabase = true;
+				entry.adminId = rs->GetInt(0);
 
-							 ISQLResult *rs = result->GetResultSet();
-							 if (!rs)
-							 {
-								 m_loadingDbFailed = true;
-								 if (onComplete)
-								 {
-									 onComplete();
-								 }
-								 return;
-							 }
+				const char *authid = rs->GetString(1);
+				if (!authid || !*authid)
+				{
+					continue;
+				}
 
-							 while (rs->MoreRows())
-							 {
-								 ISQLRow *row = rs->FetchRow();
-								 if (!row)
-								 {
-									 break;
-								 }
+				entry.identity = NormalizeSteamID(authid);
+				entry.steamid64 = AuthIdToSteamID64(entry.identity.c_str());
 
-								 AdminEntry entry;
-								 entry.fromDatabase = true;
-								 entry.adminId = rs->GetInt(0);
+				const char *flags = rs->GetString(2);
+				entry.flags = FlagsFromString(flags);
 
-								 const char *authid = rs->GetString(1);
-								 if (!authid || !*authid)
-								 {
-									 continue;
-								 }
+				const char *group = rs->GetString(3);
+				AddGroup(entry.groups, group ? group : "");
 
-								 entry.identity = NormalizeSteamID(authid);
-								 entry.steamid64 = AuthIdToSteamID64(entry.identity.c_str());
+				const char *name = rs->GetString(4);
+				entry.name = name ? name : "";
 
-								 const char *flags = rs->GetString(2);
-								 entry.flags = FlagsFromString(flags);
+				entry.immunity = rs->GetInt(5);
 
-								 const char *group = rs->GetString(3);
-								 AddGroup(entry.groups, group ? group : "");
+				// Inherit group flags and immunity
+				if (!entry.groups.empty())
+				{
+					auto it = m_loadingGroups.find(entry.groups[0]);
+					if (it != m_loadingGroups.end())
+					{
+						entry.flags |= it->second.flags;
+						if (it->second.immunity > entry.immunity)
+						{
+							entry.immunity = it->second.immunity;
+						}
+					}
+				}
 
-								 const char *name = rs->GetString(4);
-								 entry.name = name ? name : "";
+				if (!entry.identity.empty())
+				{
+					// If there's already a DB entry for this identity (e.g., multiple group assignments), merge flags additively
+					auto existing = m_loadingDbAdmins.find(entry.identity);
+					if (existing != m_loadingDbAdmins.end())
+					{
+						existing->second.flags |= entry.flags;
+						if (entry.immunity > existing->second.immunity)
+						{
+							existing->second.immunity = entry.immunity;
+						}
+						for (const std::string &groupName : entry.groups)
+						{
+							AddGroup(existing->second.groups, groupName);
+						}
+					}
+					else
+					{
+						m_loadingDbAdmins[entry.identity] = entry;
+					}
+				}
+			}
 
-								 entry.immunity = rs->GetInt(5);
-
-								 // Inherit group flags and immunity
-								 if (!entry.groups.empty())
-								 {
-									 auto it = m_loadingGroups.find(entry.groups[0]);
-									 if (it != m_loadingGroups.end())
-									 {
-										 entry.flags |= it->second.flags;
-										 if (it->second.immunity > entry.immunity)
-										 {
-											 entry.immunity = it->second.immunity;
-										 }
-									 }
-								 }
-
-								 if (!entry.identity.empty())
-								 {
-									 // If there's already a DB entry for this identity (e.g., multiple group assignments), merge flags additively
-									 auto existing = m_loadingDbAdmins.find(entry.identity);
-									 if (existing != m_loadingDbAdmins.end())
-									 {
-										 existing->second.flags |= entry.flags;
-										 if (entry.immunity > existing->second.immunity)
-										 {
-											 existing->second.immunity = entry.immunity;
-										 }
-										 for (const std::string &groupName : entry.groups)
-										 {
-											 AddGroup(existing->second.groups, groupName);
-										 }
-									 }
-									 else
-									 {
-										 m_loadingDbAdmins[entry.identity] = entry;
-									 }
-								 }
-							 }
-
-							 MMU_LOG_INFO("Loaded %zu admin(s) from database.\n", m_loadingDbAdmins.size());
-							 if (onComplete)
-							 {
-								 onComplete();
-							 }
-						 });
+			MMU_LOG_INFO("Loaded %zu admin(s) from database.\n", m_loadingDbAdmins.size());
+		},
+		std::move(onComplete));
 }
 
 void CS2AAdminManager::LoadDatabaseAdmins(uint32_t generation, std::function<void()> onComplete)

@@ -39,6 +39,29 @@ static std::string Code(const std::string &text)
 	return out + "``";
 }
 
+// Empty when the hostname is unset.
+static std::string ServerLine()
+{
+	ConVarRefAbstract hn("hostname");
+	if (!hn.IsConVarDataValid())
+	{
+		return "";
+	}
+	CUtlString name = hn.GetString();
+	return name.Get() && *name.Get() ? "**Server:** " + Code(name.Get()) + "\n" : "";
+}
+
+// The SteamID is left out when 0.
+static std::string PersonLine(const char *label, const char *name, uint64_t steamid64)
+{
+	std::string line = std::string("**") + label + ":** " + Code(name ? name : "");
+	if (steamid64 != 0)
+	{
+		line += " - ``" + std::to_string(steamid64) + "``";
+	}
+	return line + "\n";
+}
+
 void CS2ADiscord::Init()
 {
 	mmu::http::SetUserAgent((std::string("CS2Admin/") + PLUGIN_FULL_VERSION).c_str());
@@ -74,33 +97,10 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 		return;
 	}
 
-	std::string desc;
-
-	{
-		ConVarRefAbstract hn("hostname");
-		if (hn.IsConVarDataValid())
-		{
-			CUtlString s = hn.GetString();
-			if (s.Get() && *s.Get())
-			{
-				desc += "**Server:** " + Code(s.Get()) + "\n";
-			}
-		}
-	}
-
-	desc += "**Admin:** " + Code(adminName ? adminName : "Console");
-	if (adminSteamid64 != 0)
-	{
-		desc += " - ``" + std::to_string(adminSteamid64) + "``";
-	}
-	desc += "\n";
+	std::string desc = ServerLine();
+	desc += PersonLine("Admin", adminName ? adminName : "Console", adminSteamid64);
 	desc += "**Action:** " + Code(action ? action : "") + "\n";
-	desc += "**Target:** " + Code(targetName ? targetName : "");
-	if (targetSteamid64 != 0)
-	{
-		desc += " - ``" + std::to_string(targetSteamid64) + "``";
-	}
-	desc += "\n";
+	desc += PersonLine("Target", targetName, targetSteamid64);
 
 	if (durationMinutes >= 0)
 	{
@@ -161,30 +161,9 @@ void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName,
 		return;
 	}
 
-	std::string desc;
-	{
-		ConVarRefAbstract hn("hostname");
-		if (hn.IsConVarDataValid())
-		{
-			CUtlString s = hn.GetString();
-			if (s.Get() && *s.Get())
-			{
-				desc += "**Server:** " + Code(s.Get()) + "\n";
-			}
-		}
-	}
-	desc += "**Reporter:** " + Code(reporterName ? reporterName : "");
-	if (reporterSteamid64 != 0)
-	{
-		desc += " - ``" + std::to_string(reporterSteamid64) + "``";
-	}
-	desc += "\n";
-	desc += "**Target:** " + Code(targetName ? targetName : "");
-	if (targetSteamid64 != 0)
-	{
-		desc += " - ``" + std::to_string(targetSteamid64) + "``";
-	}
-	desc += "\n";
+	std::string desc = ServerLine();
+	desc += PersonLine("Reporter", reporterName, reporterSteamid64);
+	desc += PersonLine("Target", targetName, targetSteamid64);
 	desc += "**Reason:** " + Code(reason ? reason : "") + "\n";
 
 	SendEmbedMessage("Player Report", desc.c_str(), 0xF39C12, g_CS2AConfig.discordFooterText.c_str());

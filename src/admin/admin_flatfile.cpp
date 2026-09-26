@@ -1,10 +1,10 @@
 #include "admin_manager.h"
 #include "mmu/log.h"
+#include "mmu/str_utils.h"
 #include "src/common.h"
 
 #include <fstream>
 #include <sstream>
-#include <algorithm>
 #include <cctype>
 #include <cstring>
 #include <cstdio>
@@ -134,8 +134,7 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 				continue;
 			}
 
-			std::string keyLower = key;
-			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::string keyLower = str::ToLower(key);
 
 			if (keyLower == "identity" || keyLower == "auth" || keyLower == "steam")
 			{
@@ -480,8 +479,7 @@ void CS2AAdminManager::LoadFlatFileGroups()
 				continue;
 			}
 
-			std::string keyLower = key;
-			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::string keyLower = str::ToLower(key);
 
 			if (keyLower == "overrides")
 			{
@@ -512,9 +510,7 @@ void CS2AAdminManager::LoadFlatFileGroups()
 				continue;
 			}
 
-			std::string accessLower = access;
-			std::transform(accessLower.begin(), accessLower.end(), accessLower.begin(),
-						   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::string accessLower = str::ToLower(access);
 
 			OverrideRule rule = (accessLower == "allow") ? Command_Allow : Command_Deny;
 
@@ -598,9 +594,7 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 			{
 				if (!currentName.empty() && !currentFlag.empty())
 				{
-					std::string typeLower = currentType;
-					std::transform(typeLower.begin(), typeLower.end(), typeLower.begin(),
-								   [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+					std::string typeLower = str::ToLower(currentType);
 
 					std::string key;
 					if (typeLower == "group")
@@ -678,8 +672,7 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				continue;
 			}
 
-			std::string keyLower = key;
-			std::transform(keyLower.begin(), keyLower.end(), keyLower.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+			std::string keyLower = str::ToLower(key);
 
 			if (keyLower == "type")
 			{

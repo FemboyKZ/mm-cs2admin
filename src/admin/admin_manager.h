@@ -8,6 +8,8 @@
 #include <cstdint>
 #include "src/common.h"
 
+class ISQLResult;
+
 // Admin flag bits, mirrors SourceMod's admin flag letters a-z
 enum AdminFlag : uint32_t
 {
@@ -166,6 +168,11 @@ private:
 	void LoadGroupOverrides(uint32_t generation, std::function<void()> onComplete);
 	void LoadGlobalOverrides(uint32_t generation, std::function<void()> onComplete);
 	void LoadAdminsFromDB(uint32_t generation, std::function<void()> onComplete);
+	// Shared by the stages. `readRows` walks the result set and onComplete follows it, or a failed query.
+	void RunLoadQuery(uint32_t generation, const char *query, const char *what, std::function<void(ISQLResult *)> readRows,
+					  std::function<void()> onComplete);
+	// "cmd:<name>" or "grp:<name>" for a DB override row, empty for an unknown type.
+	static std::string OverrideKeyForType(const char *type, const char *name);
 
 	// Swap the staging set into the live set once a reload has all its data.
 	void CommitLoadedData();

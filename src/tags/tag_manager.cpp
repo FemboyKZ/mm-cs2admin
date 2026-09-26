@@ -3,6 +3,7 @@
 #include "mmu/entity/ccsplayercontroller.h"
 #include "mmu/kv_parser.h"
 #include "mmu/log.h"
+#include "mmu/str_utils.h"
 
 #include "src/admin/admin_manager.h"
 #include "src/compat/foreign_plugins.h"
@@ -35,13 +36,6 @@ bool ADMIN_BoardTagsActive()
 
 namespace
 {
-	std::string ToLower(const std::string &s)
-	{
-		std::string out = s;
-		std::transform(out.begin(), out.end(), out.begin(), [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
-		return out;
-	}
-
 	// A tag as it appears in the file, before the match value can be interpreted.
 	// Keys arrive one at a time and in any order, so "value" may land before the "match" that decides how to read it.
 	// Everything stays text until the section is complete.
@@ -89,11 +83,11 @@ namespace
 		}
 
 		RawTag &tag = FindOrCreate(*ctx, section);
-		std::string k = ToLower(key);
+		std::string k = str::ToLower(key);
 
 		if (k == "match")
 		{
-			tag.match = ToLower(value);
+			tag.match = str::ToLower(value);
 		}
 		else if (k == "value")
 		{
@@ -282,7 +276,7 @@ bool CS2ATagManager::PlayerMatches(int slot, const TagDef &tag) const
 		case TagMatch::Group:
 			for (const std::string &groupName : admin->groups)
 			{
-				if (ToLower(groupName) == ToLower(tag.group))
+				if (str::ToLower(groupName) == str::ToLower(tag.group))
 				{
 					return true;
 				}
@@ -321,7 +315,7 @@ const TagDef *CS2ATagManager::FindTag(const char *id) const
 	}
 	for (const TagDef &tag : m_tags)
 	{
-		if (ToLower(tag.id) == ToLower(id))
+		if (str::ToLower(tag.id) == str::ToLower(id))
 		{
 			return &tag;
 		}

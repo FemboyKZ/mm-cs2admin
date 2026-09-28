@@ -22,6 +22,8 @@ struct AdminMenuItem
 	// Grid tile icon, like "ak47".
 	std::string image;
 	std::string subtext;
+	// Showcase: the wide button under the image on every tab. One per menu.
+	bool pinned = false;
 };
 
 // One row of a form: a Choice over options, or a Toggle when options is empty.
@@ -32,6 +34,24 @@ struct AdminFormField
 	int value = 0; // the selected option, or 0/1 for a toggle
 };
 
+// How ShowMenu and ShowForm put a menu up. Outside the bridge, clang rejects its initializers in a default argument there.
+struct AdminMenuOptions
+{
+	// On top of the slot's current menu, which Back returns to. For every step after a flow's first.
+	bool push = false;
+	// Stays up after a pick, the caller closes it.
+	bool keepOpen = false;
+	// Panorama only. Grid and Showcase show sections as tabs.
+	MenuLayout layout = MenuLayout::List;
+	MenuTileSize tiles = MenuTileSize::Small;
+	// In a showcase, beside the box otherwise. An addon image class like "ct_logo".
+	std::string image;
+	// Page labels skip map prefixes like "kz_", to match CS2AMapManager::GetSortedMaps.
+	bool mapList = false;
+	// Behind the panorama refresh button, shows the menu again in place.
+	std::function<void(int slot)> rebuild;
+};
+
 class AdminMenuBridge
 {
 public:
@@ -39,6 +59,8 @@ public:
 	using SelectFn = std::function<void(int slot, int item, const std::string &info)>;
 	// Fired when a form is confirmed, with each field's value in order.
 	using ConfirmFn = std::function<void(int slot, const std::vector<int> &values)>;
+
+	using Options = AdminMenuOptions;
 
 	// Acquire the ICS2Menus interface. Call from AllPluginsLoaded().
 	void Init();
@@ -50,21 +72,26 @@ public:
 	// True when the external menu plugin is available.
 	bool Available() const;
 
-	// Display a one-shot menu to slot.
-	// No-op (returns false) when menus are unavailable.
-	// Chain another ShowMenu from onSelect to build multi-step flows.
-	// mapList makes panorama page labels skip map prefixes like "kz_", to match CS2AMapManager::GetSortedMaps.
-	// grid shows panorama menus as image tiles.
-	bool ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList = false, bool grid = false);
+	// Display a menu to slot. No-op (returns false) when menus are unavailable.
+	// Chain another ShowMenu with push from onSelect to build multi-step flows.
+	bool ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, const Options &options = {});
 
 	// Fields set in place, then a confirmText row that fires onConfirm.
-	bool ShowForm(int slot, const char *title, const std::vector<AdminFormField> &fields, const char *confirmText, ConfirmFn onConfirm);
+	bool ShowForm(int slot, const char *title, const std::vector<AdminFormField> &fields, const char *confirmText, ConfirmFn onConfirm,
+				  const Options &options = {});
 
-	// Close whatever menu the slot has open.
+	// Close whatever menu the slot has open, its history with it.
 	void CancelMenu(int slot);
 
+	// Hide the slot's menu without ending it, while the admin types in chat. Another menu on the slot resumes it too.
+	void Suspend(int slot);
+	void Resume(int slot);
+
 private:
-	bool Present(int slot, MenuHandle h);
+	bool Present(int slot, MenuHandle h, const Options &options);
+
+	// While a refresh button's rebuild runs, its menu goes in place of the old one.
+	bool m_rebuilding[MAXPLAYERS + 1] = {};
 
 	CS2MenusClient m_menus;
 };

@@ -45,7 +45,23 @@ void AdminMenuBridge::CancelMenu(int slot)
 	}
 }
 
-bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, bool mapList, bool grid)
+void AdminMenuBridge::Suspend(int slot)
+{
+	if (m_menus && slot >= 0 && slot <= MAXPLAYERS)
+	{
+		m_menus->SuspendMenu(slot);
+	}
+}
+
+void AdminMenuBridge::Resume(int slot)
+{
+	if (m_menus && slot >= 0 && slot <= MAXPLAYERS)
+	{
+		m_menus->ResumeMenu(slot);
+	}
+}
+
+bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, const Options &options)
 {
 	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
 	{
@@ -74,6 +90,7 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 	}
 
 	const std::string *section = nullptr;
+	int pinned = -1;
 	for (const auto &item : items)
 	{
 		if (!item.section.empty() && (!section || *section != item.section))
@@ -90,19 +107,27 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 		{
 			m_menus->SetItemSubtext(h, added, item.subtext.c_str());
 		}
+		pinned = item.pinned && pinned < 0 ? added : pinned;
 	}
-	if (grid)
+	m_menus->SetMenuLayout(h, options.layout);
+	m_menus->SetMenuTileSize(h, options.tiles);
+	if (!options.image.empty())
 	{
-		m_menus->SetMenuLayout(h, MenuLayout::Grid);
+		m_menus->SetMenuImage(h, options.image.c_str());
 	}
-	if (mapList)
+	if (pinned >= 0)
+	{
+		m_menus->SetMenuPinnedItem(h, pinned);
+	}
+	if (options.mapList)
 	{
 		m_menus->SetMenuStyle(h, MenuStyle::PagePrefixDelimiter, "_");
 	}
-	return Present(slot, h);
+	return Present(slot, h, options);
 }
 
-bool AdminMenuBridge::ShowForm(int slot, const char *title, const std::vector<AdminFormField> &fields, const char *confirmText, ConfirmFn onConfirm)
+bool AdminMenuBridge::ShowForm(int slot, const char *title, const std::vector<AdminFormField> &fields, const char *confirmText, ConfirmFn onConfirm,
+							   const Options &options)
 {
 	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
 	{
@@ -138,21 +163,35 @@ bool AdminMenuBridge::ShowForm(int slot, const char *title, const std::vector<Ad
 			m_menus->AddToggle(h, field.text.c_str(), field.value != 0, "");
 			continue;
 		}
-		std::vector<const char *> options;
+		std::vector<const char *> labels;
 		for (const std::string &option : field.options)
 		{
-			options.push_back(option.c_str());
+			labels.push_back(option.c_str());
 		}
-		m_menus->AddChoice(h, field.text.c_str(), options.data(), static_cast<int>(options.size()), field.value, "");
+		m_menus->AddChoice(h, field.text.c_str(), labels.data(), static_cast<int>(labels.size()), field.value, "");
 	}
 	m_menus->AddItem(h, confirmText, "", false);
-	return Present(slot, h);
+	return Present(slot, h, options);
 }
 
-bool AdminMenuBridge::Present(int slot, MenuHandle h)
+bool AdminMenuBridge::Present(int slot, MenuHandle h, const Options &options)
 {
 	m_menus->SetExitButton(h, true);
-	m_menus->SetCloseOnSelect(h, true);
+	m_menus->SetCloseOnSelect(h, !options.keepOpen);
 	g_CS2AConfig.menu.ApplyKeys(m_menus.Get(), h);
-	return m_menus.Present(slot, h, kMenuDuration);
+	if (options.rebuild)
+	{
+		std::function<void(int)> rebuild = options.rebuild;
+		m_menus->SetMenuRefreshCallback(h,
+										[this, rebuild](MenuHandle, int s)
+										{
+											m_rebuilding[s] = true;
+											rebuild(s);
+											m_rebuilding[s] = false;
+										});
+	}
+	const CS2MenusClient::Show how = m_rebuilding[slot] ? CS2MenusClient::Show::Replace
+									 : options.push     ? CS2MenusClient::Show::Push
+														: CS2MenusClient::Show::Display;
+	return m_menus.Present(slot, h, kMenuDuration, nullptr, how);
 }

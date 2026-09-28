@@ -476,14 +476,14 @@ bool CS2ACommandSystem::ShouldBlockChat(int slot)
 	return g_CS2ACommManager.IsGagged(slot);
 }
 
-void CS2ACommandSystem::PromptText(int slot, std::function<void(int slot, const std::string &text)> onText)
+void CS2ACommandSystem::PromptText(int slot, std::function<void(int slot, const std::string &text)> onText, std::function<void(int slot)> onCancel)
 {
 	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
 	if (slot < 0 || slot > MAXPLAYERS || !player)
 	{
 		return;
 	}
-	m_prompts[slot] = {player->steamid64, Plat_FloatTime() + 60.0, std::move(onText)};
+	m_prompts[slot] = {player->steamid64, Plat_FloatTime() + 60.0, std::move(onText), std::move(onCancel)};
 }
 
 bool CS2ACommandSystem::PromptWaiting(int slot)
@@ -531,9 +531,14 @@ bool CS2ACommandSystem::ConsumePromptedText(int slot, const char *message)
 	std::string word = str::ToLower(prefixed ? text.substr(1) : text);
 	if (word == "cancel")
 	{
+		auto onCancel = std::move(m_prompts[slot].onCancel);
 		m_prompts[slot] = {};
 		m_sayHidden[slot] = true;
 		ADMIN_ReplyToCommandT(slot, "Cancelled.\n");
+		if (onCancel)
+		{
+			onCancel(slot);
+		}
 		return true;
 	}
 	if (prefixed)
@@ -740,7 +745,8 @@ namespace
 	// minutes is "" for an untimed action.
 	using PunishFn = std::function<void(int slot, const std::string &minutes, const std::string &reason)>;
 
-	// Duration when timed, Reason and a confirm row. "Other" takes the reason from the admin's next chat line.
+	// Duration when timed, Reason and a confirm row, on top of the menu before it. "Other" takes the reason from the admin's
+	// next chat line, the form hidden meanwhile and back on "cancel".
 	void ShowPunishForm(int slot, const std::string &title, const std::string &confirm, bool timed, PunishFn apply)
 	{
 		std::vector<AdminMenuItem> durations = timed ? BuildDurationItems() : std::vector<AdminMenuItem>();
@@ -767,24 +773,38 @@ namespace
 		reason.options = reasons;
 		fields.push_back(std::move(reason));
 
-		g_AdminMenus.ShowForm(slot, title.c_str(), fields, confirm.c_str(),
-							  [timed, durations, reasons, apply](int s, const std::vector<int> &values)
-							  {
-								  const std::string minutes = timed ? durations[values[0]].info : std::string();
-								  const int choice = values.back();
-								  if (choice < static_cast<int>(reasons.size()) - 1)
-								  {
-									  apply(s, minutes, reasons[choice]);
-									  return;
-								  }
-								  ADMIN_ReplyToCommandT(s, "Type the reason in chat, or cancel to stop.\n");
-								  g_CS2ACommandSystem.PromptText(s, [apply, minutes](int s2, const std::string &text) { apply(s2, minutes, text); });
-							  });
+		AdminMenuBridge::Options options;
+		options.push = true;
+		options.keepOpen = true;
+		g_AdminMenus.ShowForm(
+			slot, title.c_str(), fields, confirm.c_str(),
+			[timed, durations, reasons, apply](int s, const std::vector<int> &values)
+			{
+				const std::string minutes = timed ? durations[values[0]].info : std::string();
+				const int choice = values.back();
+				if (choice < static_cast<int>(reasons.size()) - 1)
+				{
+					g_AdminMenus.CancelMenu(s);
+					apply(s, minutes, reasons[choice]);
+					return;
+				}
+				ADMIN_ReplyToCommandT(s, "Type the reason in chat, or cancel to stop.\n");
+				g_AdminMenus.Suspend(s);
+				g_CS2ACommandSystem.PromptText(
+					s,
+					[apply, minutes](int s2, const std::string &text)
+					{
+						g_AdminMenus.CancelMenu(s2);
+						apply(s2, minutes, text);
+					},
+					[](int s2) { g_AdminMenus.Resume(s2); });
+			},
+			options);
 	}
 
 	// player -> duration and reason -> !<cmd> <target> <minutes> <reason>
 	// Untimed: player -> reason -> !<cmd> <target> <reason>, with the caller left out of the list.
-	void StartPunishFlow(int slot, std::string cmd, std::string verb, bool timed = true)
+	void StartPunishFlow(int slot, std::string cmd, std::string verb, bool timed = true, bool push = false)
 	{
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, !timed);
 		if (players.empty())
@@ -794,17 +814,22 @@ namespace
 		}
 
 		std::string pickTitle = verb + ": select player";
-		g_AdminMenus.ShowMenu(slot, pickTitle.c_str(), players,
-							  [cmd, verb, timed, players](int s, int item, const std::string &target)
-							  {
-								  ShowPunishForm(s, verb + ": " + players[item].text, verb, timed,
-												 [cmd, timed, target](int s2, const std::string &minutes, const std::string &reason)
-												 {
-													 std::vector<std::string> args = timed ? std::vector<std::string> {target, minutes, reason}
-																						   : std::vector<std::string> {target, reason};
-													 g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s2);
-												 });
-							  });
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.rebuild = [cmd, verb, timed, push](int s) { StartPunishFlow(s, cmd, verb, timed, push); };
+		g_AdminMenus.ShowMenu(
+			slot, pickTitle.c_str(), players,
+			[cmd, verb, timed, players](int s, int item, const std::string &target)
+			{
+				ShowPunishForm(s, verb + ": " + players[item].text, verb, timed,
+							   [cmd, timed, target](int s2, const std::string &minutes, const std::string &reason)
+							   {
+								   std::vector<std::string> args =
+									   timed ? std::vector<std::string> {target, minutes, reason} : std::vector<std::string> {target, reason};
+								   g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s2);
+							   });
+			},
+			options);
 	}
 
 	// "42s ago", "12m ago" or "3h ago".
@@ -823,7 +848,7 @@ namespace
 	}
 
 	// recently disconnected -> duration and reason -> !addban <minutes> <steamid64> <reason>
-	void StartOfflineBanFlow(int slot)
+	void StartOfflineBanFlow(int slot, bool push = false)
 	{
 		const auto &disconnected = g_CS2APlayerManager.GetDisconnectedPlayers();
 		double now = Plat_FloatTime();
@@ -848,21 +873,26 @@ namespace
 			return;
 		}
 
-		g_AdminMenus.ShowMenu(slot, "Add ban: select player", items,
-							  [items](int s, int item, const std::string &steamid)
-							  {
-								  ShowPunishForm(s, "Ban: " + items[item].text, "Ban", true,
-												 [steamid](int s2, const std::string &minutes, const std::string &reason)
-												 {
-													 std::vector<std::string> args = {minutes, steamid, reason};
-													 g_CS2ACommandSystem.DispatchConsoleCommand("addban", args, s2);
-												 });
-							  });
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.rebuild = [push](int s) { StartOfflineBanFlow(s, push); };
+		g_AdminMenus.ShowMenu(
+			slot, "Add ban: select player", items,
+			[items](int s, int item, const std::string &steamid)
+			{
+				ShowPunishForm(s, "Ban: " + items[item].text, "Ban", true,
+							   [steamid](int s2, const std::string &minutes, const std::string &reason)
+							   {
+								   std::vector<std::string> args = {minutes, steamid, reason};
+								   g_CS2ACommandSystem.DispatchConsoleCommand("addban", args, s2);
+							   });
+			},
+			options);
 	}
 
 	// player -> !<cmd> <target>
 	// commFilter as in BuildPlayerItems.
-	void StartTargetOnlyFlow(int slot, std::string cmd, std::string verb, bool includeBots, bool excludeSelf, int commFilter = 0)
+	void StartTargetOnlyFlow(int slot, std::string cmd, std::string verb, bool includeBots, bool excludeSelf, int commFilter = 0, bool push = false)
 	{
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, includeBots, excludeSelf, commFilter);
 		if (std::none_of(players.begin(), players.end(), [](const AdminMenuItem &p) { return !p.disabled; }))
@@ -872,12 +902,18 @@ namespace
 		}
 
 		std::string title = verb + ": select player";
-		g_AdminMenus.ShowMenu(slot, title.c_str(), players,
-							  [cmd](int s, int, const std::string &target)
-							  {
-								  std::vector<std::string> args = {target};
-								  g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s);
-							  });
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.rebuild = [cmd, verb, includeBots, excludeSelf, commFilter, push](int s)
+		{ StartTargetOnlyFlow(s, cmd, verb, includeBots, excludeSelf, commFilter, push); };
+		g_AdminMenus.ShowMenu(
+			slot, title.c_str(), players,
+			[cmd](int s, int, const std::string &target)
+			{
+				std::vector<std::string> args = {target};
+				g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s);
+			},
+			options);
 	}
 
 	// rtv's !nominate list, empty without rtv.
@@ -921,7 +957,7 @@ namespace
 	}
 
 	// map list -> !map <mapname|workshopid>
-	void StartMapFlow(int slot)
+	void StartMapFlow(int slot, bool push = false)
 	{
 		std::vector<AdminMenuItem> items = BuildRtvMapItems(slot);
 		if (items.empty())
@@ -940,6 +976,10 @@ namespace
 			return;
 		}
 
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.mapList = true;
+		options.rebuild = [push](int s) { StartMapFlow(s, push); };
 		g_AdminMenus.ShowMenu(
 			slot, "Change Map", items,
 			[](int s, int, const std::string &mapArg)
@@ -947,7 +987,7 @@ namespace
 				std::vector<std::string> args = {mapArg};
 				g_CS2ACommandSystem.DispatchConsoleCommand("map", args, s);
 			},
-			true);
+			options);
 	}
 
 	// Giveable items grouped by category for the !give picker.
@@ -1054,8 +1094,25 @@ namespace
 		return items;
 	}
 
+	// weapon grid -> !give <target> <classname>, on top of the menu before it.
+	void ShowWeaponPicker(int slot, const std::string &target)
+	{
+		AdminMenuBridge::Options options;
+		options.push = true;
+		options.layout = MenuLayout::Grid;
+		options.tiles = MenuTileSize::Medium;
+		g_AdminMenus.ShowMenu(
+			slot, "Give: select weapon", BuildWeaponItems(),
+			[target](int s, int, const std::string &classname)
+			{
+				std::vector<std::string> args = {target, classname};
+				g_CS2ACommandSystem.DispatchConsoleCommand("give", args, s);
+			},
+			options);
+	}
+
 	// player -> weapon -> !give <target> <classname>
-	void StartGiveFlow(int slot)
+	void StartGiveFlow(int slot, bool push = false)
 	{
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, true, false);
 		if (players.empty())
@@ -1064,18 +1121,11 @@ namespace
 			return;
 		}
 
-		g_AdminMenus.ShowMenu(slot, "Give: select player", players,
-							  [](int s, int, const std::string &target)
-							  {
-								  g_AdminMenus.ShowMenu(
-									  s, "Give: select weapon", BuildWeaponItems(),
-									  [target](int s2, int, const std::string &classname)
-									  {
-										  std::vector<std::string> args = {target, classname};
-										  g_CS2ACommandSystem.DispatchConsoleCommand("give", args, s2);
-									  },
-									  false, true);
-							  });
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.rebuild = [push](int s) { StartGiveFlow(s, push); };
+		g_AdminMenus.ShowMenu(
+			slot, "Give: select player", players, [](int s, int, const std::string &target) { ShowWeaponPicker(s, target); }, options);
 	}
 
 	// The slot behind a picker's info, or -1 once that player is gone.
@@ -1099,7 +1149,7 @@ namespace
 	}
 
 	// player -> applicable comm actions -> punish form, or the lift directly.
-	void StartCommsFlow(int slot)
+	void StartCommsFlow(int slot, bool push = false)
 	{
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, false);
 		if (players.empty())
@@ -1108,67 +1158,189 @@ namespace
 			return;
 		}
 
-		g_AdminMenus.ShowMenu(slot, "Gag / Mute: select player", players,
-							  [players](int s, int item, const std::string &target)
-							  {
-								  PlayerInfo *p = g_CS2APlayerManager.GetPlayer(SlotFromTargetInfo(target));
-								  if (!p)
-								  {
-									  ADMIN_ReplyToCommandT(s, "No valid targets online.\n");
-									  return;
-								  }
-								  const bool muted = p->isMuted || p->isSessionMuted;
-								  const bool gagged = p->isGagged || p->isSessionGagged;
+		AdminMenuBridge::Options pickOptions;
+		pickOptions.push = push;
+		pickOptions.rebuild = [push](int s) { StartCommsFlow(s, push); };
+		g_AdminMenus.ShowMenu(
+			slot, "Gag / Mute: select player", players,
+			[players](int s, int item, const std::string &target)
+			{
+				PlayerInfo *p = g_CS2APlayerManager.GetPlayer(SlotFromTargetInfo(target));
+				if (!p)
+				{
+					ADMIN_ReplyToCommandT(s, "No valid targets online.\n");
+					return;
+				}
+				const bool muted = p->isMuted || p->isSessionMuted;
+				const bool gagged = p->isGagged || p->isSessionGagged;
 
-								  struct Action
-								  {
-									  const char *cmd;
-									  const char *verb;
-									  bool timed;
-									  bool show;
-								  };
-								  const Action actions[] = {
-									  {"mute", "Mute", true, !muted},
-									  {"unmute", "Unmute", false, muted},
-									  {"gag", "Gag", true, !gagged},
-									  {"ungag", "Ungag", false, gagged},
-									  {"silence", "Silence", true, !muted || !gagged},
-									  {"unsilence", "Unsilence", false, muted && gagged},
-								  };
-								  std::vector<AdminMenuItem> items;
-								  for (const Action &action : actions)
-								  {
-									  if (action.show && g_CS2ACommandSystem.CanRun(s, action.cmd))
-									  {
-										  items.push_back({action.verb, action.cmd, false});
-									  }
-								  }
-								  if (items.empty())
-								  {
-									  ADMIN_ReplyToCommandT(s, "You do not have permission to use this command.\n");
-									  return;
-								  }
+				struct Action
+				{
+					const char *cmd;
+					const char *verb;
+					bool timed;
+					bool show;
+				};
+				const Action actions[] = {
+					{"mute", "Mute", true, !muted},
+					{"unmute", "Unmute", false, muted},
+					{"gag", "Gag", true, !gagged},
+					{"ungag", "Ungag", false, gagged},
+					{"silence", "Silence", true, !muted || !gagged},
+					{"unsilence", "Unsilence", false, muted && gagged},
+				};
+				std::vector<AdminMenuItem> items;
+				for (const Action &action : actions)
+				{
+					if (action.show && g_CS2ACommandSystem.CanRun(s, action.cmd))
+					{
+						items.push_back({action.verb, action.cmd, false});
+					}
+				}
+				if (items.empty())
+				{
+					ADMIN_ReplyToCommandT(s, "You do not have permission to use this command.\n");
+					return;
+				}
 
-								  const std::string name = players[item].text;
-								  g_AdminMenus.ShowMenu(s, ("Gag / Mute: " + name).c_str(), items,
-														[name, target](int s2, int, const std::string &cmd)
-														{
-															if (cmd != "mute" && cmd != "gag" && cmd != "silence")
-															{
-																std::vector<std::string> args = {target};
-																g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s2);
-																return;
-															}
-															std::string verb = cmd == "mute" ? "Mute" : (cmd == "gag" ? "Gag" : "Silence");
-															ShowPunishForm(
-																s2, verb + ": " + name, verb, true,
-																[cmd, target](int s3, const std::string &minutes, const std::string &reason)
-																{
-																	std::vector<std::string> args = {target, minutes, reason};
-																	g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s3);
-																});
-														});
-							  });
+				const std::string name = players[item].text;
+				AdminMenuBridge::Options actionOptions;
+				actionOptions.push = true;
+				g_AdminMenus.ShowMenu(
+					s, ("Gag / Mute: " + name).c_str(), items,
+					[name, target](int s2, int, const std::string &cmd)
+					{
+						if (cmd != "mute" && cmd != "gag" && cmd != "silence")
+						{
+							std::vector<std::string> args = {target};
+							g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s2);
+							return;
+						}
+						std::string verb = cmd == "mute" ? "Mute" : (cmd == "gag" ? "Gag" : "Silence");
+						ShowPunishForm(s2, verb + ": " + name, verb, true,
+									   [cmd, target](int s3, const std::string &minutes, const std::string &reason)
+									   {
+										   std::vector<std::string> args = {target, minutes, reason};
+										   g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s3);
+									   });
+					},
+					actionOptions);
+			},
+			pickOptions);
+	}
+
+	// A player's page: every action the caller may take on them, as showcase buttons in tabs, the team's logo beside them.
+	// Each opens on top of the page, or runs at once when it needs nothing more.
+	void ShowPlayerPage(int slot, const std::string &target, bool push)
+	{
+		const int targetSlot = SlotFromTargetInfo(target);
+		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(targetSlot);
+		if (!p)
+		{
+			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			return;
+		}
+		CCSPlayerController *controller = CCSPlayerController::FromSlot(targetSlot);
+		const int team = controller ? controller->m_iTeamNum() : 0;
+		const bool human = !p->fakePlayer && p->steamid64 != 0;
+		const bool self = targetSlot == slot;
+		const bool muted = p->isMuted || p->isSessionMuted;
+		const bool gagged = p->isGagged || p->isSessionGagged;
+		const std::string name = p->name;
+
+		struct Action
+		{
+			const char *section;
+			const char *label;
+			const char *cmd;
+			bool show;
+		};
+
+		// Bans, kicks and comm blocks only reach real players, kicking yourself is left out like in the Kick list.
+		const Action actions[] = {
+			{"Punish", "Ban", "ban", human},
+			{"Punish", "Kick", "kick", human && !self},
+			{"Punish", "Slay", "slay", team >= 2 && controller && controller->m_bPawnIsAlive()},
+			{"Chat", "Mute", "mute", human && !muted},
+			{"Chat", "Unmute", "unmute", human && muted},
+			{"Chat", "Gag", "gag", human && !gagged},
+			{"Chat", "Ungag", "ungag", human && gagged},
+			{"Chat", "Silence", "silence", human && (!muted || !gagged)},
+			{"Chat", "Unsilence", "unsilence", human && muted && gagged},
+			{"Items", "Give Weapon", "give", team >= 2},
+			{"Items", "Strip Weapons", "strip", team >= 2},
+			{"Info", "Who", "who", human},
+			{"Info", "Ban History", "listbans", human},
+			{"Info", "Comm History", "listcomms", human},
+		};
+		std::vector<AdminMenuItem> items;
+		for (const Action &action : actions)
+		{
+			if (action.show && g_CS2ACommandSystem.CanRun(slot, action.cmd))
+			{
+				AdminMenuItem item;
+				item.text = action.label;
+				item.info = action.cmd;
+				item.section = action.section;
+				items.push_back(std::move(item));
+			}
+		}
+		if (items.empty())
+		{
+			ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+			return;
+		}
+
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.layout = MenuLayout::Showcase;
+		options.image = team == 3 ? "ct_logo" : team == 2 ? "t_logo" : "";
+		options.rebuild = [target, push](int s) { ShowPlayerPage(s, target, push); };
+		g_AdminMenus.ShowMenu(
+			slot, name.c_str(), items,
+			[target, name](int s, int, const std::string &cmd)
+			{
+				const bool timed = cmd == "ban" || cmd == "mute" || cmd == "gag" || cmd == "silence";
+				if (timed || cmd == "kick")
+				{
+					const std::string verb = cmd == "ban"    ? "Ban"
+											 : cmd == "kick" ? "Kick"
+											 : cmd == "mute" ? "Mute"
+											 : cmd == "gag"  ? "Gag"
+															 : "Silence";
+					ShowPunishForm(s, verb + ": " + name, verb, timed,
+								   [cmd, timed, target](int s2, const std::string &minutes, const std::string &reason)
+								   {
+									   std::vector<std::string> args =
+										   timed ? std::vector<std::string> {target, minutes, reason} : std::vector<std::string> {target, reason};
+									   g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s2);
+								   });
+					return;
+				}
+				if (cmd == "give")
+				{
+					ShowWeaponPicker(s, target);
+					return;
+				}
+				std::vector<std::string> args = {target};
+				g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), args, s);
+			},
+			options);
+	}
+
+	// player -> their page
+	void StartPlayersFlow(int slot, bool push = false)
+	{
+		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, true, false);
+		if (players.empty())
+		{
+			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			return;
+		}
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.rebuild = [push](int s) { StartPlayersFlow(s, push); };
+		g_AdminMenus.ShowMenu(slot, "Players", players, [](int s, int, const std::string &target) { ShowPlayerPage(s, target, true); }, options);
 	}
 
 	// cfg/cs2admin/adminmenu_cfgs.txt, SourceMod's format.
@@ -1190,7 +1362,7 @@ namespace
 	}
 
 	// config list -> !execcfg <file>
-	void StartExecCfgFlow(int slot)
+	void StartExecCfgFlow(int slot, bool push = false)
 	{
 		std::vector<AdminMenuItem> items = LoadMenuConfigs();
 		if (items.empty())
@@ -1198,12 +1370,17 @@ namespace
 			ADMIN_ReplyToCommandT(slot, "No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n");
 			return;
 		}
-		g_AdminMenus.ShowMenu(slot, "Execute Config", items,
-							  [](int s, int, const std::string &file)
-							  {
-								  std::vector<std::string> args = {file};
-								  g_CS2ACommandSystem.DispatchConsoleCommand("execcfg", args, s);
-							  });
+		AdminMenuBridge::Options options;
+		options.push = push;
+		options.rebuild = [push](int s) { StartExecCfgFlow(s, push); };
+		g_AdminMenus.ShowMenu(
+			slot, "Execute Config", items,
+			[](int s, int, const std::string &file)
+			{
+				std::vector<std::string> args = {file};
+				g_CS2ACommandSystem.DispatchConsoleCommand("execcfg", args, s);
+			},
+			options);
 	}
 
 	// SourceMod's sm_admin: every admin tool the caller may use, in SourceMod's categories.
@@ -1216,20 +1393,21 @@ namespace
 	};
 
 	const AdminMenuEntry kAdminMenu[] = {
-		{"Player Commands", "Ban", "ban", [](int s) { StartPunishFlow(s, "ban", "Ban"); }},
-		{"Player Commands", "Kick", "kick", [](int s) { StartPunishFlow(s, "kick", "Kick", false); }},
-		{"Player Commands", "Slay", "slay", [](int s) { StartTargetOnlyFlow(s, "slay", "Slay", true, false); }},
-		{"Player Commands", "Gag / Mute", "gag", [](int s) { StartCommsFlow(s); }},
-		{"Player Commands", "Who", "who", [](int s) { StartTargetOnlyFlow(s, "who", "Who", false, false); }},
-		{"Player Commands", "Give Weapon", "give", [](int s) { StartGiveFlow(s); }},
-		{"Player Commands", "Strip Weapons", "strip", [](int s) { StartTargetOnlyFlow(s, "strip", "Strip", true, false); }},
-		{"Player Commands", "Ban History", "listbans", [](int s) { StartTargetOnlyFlow(s, "listbans", "List Bans", false, false); }},
-		{"Player Commands", "Comm History", "listcomms", [](int s) { StartTargetOnlyFlow(s, "listcomms", "List Comms", false, false); }},
-		{"Player Commands", "Ban Disconnected", "addban", [](int s) { StartOfflineBanFlow(s); }},
-		{"Server Commands", "Change Map", "map", [](int s) { StartMapFlow(s); }},
+		{"Player Commands", "Players", "who", [](int s) { StartPlayersFlow(s, true); }},
+		{"Player Commands", "Ban", "ban", [](int s) { StartPunishFlow(s, "ban", "Ban", true, true); }},
+		{"Player Commands", "Kick", "kick", [](int s) { StartPunishFlow(s, "kick", "Kick", false, true); }},
+		{"Player Commands", "Slay", "slay", [](int s) { StartTargetOnlyFlow(s, "slay", "Slay", true, false, 0, true); }},
+		{"Player Commands", "Gag / Mute", "gag", [](int s) { StartCommsFlow(s, true); }},
+		{"Player Commands", "Who", "who", [](int s) { StartTargetOnlyFlow(s, "who", "Who", false, false, 0, true); }},
+		{"Player Commands", "Give Weapon", "give", [](int s) { StartGiveFlow(s, true); }},
+		{"Player Commands", "Strip Weapons", "strip", [](int s) { StartTargetOnlyFlow(s, "strip", "Strip", true, false, 0, true); }},
+		{"Player Commands", "Ban History", "listbans", [](int s) { StartTargetOnlyFlow(s, "listbans", "List Bans", false, false, 0, true); }},
+		{"Player Commands", "Comm History", "listcomms", [](int s) { StartTargetOnlyFlow(s, "listcomms", "List Comms", false, false, 0, true); }},
+		{"Player Commands", "Ban Disconnected", "addban", [](int s) { StartOfflineBanFlow(s, true); }},
+		{"Server Commands", "Change Map", "map", [](int s) { StartMapFlow(s, true); }},
 		{"Server Commands", "Reload Admins", "reloadadmins",
 		 [](int s) { g_CS2ACommandSystem.DispatchConsoleCommand("reloadadmins", std::vector<std::string>(), s); }},
-		{"Server Commands", "Execute Config", "execcfg", [](int s) { StartExecCfgFlow(s); }},
+		{"Server Commands", "Execute Config", "execcfg", [](int s) { StartExecCfgFlow(s, true); }},
 	};
 
 	void StartAdminMenu(int slot)
@@ -1254,7 +1432,10 @@ namespace
 			ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 			return;
 		}
-		g_AdminMenus.ShowMenu(slot, "Admin Menu", items, [](int s, int, const std::string &info) { kAdminMenu[atoi(info.c_str())].open(s); });
+		AdminMenuBridge::Options options;
+		options.rebuild = &StartAdminMenu;
+		g_AdminMenus.ShowMenu(
+			slot, "Admin Menu", items, [](int s, int, const std::string &info) { kAdminMenu[atoi(info.c_str())].open(s); }, options);
 	}
 
 	// True when slot is a real player and the menu plugin can render a picker.

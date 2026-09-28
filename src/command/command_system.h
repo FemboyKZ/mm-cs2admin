@@ -54,8 +54,8 @@ public:
 	bool CanRun(int slot, const char *name) const;
 
 	// Hands the slot's next chat line to onText, like a typed ban reason.
-	// "cancel" drops it, commands still run, and it expires after a minute.
-	void PromptText(int slot, std::function<void(int slot, const std::string &text)> onText);
+	// "cancel" drops it and calls onCancel, commands still run, and it expires after a minute.
+	void PromptText(int slot, std::function<void(int slot, const std::string &text)> onText, std::function<void(int slot)> onCancel = nullptr);
 	// True when a waiting prompt took the line.
 	bool ConsumePromptedText(int slot, const char *message);
 	// See ICS2Admin::IsChatHidden.
@@ -72,6 +72,7 @@ private:
 		uint64_t steamid64 = 0; // so a prompt never passes to the slot's next player
 		double expires = 0.0;
 		std::function<void(int, const std::string &)> onText;
+		std::function<void(int)> onCancel;
 	};
 
 	Prompt m_prompts[MAXPLAYERS + 1];

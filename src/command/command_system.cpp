@@ -2374,7 +2374,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					});
 
 	// !rcon <command> - Execute a server console command
-	RegisterCommand("rcon", "basecommands", ADMFLAG_RCON, {{{"command"}}, "command"}, "Usage: !rcon <command>\n",
+	RegisterCommand("rcon", "basecommands", ADMFLAG_RCON, {{{"command"}}, "command", true}, "Usage: !rcon <command>\n",
 					[](int slot, const mmu::Args &args, bool silent)
 					{
 						if (args.Empty())

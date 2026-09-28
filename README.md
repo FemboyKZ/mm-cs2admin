@@ -103,7 +103,7 @@ Every chat command is also a console command as `mm_<name>`.
 Arguments are `key=value` pairs in any order.
 The one argument shown without `key=` goes first and needs no key,
 so `!ban jvn time=1d reason=wall hack` is `!ban player=jvn time=1d reason=wall hack`.
-A value runs until the next `key=`, and `key="value"` or `"key=value"` quote one that holds a `key=` of its own.
+A value runs until the next `key=`, and `key="value"` or `"key=value"` quote one that holds a `key=` of its own. `!rcon` is the exception, it sends the rest of the line to the console exactly as typed.
 
 Permission check order. Root (`z`) always passes.
 

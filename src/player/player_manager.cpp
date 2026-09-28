@@ -5,6 +5,7 @@
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
 #include "mmu/entity/ccsplayercontroller.h"
+#include "mmu/target.h"
 
 #include <algorithm>
 #include <cctype>
@@ -160,321 +161,39 @@ std::string GetAdminIP(int adminSlot)
 	return "";
 }
 
+static TargetResult FindTargets(int callerSlot, const char *pattern, mmu::TargetMode mode)
+{
+	mmu::TargetResult found = mmu::FindTargets(
+		callerSlot, pattern ? pattern : "",
+		[](int slot, mmu::TargetCandidate &who)
+		{
+			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+			if (!p || !p->connected)
+			{
+				return false;
+			}
+			who = {p->steamid64, p->fakePlayer};
+			return true;
+		},
+		mode);
+	TargetResult result;
+	result.slots = std::move(found.slots);
+	result.error = std::move(found.error);
+	result.isMultiTarget = found.group;
+	return result;
+}
+
 TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
 {
-	TargetResult result;
-
-	if (!pattern || !*pattern)
-	{
-		result.error = "No target specified.";
-		return result;
-	}
-
-	CGlobalVars *globals = GetGameGlobals();
-	int maxClients = globals ? globals->maxClients : MAXPLAYERS;
-
-	std::string pat(pattern);
-
-	// @ group targets
-	if (pat[0] == '@')
-	{
-		std::string group = str::ToLower(pat.substr(1));
-		result.isMultiTarget = true;
-		// SourceMod's spellings.
-		if (group == "bots" || group == "humans")
-		{
-			group.pop_back();
-		}
-
-		if (group == "me")
-		{
-			result.isMultiTarget = false;
-			if (callerSlot >= 0)
-			{
-				PlayerInfo *p = g_CS2APlayerManager.GetPlayer(callerSlot);
-				if (p && p->connected)
-				{
-					result.slots.push_back(callerSlot);
-				}
-			}
-			if (result.slots.empty())
-			{
-				result.error = "You are not in-game.";
-			}
-			return result;
-		}
-
-		for (int i = 0; i < maxClients; i++)
-		{
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-			if (!p || !p->connected)
-			{
-				continue;
-			}
-
-			if (group == "all")
-			{
-				if (!p->fakePlayer)
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "bot")
-			{
-				if (p->fakePlayer)
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "human")
-			{
-				if (!p->fakePlayer)
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "t")
-			{
-				if (p->fakePlayer)
-				{
-					continue;
-				}
-				CCSPlayerController *ctrl = CCSPlayerController::FromSlot(i);
-				if (ctrl && ctrl->m_iTeamNum() == CS_TEAM_T)
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "ct")
-			{
-				if (p->fakePlayer)
-				{
-					continue;
-				}
-				CCSPlayerController *ctrl = CCSPlayerController::FromSlot(i);
-				if (ctrl && ctrl->m_iTeamNum() == CS_TEAM_CT)
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "spec")
-			{
-				if (p->fakePlayer)
-				{
-					continue;
-				}
-				CCSPlayerController *ctrl = CCSPlayerController::FromSlot(i);
-				if (ctrl && ctrl->m_iTeamNum() == CS_TEAM_SPECTATOR)
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "alive")
-			{
-				if (p->fakePlayer)
-				{
-					continue;
-				}
-				CCSPlayerController *ctrl = CCSPlayerController::FromSlot(i);
-				if (ctrl && ctrl->m_bPawnIsAlive())
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "dead")
-			{
-				if (p->fakePlayer)
-				{
-					continue;
-				}
-				CCSPlayerController *ctrl = CCSPlayerController::FromSlot(i);
-				if (ctrl && !ctrl->m_bPawnIsAlive())
-				{
-					result.slots.push_back(i);
-				}
-			}
-			else if (group == "random")
-			{
-				if (!p->fakePlayer)
-				{
-					result.slots.push_back(i);
-				}
-			}
-		}
-
-		// For @random, pick one at random from the collected slots
-		if (group == "random" && !result.slots.empty())
-		{
-			static bool seeded = false;
-			if (!seeded)
-			{
-				srand(static_cast<unsigned int>(std::time(nullptr)));
-				seeded = true;
-			}
-			int idx = rand() % result.slots.size();
-			int picked = result.slots[idx];
-			result.slots.clear();
-			result.slots.push_back(picked);
-			result.isMultiTarget = false;
-		}
-
-		if (result.slots.empty())
-		{
-			result.error = "No matching players found.";
-		}
-
-		return result;
-	}
-
-	// $ SteamID64 targeting
-	if (pat[0] == '$')
-	{
-		std::string steamStr = pat.substr(1);
-		char *end;
-		uint64_t steamid64 = strtoull(steamStr.c_str(), &end, 10);
-		if (*end != '\0' || steamid64 == 0)
-		{
-			result.error = "Invalid SteamID64.";
-			return result;
-		}
-
-		int slot = g_CS2APlayerManager.FindSlotBySteamID64(steamid64);
-		if (slot >= 0)
-		{
-			result.slots.push_back(slot);
-		}
-		else
-		{
-			result.error = "Player with that SteamID64 not found.";
-		}
-
-		return result;
-	}
-
-	// & exact name targeting (case insensitive)
-	if (pat[0] == '&')
-	{
-		std::string exactName = str::ToLower(pat.substr(1));
-		for (int i = 0; i < maxClients; i++)
-		{
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-			if (!p || !p->connected)
-			{
-				continue;
-			}
-
-			if (str::ToLower(p->name) == exactName)
-			{
-				result.slots.push_back(i);
-				return result;
-			}
-		}
-		result.error = "No player found with exact name.";
-		return result;
-	}
-
-	// # slot/userid targeting
-	if (pat[0] == '#')
-	{
-		// atoi would read "#abc" as slot 0.
-		char *end = nullptr;
-		long parsed = std::strtol(pat.c_str() + 1, &end, 10);
-		if (pat.size() > 1 && *end == '\0' && parsed >= 0 && parsed <= MAXPLAYERS)
-		{
-			int slot = static_cast<int>(parsed);
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
-			if (p && p->connected)
-			{
-				result.slots.push_back(slot);
-				return result;
-			}
-		}
-		result.error = "Player not found with that slot/userid.";
-		return result;
-	}
-
-	// Try exact slot number
-	bool isNumber = true;
-	for (const char *p = pattern; *p; p++)
-	{
-		if (!std::isdigit(static_cast<unsigned char>(*p)))
-		{
-			isNumber = false;
-			break;
-		}
-	}
-
-	if (isNumber)
-	{
-		int slot = std::atoi(pattern);
-		if (slot >= 0 && slot <= MAXPLAYERS)
-		{
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
-			if (p && p->connected)
-			{
-				result.slots.push_back(slot);
-				return result;
-			}
-		}
-	}
-
-	// Partial name match (single target only)
-	std::string search = str::ToLower(pat);
-	int found = -1;
-	int matches = 0;
-
-	for (int i = 0; i < maxClients; i++)
-	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (!p || !p->connected)
-		{
-			continue;
-		}
-
-		std::string name = str::ToLower(p->name);
-		if (name.find(search) != std::string::npos)
-		{
-			found = i;
-			matches++;
-		}
-	}
-
-	if (matches == 1)
-	{
-		result.slots.push_back(found);
-		return result;
-	}
-
-	if (matches > 1)
-	{
-		result.error = "Multiple players match that name. Be more specific.";
-	}
-	else
-	{
-		result.error = "No player found matching that name.";
-	}
-
-	return result;
+	return FindTargets(callerSlot, pattern, mmu::TargetMode::Many);
 }
 
 int ADMIN_FindTarget(int callerSlot, const char *pattern)
 {
-	TargetResult result = ADMIN_FindTargets(callerSlot, pattern);
+	TargetResult result = FindTargets(callerSlot, pattern, mmu::TargetMode::One);
 	if (!result.error.empty())
 	{
 		ADMIN_ReplyToCommand(callerSlot, "%s\n", ADMIN_Translate(callerSlot, result.error.c_str()).c_str());
-		return -1;
-	}
-	if (result.slots.size() != 1)
-	{
-		if (result.slots.size() > 1)
-		{
-			ADMIN_ReplyToCommandT(callerSlot, "Multiple players matched. Use a more specific target.\n");
-		}
-		else
-		{
-			ADMIN_ReplyToCommandT(callerSlot, "No player found.\n");
-		}
 		return -1;
 	}
 	return result.slots[0];

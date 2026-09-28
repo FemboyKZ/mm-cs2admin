@@ -2,6 +2,7 @@
 #define _INCLUDE_ADMIN_COMMAND_SYSTEM_H_
 
 #include "src/common.h"
+#include "mmu/command_args.h"
 #include <string>
 #include <vector>
 #include <memory>
@@ -10,9 +11,9 @@
 
 // Callback type for chat commands.
 // slot = player slot who typed the command.
-// args = the arguments after the command name.
+// args = the key=value arguments after the command name.
 // silent = true if command was prefixed with / (don't echo to chat).
-typedef std::function<void(int slot, const std::vector<std::string> &args, bool silent)> ChatCommandCallback;
+typedef std::function<void(int slot, const mmu::Args &args, bool silent)> ChatCommandCallback;
 
 class ConCommand;
 
@@ -25,7 +26,9 @@ public:
 	// Register a chat command (e.g., "ban", "mute").
 	// Triggered by !ban, /ban, !mute, /mute etc. in chat.
 	// group and defaultFlag feed CanPlayerUseCommand, which runs before the callback does.
-	void RegisterCommand(const char *name, const char *group, uint32_t defaultFlag, ChatCommandCallback callback);
+	// Args that don't parse against `keys` get an error and `usage` instead of the callback.
+	void RegisterCommand(const char *name, const char *group, uint32_t defaultFlag, mmu::ArgSpec keys, const char *usage,
+						 ChatCommandCallback callback);
 
 	// Register mm_ server console commands mirroring all chat commands.
 	// Call once after RegisterBuiltinCommands().
@@ -41,11 +44,15 @@ public:
 	// silent is set when the command used the silent prefix, so the chat line should be hidden.
 	bool ProcessChatMessage(int slot, const char *message, bool teamOnly, bool &silent);
 
-	// Dispatch a console command to the matching chat command handler.
+	// Run a chat command's handler from outside chat, like a menu flow ending in the command.
 	// cmdName = command name without "mm_" prefix (e.g. "who").
-	// args = parsed arguments (excluding command name).
 	// slot = player slot (-1 for server console).
-	void DispatchConsoleCommand(const char *cmdName, const std::vector<std::string> &args, int slot);
+	void DispatchConsoleCommand(const char *cmdName, const mmu::Args &args, int slot);
+	// The same with the args still text, like an mm_ console command's.
+	void DispatchConsoleLine(const char *cmdName, const std::string &line, int slot);
+
+	// Replies with the command's usage phrase.
+	void ReplyUsage(int slot, const char *name) const;
 
 	// Check if a gagged player should have their message blocked.
 	bool ShouldBlockChat(int slot);
@@ -81,12 +88,16 @@ private:
 	{
 		const char *group;
 		uint32_t defaultFlag;
+		mmu::ArgSpec keys;
+		const char *usage;
 		ChatCommandCallback callback;
 	};
 
 	bool CanUse(int slot, const std::string &name, const Command &command) const;
 	// Replies with the permission error instead of calling back when the caller may not use it.
-	void Run(const std::string &name, const Command &command, int slot, const std::vector<std::string> &args, bool silent);
+	void Run(const std::string &name, const Command &command, int slot, const mmu::Args &args, bool silent);
+	// Run, or the parse error and usage.
+	void ParseAndRun(const std::string &name, const Command &command, int slot, const std::string &line, bool silent);
 
 	std::unordered_map<std::string, Command> m_commands;
 

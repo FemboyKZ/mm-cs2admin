@@ -303,60 +303,72 @@
 		"en"	"You do not have permission to use this command.\n"
 		"chi"	"你没有使用此命令的权限。\n"
 	}
-	"Usage: !ban <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Unknown key %s=.\n"
 	{
-		"en"	"Usage: !ban <target> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !ban <目标> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Unknown key %s=.\n"
+	}
+	"Put %s after a key, like key=value.\n"
+	{
+		"en"	"Put %s after a key, like key=value.\n"
+	}
+	"A quote is left open.\n"
+	{
+		"en"	"A quote is left open.\n"
+	}
+	"Usage: !ban <target> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !ban <target> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !ban <目标> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
 	{
 		"en"	"Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
 		"chi"	"无效的时长。请输入分钟数（如 30）或后缀：h(小时)、d(天)、w(周)、m(月)。0 为永久。\n"
 	}
-	"Usage: !unban <steamid>\n"
+	"Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n"
 	{
-		"en"	"Usage: !unban <steamid>\n"
-		"chi"	"用法: !unban <SteamID>\n"
+		"en"	"Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n"
+		"chi"	"用法: !unban <SteamID> (STEAM_0:X:Y、SteamID64 或 [U:1:X])\n"
 	}
-	"Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !addban <steamid> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !addban <time> <steamid> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !addban <时长> <SteamID> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !addban <steamid> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !addban <SteamID> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
-	"Usage: !mute <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !mute <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !mute <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !mute <目标> [时长] [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !mute <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !mute <目标> [time=<时长>] [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !unmute <target>\n"
 	{
 		"en"	"Usage: !unmute <target>\n"
 		"chi"	"用法: !unmute <目标>\n"
 	}
-	"Usage: !gag <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !gag <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !gag <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !gag <目标> [时长] [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !gag <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !gag <目标> [time=<时长>] [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !ungag <target>\n"
 	{
 		"en"	"Usage: !ungag <target>\n"
 		"chi"	"用法: !ungag <目标>\n"
 	}
-	"Usage: !silence <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !silence <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !silence <target> [time] [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !silence <目标> [时长] [原因] (双重禁言：语音+文字；时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !silence <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !silence <目标> [time=<时长>] [reason=<原因>] (双重禁言：语音+文字；时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Usage: !unsilence <target>\n"
 	{
 		"en"	"Usage: !unsilence <target>\n"
 		"chi"	"用法: !unsilence <目标>\n"
 	}
-	"Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
+	"Usage: !banip <ip> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
 	{
-		"en"	"Usage: !banip <ip> <time> [reason] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !banip <IP地址> <时长> [原因] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"Usage: !banip <ip> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !banip <IP地址> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
 	}
 	"Invalid IP address format.\n"
 	{
@@ -373,15 +385,20 @@
 		"en"	"Usage: !listcomms <target|steamid>\n"
 		"chi"	"用法: !listcomms <目标|SteamID>\n"
 	}
+	"Usage: !comms [target]\n"
+	{
+		"en"	"Usage: !comms [target]\n"
+		"chi"	"用法: !comms [目标]\n"
+	}
 	"This command cannot be used from console.\n"
 	{
 		"en"	"This command cannot be used from console.\n"
 		"chi"	"无法在控制台中执行此指令。\n"
 	}
-	"Usage: !report <target> <reason>\n"
+	"Usage: !report <target> reason=<text>\n"
 	{
-		"en"	"Usage: !report <target> <reason>\n"
-		"chi"	"用法: !report <目标> <原因>\n"
+		"en"	"Usage: !report <target> reason=<text>\n"
+		"chi"	"用法: !report <目标> reason=<原因>\n"
 	}
 	"You must wait %d seconds before reporting again.\n"
 	{
@@ -408,10 +425,10 @@
 		"en"	"Report submitted against %s.\n"
 		"chi"	"已成功提交对 %s 的举报。\n"
 	}
-	"Usage: !kick <target> [reason]\n"
+	"Usage: !kick <target> [reason=<text>]\n"
 	{
-		"en"	"Usage: !kick <target> [reason]\n"
-		"chi"	"用法: !kick <目标> [原因]\n"
+		"en"	"Usage: !kick <target> [reason=<text>]\n"
+		"chi"	"用法: !kick <目标> [reason=<原因>]\n"
 	}
 	"You cannot kick yourself.\n"
 	{
@@ -453,6 +470,11 @@
 		"en"	"  No admins currently online.\n"
 		"chi"	"  当前没有管理员在线。\n"
 	}
+	"Usage: !who [target]\n"
+	{
+		"en"	"Usage: !who [target]\n"
+		"chi"	"用法: !who [目标]\n"
+	}
 	"%d admin(s) online\n"
 	{
 		"en"	"%d admin(s) online\n"
@@ -493,6 +515,11 @@
 		"en"	"Use !adminhelp %d for next page.\n"
 		"chi"	"使用 !adminhelp %d 查看下一页。\n"
 	}
+	"Usage: !adminhelp [page]\n"
+	{
+		"en"	"Usage: !adminhelp [page]\n"
+		"chi"	"用法: !adminhelp [页码]\n"
+	}
 	"Usage: !find <text>\n"
 	{
 		"en"	"Usage: !find <text>\n"
@@ -523,10 +550,10 @@
 		"en"	"Executed: %s, check console for output.\n"
 		"chi"	"已执行: %s，请在控制台查看输出。\n"
 	}
-	"Usage: !pm <target> <message>\n"
+	"Usage: !pm <target> message=<text>\n"
 	{
-		"en"	"Usage: !pm <target> <message>\n"
-		"chi"	"用法: !pm <目标> <私聊消息>\n"
+		"en"	"Usage: !pm <target> message=<text>\n"
+		"chi"	"用法: !pm <目标> message=<私聊消息>\n"
 	}
 	"[PM from %s] %s\n"
 	{
@@ -573,20 +600,25 @@
 		"en"	"Use !maps %d for next page.\n"
 		"chi"	"使用 !maps %d 查看下一页。\n"
 	}
-	"Usage: !entfire <entity> <input> [value]\n"
+	"Usage: !maps [page]\n"
 	{
-		"en"	"Usage: !entfire <entity> <input> [value]\n"
-		"chi"	"用法: !entfire <实体> <输入信号> [参数值]\n"
+		"en"	"Usage: !maps [page]\n"
+		"chi"	"用法: !maps [页码]\n"
+	}
+	"Usage: !entfire <entity> input=<input> [value=<value>]\n"
+	{
+		"en"	"Usage: !entfire <entity> input=<input> [value=<value>]\n"
+		"chi"	"用法: !entfire <实体> input=<输入信号> [value=<参数值>]\n"
 	}
 	"Fired: %s %s%s\n"
 	{
 		"en"	"Fired: %s %s%s\n"
 		"chi"	"已触发实体: %s %s%s\n"
 	}
-	"Usage: !give <target> <weapon>\n"
+	"Usage: !give <target> weapon=<weapon>\n"
 	{
-		"en"	"Usage: !give <target> <weapon>\n"
-		"chi"	"用法: !give <目标> <武器代码>\n"
+		"en"	"Usage: !give <target> weapon=<weapon>\n"
+		"chi"	"用法: !give <目标> weapon=<武器代码>\n"
 	}
 	"%s gave %s to %d players.\n"
 	{
@@ -618,15 +650,10 @@
 		"en"	"%s stripped weapons from %s.\n"
 		"chi"	"%s 剥夺了 %s 的武器。\n"
 	}
-	"Multiple players matched. Use a more specific target.\n"
+	"Multiple players matched. Use a more specific target."
 	{
-		"en"	"Multiple players matched. Use a more specific target.\n"
-		"chi"	"匹配到多名玩家，请使用更具体的名称或目标。\n"
-	}
-	"No player found.\n"
-	{
-		"en"	"No player found.\n"
-		"chi"	"未找到玩家。\n"
+		"en"	"Multiple players matched. Use a more specific target."
+		"chi"	"匹配到多名玩家，请使用更具体的名称或目标。"
 	}
 	"[ADMIN] %s"
 	{
@@ -637,11 +664,6 @@
 	{
 		"en"	" %s%s%s"
 		"chi"	" %s%s%s"
-	}
-	"No target specified."
-	{
-		"en"	"No target specified."
-		"chi"	"未指定目标。"
 	}
 	"You are not in-game."
 	{
@@ -658,10 +680,9 @@
 		"en"	"Invalid SteamID64."
 		"chi"	"无效的 SteamID64。"
 	}
-	"Player with that SteamID64 not found."
+	"No player with that SteamID is online."
 	{
-		"en"	"Player with that SteamID64 not found."
-		"chi"	"未找到该 SteamID64 对应的玩家。"
+		"en"	"No player with that SteamID is online."
 	}
 	"No player found with exact name."
 	{
@@ -702,6 +723,11 @@
 	{
 		"en"	"You do not have any tags.\n"
 		"chi"	"你当前没有任何称号。\n"
+	}
+	"Usage: !tag [name|none]\n"
+	{
+		"en"	"Usage: !tag [name|none]\n"
+		"chi"	"用法: !tag [标签名|none]\n"
 	}
 	"Your tag is now hidden.\n"
 	{

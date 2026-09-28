@@ -122,12 +122,7 @@ struct TargetResult
 	bool isMultiTarget = false; // True if @all, @t, @ct etc.
 };
 
-// Find player(s) by pattern. Supports:
-//   @me, @all, @t, @ct, @spec, @dead, @alive, @random, @bot, @human
-//   $<steamid64>   - target by SteamID64
-//   &<exact name>  - target by exact name (case insensitive)
-//   #<userid/slot> - target by slot number
-//   <partial name> - partial name match (single target only)
+// Player(s) by pattern, see mmu::FindTargets.
 TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern);
 
 // Single target function. Returns slot or -1.

@@ -79,7 +79,7 @@ namespace
 		return ref.GetBool();
 	}
 
-	void OnConVarChanged(ConVarRefAbstract *ref, CSplitScreenSlot, const char *, const char *, void *)
+	void OnConVarChanged(ConVarRefAbstract *ref, CSplitScreenSlot, const char *, const char *, ConVarUserInfoSet_t *)
 	{
 		if (ref && strcmp(ref->GetName(), kCs2kzClantagConVar) == 0)
 		{

@@ -115,12 +115,8 @@ void CS2AOfflineQueue::SaveToFile()
 	char path[512];
 	snprintf(path, sizeof(path), "%s/addons/cs2admin/queue.txt", g_SMAPI->GetBaseDir());
 
-	if (m_entries.empty())
-	{
-		std::remove(path);
-		return;
-	}
-
+	// An empty queue truncates the file and leaves it in place.
+	// Removing it would unlink a symlinked queue.txt, and the target would keep its entries and replay them on every start.
 	std::ofstream file(path, std::ios::trunc);
 	if (!file.is_open())
 	{

@@ -21,8 +21,8 @@ public:
 	// Load maplist from cfg/maplist.txt
 	bool LoadMapList();
 
-	// Find a map by partial name match. Returns nullptr if not found or ambiguous.
-	const MapEntry *FindMap(const char *input, std::string &error) const;
+	// Find a map by partial name match. Returns nullptr if not found or ambiguous, outMatches then gets the ambiguous ones.
+	const MapEntry *FindMap(const char *input, std::string &error, std::vector<const MapEntry *> *outMatches = nullptr) const;
 
 	// Execute the map change. Returns true on success.
 	// A workshop map that isn't on disk is downloaded first,

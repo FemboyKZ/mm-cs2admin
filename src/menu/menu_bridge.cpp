@@ -122,6 +122,7 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 	if (options.mapList)
 	{
 		m_menus->SetMenuStyle(h, MenuStyle::PagePrefixDelimiter, "_");
+		m_menus->SetMenuTextFeatures(h, kMenuTextIndex);
 	}
 	return Present(slot, h, options);
 }

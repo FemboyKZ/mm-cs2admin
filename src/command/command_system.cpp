@@ -1000,6 +1000,28 @@ namespace
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
 	}
 
+	// !map <partial name> with several matches -> !map <mapname|workshopid>
+	void ShowMapMatches(int slot, std::vector<const MapEntry *> matches)
+	{
+		auto name = [](const MapEntry *m) -> const std::string & { return m->displayName.empty() ? m->mapName : m->displayName; };
+		std::stable_sort(matches.begin(), matches.end(), [&](const MapEntry *a, const MapEntry *b) { return mmu::MapNameLess(name(a), name(b)); });
+
+		std::vector<AdminMenuItem> items;
+		for (const MapEntry *m : matches)
+		{
+			AdminMenuItem item;
+			item.text = name(m);
+			item.info = (m->isWorkshop && !m->workshopId.empty()) ? m->workshopId : m->mapName;
+			items.push_back(std::move(item));
+		}
+
+		AdminMenuBridge::Options options;
+		options.mapList = true;
+		g_AdminMenus.ShowMenu(
+			slot, "Matching Maps", items, [](int s, int, const std::string &mapArg)
+			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
+	}
+
 	// Giveable items grouped by category for the !give picker.
 	// Classnames and display names follow CS2Fixes' weapon table.
 	// Cosmetic knife variants are collapsed to a single "Knife" since GiveNamedItem("weapon_knife") covers them.
@@ -2530,6 +2552,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (!g_CS2AMapManager.ChangeMap(map.c_str(), error))
 						{
+							std::vector<const MapEntry *> matches;
+							std::string ambiguous;
+							if (MenuPickerAvailable(slot) && !g_CS2AMapManager.FindMap(map.c_str(), ambiguous, &matches) && matches.size() > 1)
+							{
+								ShowMapMatches(slot, std::move(matches));
+								return;
+							}
 							ADMIN_ReplyToCommandT(slot, "%s\n", error.c_str());
 							return;
 						}

@@ -183,7 +183,7 @@ bool CS2AMapManager::LoadMapList()
 	return true;
 }
 
-const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error) const
+const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error, std::vector<const MapEntry *> *outMatches) const
 {
 	if (!input || !*input)
 	{
@@ -236,6 +236,10 @@ const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error) c
 		if (matches.size() > 5)
 		{
 			error += " ...";
+		}
+		if (outMatches)
+		{
+			*outMatches = std::move(matches);
 		}
 		return nullptr;
 	}

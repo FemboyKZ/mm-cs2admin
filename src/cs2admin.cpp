@@ -31,7 +31,7 @@ void ShutdownConsoleCommands();
 #include "mmu/str_utils.h"
 #include "mmu/voice_block.h"
 
-#include <sql_mm.h>
+#include "interfaces/sql_mm/sql_mm.h"
 
 #include <schemasystem/schemasystem.h>
 #include <interfaces/interfaces.h>

@@ -13,7 +13,7 @@
 #include "src/queue/offline_queue.h"
 
 #include "interfaces/cs2kz/ics2kz.h"
-#include <sql_mm.h>
+#include "interfaces/sql_mm/sql_mm.h"
 
 #include <algorithm>
 #include <cstdio>

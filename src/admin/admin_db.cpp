@@ -5,7 +5,7 @@
 #include "src/db/database.h"
 #include "src/tags/tag_manager.h"
 
-#include <sql_mm.h>
+#include "interfaces/sql_mm/sql_mm.h"
 
 #include <cstring>
 #include <cstdio>

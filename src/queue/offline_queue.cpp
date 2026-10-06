@@ -3,7 +3,7 @@
 #include "src/common.h"
 #include "src/db/database.h"
 
-#include <sql_mm.h>
+#include "interfaces/sql_mm/sql_mm.h"
 #include <algorithm>
 #include <fstream>
 #include <cstdio>

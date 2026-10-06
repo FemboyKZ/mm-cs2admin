@@ -7,7 +7,7 @@
 #include "src/config/config.h"
 #include "src/tags/tag_manager.h"
 
-#include <ics2kz.h>
+#include "interfaces/cs2kz/ics2kz.h"
 #include <tier1/convar.h>
 
 #include <cstdio>

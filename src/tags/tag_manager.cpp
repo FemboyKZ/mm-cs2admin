@@ -12,7 +12,7 @@
 #include "src/player/player_manager.h"
 #include "src/queue/offline_queue.h"
 
-#include <ics2kz.h>
+#include "interfaces/cs2kz/ics2kz.h"
 #include <sql_mm.h>
 
 #include <algorithm>

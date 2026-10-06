@@ -1,9 +1,9 @@
 #include "tag_manager.h"
 
-#include "mmu/entity/ccsplayercontroller.h"
-#include "mmu/kv_parser.h"
-#include "mmu/log.h"
-#include "mmu/str_utils.h"
+#include "sdk/entity/ccsplayercontroller.h"
+#include "utils/kv_parser.h"
+#include "utils/log.h"
+#include "utils/str.h"
 
 #include "src/admin/admin_manager.h"
 #include "src/compat/foreign_plugins.h"

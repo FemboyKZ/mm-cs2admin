@@ -1,8 +1,8 @@
 #include "config.h"
-#include "mmu/str_utils.h"
-#include "mmu/log.h"
-#include "mmu/chat_colors.h"
-#include "mmu/kv_parser.h"
+#include "utils/str.h"
+#include "utils/log.h"
+#include "utils/chat_colors.h"
+#include "utils/kv_parser.h"
 #include "src/common.h"
 #include <fstream>
 #include <sstream>

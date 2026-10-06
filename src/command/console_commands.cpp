@@ -1,6 +1,6 @@
 #include "src/common.h"
-#include "mmu/chat_command.h"
-#include "mmu/log.h"
+#include "utils/chat_command.h"
+#include "utils/log.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
 #include "src/player/player_manager.h"

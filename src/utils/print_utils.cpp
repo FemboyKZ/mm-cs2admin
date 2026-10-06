@@ -1,5 +1,5 @@
 #include "print_utils.h"
-#include "mmu/log.h"
+#include "utils/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -7,7 +7,7 @@
 #include "src/lang/translations.h"
 #include "src/player/player_manager.h"
 
-#include "mmu/print.h"
+#include "game/print.h"
 
 #include <cstdarg>
 #include <cstdio>

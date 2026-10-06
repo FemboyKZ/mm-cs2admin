@@ -2,7 +2,7 @@
 #define _INCLUDE_ADMIN_PLAYER_MANAGER_H_
 
 #include "../common.h"
-#include "mmu/player_table.h"
+#include "game/player_table.h"
 #include <string>
 #include <vector>
 #include <tuple>

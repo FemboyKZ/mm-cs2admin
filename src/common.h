@@ -5,15 +5,15 @@
 #include <igameevents.h>
 #include <iserver.h>
 
-#include "mmu/chat_colors.h"
-#include "mmu/plugin_globals.h"
+#include "utils/chat_colors.h"
+#include "sdk/plugin_globals.h"
 
 #include <cstdint>
 #include <cstring>
 #include <string>
 #include <cstdio>
 
-// Plugin-specific engine interfaces. Shared ones live in mmu/plugin_globals.h.
+// Plugin-specific engine interfaces. Shared ones live in sdk/plugin_globals.h.
 extern IGameEventManager2 *g_pGameEvents;
 
 class INetworkMessages;
@@ -29,10 +29,10 @@ class CGameEntitySystem;
 extern CGameEntitySystem *g_pEntitySystem;
 
 // SteamID conversion utilities
-#include "mmu/steam_utils.h"
+#include "utils/steamid.h"
 
 // CGlobalVars accessor, only valid during active game
-#include "mmu/print.h"
+#include "game/print.h"
 
 inline CGlobalVars *GetGameGlobals()
 {

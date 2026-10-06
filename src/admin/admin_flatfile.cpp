@@ -1,6 +1,6 @@
 #include "admin_manager.h"
-#include "mmu/log.h"
-#include "mmu/str_utils.h"
+#include "utils/log.h"
+#include "utils/str.h"
 #include "src/common.h"
 
 #include <fstream>

@@ -1,11 +1,11 @@
 #include "player_manager.h"
-#include "mmu/str_utils.h"
-#include "mmu/log.h"
+#include "utils/str.h"
+#include "utils/log.h"
 #include "src/admin/admin_manager.h"
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
-#include "mmu/entity/ccsplayercontroller.h"
-#include "mmu/target.h"
+#include "sdk/entity/ccsplayercontroller.h"
+#include "game/target.h"
 
 #include <algorithm>
 #include <cctype>

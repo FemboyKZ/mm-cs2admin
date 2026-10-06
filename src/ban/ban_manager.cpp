@@ -1,5 +1,5 @@
 #include "ban_manager.h"
-#include "mmu/log.h"
+#include "utils/log.h"
 #include "src/common.h"
 #include "src/config/config.h"
 #include "src/db/database.h"
@@ -9,7 +9,7 @@
 #include "src/admin/admin_manager.h"
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
-#include "src/utils/discord.h"
+#include "src/utils/discord_notify.h"
 
 #include "interfaces/sql_mm/sql_mm.h"
 #include <algorithm>

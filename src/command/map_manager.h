@@ -1,7 +1,7 @@
 #ifndef _INCLUDE_ADMIN_MAP_MANAGER_H_
 #define _INCLUDE_ADMIN_MAP_MANAGER_H_
 
-#include "mmu/workshop.h"
+#include "game/workshop.h"
 
 #include <cstdint>
 #include <string>

@@ -1,7 +1,7 @@
 #include "foreign_plugins.h"
 
-#include "mmu/kv_parser.h"
-#include "mmu/log.h"
+#include "utils/kv_parser.h"
+#include "utils/log.h"
 
 #include "src/common.h"
 #include "src/config/config.h"

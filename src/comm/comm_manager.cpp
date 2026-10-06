@@ -1,5 +1,5 @@
 #include "comm_manager.h"
-#include "mmu/log.h"
+#include "utils/log.h"
 #include "src/common.h"
 #include "src/admin/admin_manager.h"
 #include "src/config/config.h"

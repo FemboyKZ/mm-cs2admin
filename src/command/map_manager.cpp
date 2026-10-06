@@ -1,9 +1,9 @@
 #include "map_manager.h"
-#include "mmu/str_utils.h"
-#include "mmu/log.h"
-#include "mmu/maplist.h"
+#include "utils/str.h"
+#include "utils/log.h"
+#include "utils/maplist.h"
 #include "src/common.h"
-#include "mmu/workshop.h"
+#include "game/workshop.h"
 #include "src/config/config.h"
 #include "src/utils/print_utils.h"
 

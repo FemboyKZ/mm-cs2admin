@@ -1,10 +1,10 @@
 #include "chat_processor.h"
 
-#include "mmu/chat_colors.h"
-#include "mmu/entity/ccsplayercontroller.h"
-#include "mmu/log.h"
-#include "mmu/print.h"
-#include "mmu/recipient_filter.h"
+#include "utils/chat_colors.h"
+#include "sdk/entity/ccsplayercontroller.h"
+#include "utils/log.h"
+#include "game/print.h"
+#include "sdk/recipient_filter.h"
 
 #include "src/compat/foreign_plugins.h"
 #include "src/config/config.h"

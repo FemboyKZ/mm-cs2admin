@@ -104,7 +104,7 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 
 	if (durationMinutes >= 0)
 	{
-		std::string dur = (durationMinutes == 0) ? "Permanent" : ADMIN_FormatDuration(durationMinutes);
+		std::string dur = (durationMinutes == 0) ? "Permanent" : ADMIN_FormatDuration(-1, durationMinutes);
 		desc += "**Duration:** ``" + dur + "``\n";
 	}
 

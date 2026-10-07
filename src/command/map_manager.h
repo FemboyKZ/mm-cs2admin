@@ -25,12 +25,13 @@ public:
 	bool LoadMapList();
 
 	// Find a map by partial name match. Returns nullptr if not found or ambiguous, outMatches then gets the ambiguous ones.
-	const MapEntry *FindMap(const char *input, std::string &error, std::vector<const MapEntry *> *outMatches = nullptr) const;
+	const MapEntry *FindMap(int slot, const char *input, std::string &error, std::vector<const MapEntry *> *outMatches = nullptr) const;
 
 	// Execute the map change. Returns true on success.
 	// A workshop map that isn't on disk is downloaded first,
 	// so success here can mean the change was accepted rather than already issued.
-	bool ChangeMap(const char *input, std::string &error);
+	// error comes back in the language of `slot`, as it does from the lookups below.
+	bool ChangeMap(int slot, const char *input, std::string &error);
 
 	// Drives a deferred workshop change. Call once per frame.
 	void Tick();
@@ -75,12 +76,12 @@ private:
 
 	// Partial-match input against m_localMaps, same rules as FindMap.
 	// Returns the full map name, "" if no match.
-	std::string MatchLocalMap(const std::string &input, std::string &error) const;
+	std::string MatchLocalMap(int slot, const std::string &input, std::string &error) const;
 
 	// host_workshop_map on an addon that isn't on disk drops the server onto the "error" map,
 	// so an absent one is downloaded before the change is issued.
 	// Refused while an earlier workshop change is still being worked on.
-	bool BeginWorkshopChange(const std::string &workshopId, const std::string &label, std::string &error);
+	bool BeginWorkshopChange(int slot, const std::string &workshopId, const std::string &label, std::string &error);
 	void ClearPendingChange();
 
 	std::vector<MapEntry> m_maps;

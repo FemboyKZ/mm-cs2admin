@@ -272,37 +272,37 @@ int ADMIN_ParseDuration(const char *input)
 	}
 }
 
-std::string ADMIN_FormatDuration(int minutes)
+std::string ADMIN_FormatDuration(int slot, int minutes)
 {
 	if (minutes == 0)
 	{
-		return "permanent";
+		return ADMIN_Translate(slot, "permanent");
 	}
 
 	if (minutes < 60)
 	{
-		return std::to_string(minutes) + " minute" + (minutes != 1 ? "s" : "");
+		return ADMIN_Format(slot, minutes != 1 ? "%d minutes" : "%d minute", minutes);
 	}
 
 	int hours = minutes / 60;
 	if (hours < 24)
 	{
-		return std::to_string(hours) + " hour" + (hours != 1 ? "s" : "");
+		return ADMIN_Format(slot, hours != 1 ? "%d hours" : "%d hour", hours);
 	}
 
 	int days = hours / 24;
 	if (days < 7)
 	{
-		return std::to_string(days) + " day" + (days != 1 ? "s" : "");
+		return ADMIN_Format(slot, days != 1 ? "%d days" : "%d day", days);
 	}
 
 	int weeks = days / 7;
 	// By days, not weeks: 28 and 29 days are 4 weeks but still 0 whole months.
 	if (days < 30)
 	{
-		return std::to_string(weeks) + " week" + (weeks != 1 ? "s" : "");
+		return ADMIN_Format(slot, weeks != 1 ? "%d weeks" : "%d week", weeks);
 	}
 
 	int months = days / 30;
-	return std::to_string(months) + " month" + (months != 1 ? "s" : "");
+	return ADMIN_Format(slot, months != 1 ? "%d months" : "%d month", months);
 }

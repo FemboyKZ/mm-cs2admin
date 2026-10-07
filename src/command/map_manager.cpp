@@ -6,6 +6,7 @@
 #include "game/workshop.h"
 #include "interfaces/cs2rockthevote/ics2rtv.h"
 #include "src/config/config.h"
+#include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
 
 extern CSteamGameServerAPIContext g_AdminSteamAPI;
@@ -85,7 +86,7 @@ void CS2AMapManager::ScanLocalMaps()
 	MMU_LOG_INFO("Found %d local map(s) in maps folder\n", (int)m_localMaps.size());
 }
 
-std::string CS2AMapManager::MatchLocalMap(const std::string &input, std::string &error) const
+std::string CS2AMapManager::MatchLocalMap(int slot, const std::string &input, std::string &error) const
 {
 	std::string search = str::ToLower(input);
 
@@ -113,9 +114,7 @@ std::string CS2AMapManager::MatchLocalMap(const std::string &input, std::string 
 
 	if (matches.size() > 1)
 	{
-		error = "Multiple maps match '";
-		error += input;
-		error += "':";
+		error = ADMIN_Format(slot, "Multiple maps match '%s':", input.c_str());
 		for (size_t i = 0; i < matches.size() && i < 5; i++)
 		{
 			error += " ";
@@ -184,11 +183,11 @@ bool CS2AMapManager::LoadMapList()
 	return true;
 }
 
-const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error, std::vector<const MapEntry *> *outMatches) const
+const MapEntry *CS2AMapManager::FindMap(int slot, const char *input, std::string &error, std::vector<const MapEntry *> *outMatches) const
 {
 	if (!input || !*input)
 	{
-		error = "No map specified.";
+		error = ADMIN_Translate(slot, "No map specified.");
 		return nullptr;
 	}
 
@@ -226,9 +225,7 @@ const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error, s
 
 	if (matches.size() > 1)
 	{
-		error = "Multiple maps match '";
-		error += input;
-		error += "':";
+		error = ADMIN_Format(slot, "Multiple maps match '%s':", input);
 		for (size_t i = 0; i < matches.size() && i < 5; i++)
 		{
 			error += " ";
@@ -245,17 +242,15 @@ const MapEntry *CS2AMapManager::FindMap(const char *input, std::string &error, s
 		return nullptr;
 	}
 
-	error = "No map found matching '";
-	error += input;
-	error += "'.";
+	error = ADMIN_Format(slot, "No map found matching '%s'.", input);
 	return nullptr;
 }
 
-bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
+bool CS2AMapManager::ChangeMap(int slot, const char *input, std::string &error)
 {
 	if (!g_pEngine)
 	{
-		error = "Engine not available.";
+		error = ADMIN_Translate(slot, "Engine not available.");
 		return false;
 	}
 
@@ -265,21 +260,21 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 
 	if (isRawWorkshopId)
 	{
-		const MapEntry *entry = FindMap(input, error);
+		const MapEntry *entry = FindMap(slot, input, error);
 		if (entry && entry->isWorkshop)
 		{
 			error.clear();
-			return BeginWorkshopChange(entry->workshopId, MapLabel(*entry), error);
+			return BeginWorkshopChange(slot, entry->workshopId, MapLabel(*entry), error);
 		}
 
 		error.clear();
-		return BeginWorkshopChange(inputStr, inputStr, error);
+		return BeginWorkshopChange(slot, inputStr, inputStr, error);
 	}
 
-	const MapEntry *entry = FindMap(input, error);
+	const MapEntry *entry = FindMap(slot, input, error);
 	if (!entry)
 	{
-		std::string resolved = MatchLocalMap(inputStr, error);
+		std::string resolved = MatchLocalMap(slot, inputStr, error);
 		if (resolved.empty())
 		{
 			return false; // error is the ambiguous list, or FindMap's "No map found"
@@ -298,7 +293,7 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 
 	if (entry->isWorkshop)
 	{
-		return BeginWorkshopChange(entry->workshopId, MapLabel(*entry), error);
+		return BeginWorkshopChange(slot, entry->workshopId, MapLabel(*entry), error);
 	}
 
 	// A workshop change still waiting on its download would otherwise fire later on top of this one.
@@ -307,13 +302,13 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 	return true;
 }
 
-bool CS2AMapManager::BeginWorkshopChange(const std::string &workshopId, const std::string &label, std::string &error)
+bool CS2AMapManager::BeginWorkshopChange(int slot, const std::string &workshopId, const std::string &label, std::string &error)
 {
 	uint64_t fileId = std::strtoull(workshopId.c_str(), nullptr, 10);
 
 	if (m_pending.Busy())
 	{
-		error = "Already working on '" + m_pendingLabel + "', try again once it is loaded.";
+		error = ADMIN_Format(slot, "Already working on '%s', try again once it is loaded.", m_pendingLabel.c_str());
 		return false;
 	}
 
@@ -328,14 +323,14 @@ bool CS2AMapManager::BeginWorkshopChange(const std::string &workshopId, const st
 
 	if (g_CS2AConfig.workshopDownloadTimeout <= 0)
 	{
-		error = "Map '" + label + "' is not installed on this server.";
+		error = ADMIN_Format(slot, "Map '%s' is not installed on this server.", label.c_str());
 		return false;
 	}
 
 	// The download itself starts from Tick, once Steam has confirmed the id is a CS2 map.
 	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.workshopDownloadTimeout), g_AdminSteamAPI))
 	{
-		error = "Map '" + label + "' is not installed and no download could be started.";
+		error = ADMIN_Format(slot, "Map '%s' is not installed and no download could be started.", label.c_str());
 		return false;
 	}
 	m_pendingWorkshopId = workshopId;

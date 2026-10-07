@@ -563,9 +563,9 @@ static std::string FormatDate(int unixTime)
 }
 
 // Rows store the length in seconds.
-static std::string FormatLength(int seconds)
+static std::string FormatLength(int slot, int seconds)
 {
-	return seconds == 0 ? "Permanent" : ADMIN_FormatDuration(seconds / 60 > 0 ? seconds / 60 : 1);
+	return seconds == 0 ? ADMIN_Translate(slot, "permanent") : ADMIN_FormatDuration(slot, seconds / 60 > 0 ? seconds / 60 : 1);
 }
 
 static uint64_t CallerSteamID(int callerSlot)
@@ -617,7 +617,9 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 							 }
 
 							 ADMIN_ReplyToCommandT(callerSlot, "Ban history for %s (last 10):\n", authid.c_str());
-							 ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-12s %-4s %s\n", "Date", "Banned By", "Length", "R", "Reason");
+							 ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-12s %-4s %s\n", ADMIN_Translate(callerSlot, "Date").c_str(),
+												   ADMIN_Translate(callerSlot, "Banned By").c_str(), ADMIN_Translate(callerSlot, "Length").c_str(),
+												   "R", ADMIN_Translate(callerSlot, "Reason").c_str());
 
 							 while (rs->MoreRows())
 							 {
@@ -633,7 +635,8 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 								 const char *status = (removeType && *removeType) ? removeType : " ";
 
 								 ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-12s %-4s %s\n", FormatDate(rs->GetInt(0)).c_str(),
-													   admin ? admin : "Unknown", FormatLength(rs->GetInt(2)).c_str(), status, reason ? reason : "");
+													   admin ? admin : ADMIN_Translate(callerSlot, "Unknown").c_str(),
+													   FormatLength(callerSlot, rs->GetInt(2)).c_str(), status, reason ? reason : "");
 							 }
 						 });
 }
@@ -659,49 +662,53 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 			 "WHERE %s ORDER BY c.created DESC LIMIT 10",
 			 prefix.c_str(), prefix.c_str(), authCond.c_str());
 
-	g_CS2ADatabase.Query(
-		query,
-		[callerSlot, callerId = CallerSteamID(callerSlot), authid = std::string(authid)](ISQLQuery *result)
-		{
-			if (!CallerStillThere(callerSlot, callerId))
-			{
-				return;
-			}
+	g_CS2ADatabase.Query(query,
+						 [callerSlot, callerId = CallerSteamID(callerSlot), authid = std::string(authid)](ISQLQuery *result)
+						 {
+							 if (!CallerStillThere(callerSlot, callerId))
+							 {
+								 return;
+							 }
 
-			if (!result)
-			{
-				ADMIN_ReplyToCommandT(callerSlot, "Query failed.\n");
-				return;
-			}
+							 if (!result)
+							 {
+								 ADMIN_ReplyToCommandT(callerSlot, "Query failed.\n");
+								 return;
+							 }
 
-			ISQLResult *rs = result->GetResultSet();
-			if (!rs || rs->GetRowCount() == 0)
-			{
-				ADMIN_ReplyToCommandT(callerSlot, "No comm blocks found for %s.\n", authid.c_str());
-				return;
-			}
+							 ISQLResult *rs = result->GetResultSet();
+							 if (!rs || rs->GetRowCount() == 0)
+							 {
+								 ADMIN_ReplyToCommandT(callerSlot, "No comm blocks found for %s.\n", authid.c_str());
+								 return;
+							 }
 
-			ADMIN_ReplyToCommandT(callerSlot, "Comm history for %s (last 10):\n", authid.c_str());
-			ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", "Date", "Admin", "Type", "Length", "R", "Reason");
+							 ADMIN_ReplyToCommandT(callerSlot, "Comm history for %s (last 10):\n", authid.c_str());
+							 ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", ADMIN_Translate(callerSlot, "Date").c_str(),
+												   ADMIN_Translate(callerSlot, "Admin").c_str(), ADMIN_Translate(callerSlot, "Type").c_str(),
+												   ADMIN_Translate(callerSlot, "Length").c_str(), "R", ADMIN_Translate(callerSlot, "Reason").c_str());
 
-			while (rs->MoreRows())
-			{
-				ISQLRow *row = rs->FetchRow();
-				if (!row)
-				{
-					break;
-				}
+							 while (rs->MoreRows())
+							 {
+								 ISQLRow *row = rs->FetchRow();
+								 if (!row)
+								 {
+									 break;
+								 }
 
-				const char *admin = rs->GetString(1);
-				int type = rs->GetInt(3);
-				const char *removeType = rs->GetString(4);
-				const char *reason = rs->GetString(5);
+								 const char *admin = rs->GetString(1);
+								 int type = rs->GetInt(3);
+								 const char *removeType = rs->GetString(4);
+								 const char *reason = rs->GetString(5);
 
-				const char *typeStr = (type == 1) ? "Mute" : (type == 2) ? "Gag" : "?";
-				const char *status = (removeType && *removeType) ? removeType : " ";
+								 const std::string typeStr = (type == 1)   ? ADMIN_Translate(callerSlot, "Mute")
+															 : (type == 2) ? ADMIN_Translate(callerSlot, "Gag")
+																		   : "?";
+								 const char *status = (removeType && *removeType) ? removeType : " ";
 
-				ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", FormatDate(rs->GetInt(0)).c_str(), admin ? admin : "Unknown",
-									  typeStr, FormatLength(rs->GetInt(2)).c_str(), status, reason ? reason : "");
-			}
-		});
+								 ADMIN_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", FormatDate(rs->GetInt(0)).c_str(),
+													   admin ? admin : ADMIN_Translate(callerSlot, "Unknown").c_str(), typeStr.c_str(),
+													   FormatLength(callerSlot, rs->GetInt(2)).c_str(), status, reason ? reason : "");
+							 }
+						 });
 }

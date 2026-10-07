@@ -325,7 +325,7 @@ static bool ParseBlockArgs(int slot, const mmu::Args &args, const char *defaultR
 
 	if (minutes >= 0 && !g_CS2ACommManager.IsAllowedLength(slot, minutes))
 	{
-		ADMIN_ReplyToCommandT(slot, "You cannot issue blocks longer than %s.\n", ADMIN_FormatDuration(g_CS2AConfig.commsMaxLength).c_str());
+		ADMIN_ReplyToCommandT(slot, "You cannot issue blocks longer than %s.\n", ADMIN_FormatDuration(slot, g_CS2AConfig.commsMaxLength).c_str());
 		return false;
 	}
 
@@ -358,7 +358,8 @@ static void ReplyAdminLine(int slot, const PlayerInfo &player, const AdminEntry 
 	{
 		group += (group.empty() ? "" : ", ") + groupName;
 	}
-	ADMIN_ReplyToCommandT(slot, "  %s [%s] flags: %s imm: %d\n", player.name.c_str(), group.empty() ? "(no group)" : group.c_str(),
+	ADMIN_ReplyToCommandT(slot, "  %s [%s] flags: %s imm: %d\n", player.name.c_str(),
+						  group.empty() ? ADMIN_Translate(slot, "(no group)").c_str() : group.c_str(),
 						  CS2AAdminManager::FlagsToString(admin.flags).c_str(), admin.immunity);
 }
 
@@ -633,18 +634,18 @@ namespace
 	}
 
 	// "12 minutes left", "permanent" or "session" for an active comm block.
-	std::string BlockRemaining(bool session, double expires)
+	std::string BlockRemaining(int slot, bool session, double expires)
 	{
 		if (session)
 		{
-			return "session";
+			return ADMIN_Translate(slot, "session");
 		}
 		if (expires <= 0.0)
 		{
-			return "permanent";
+			return ADMIN_Translate(slot, "permanent");
 		}
 		int minutes = static_cast<int>(std::ceil((expires - Plat_FloatTime()) / 60.0));
-		return ADMIN_FormatDuration((std::max)(1, minutes)) + " left";
+		return ADMIN_Format(slot, "%s left", ADMIN_FormatDuration(slot, (std::max)(1, minutes)).c_str());
 	}
 
 	struct TeamSection
@@ -690,7 +691,7 @@ namespace
 
 				AdminMenuItem item;
 				item.text = p->name;
-				item.section = section.name;
+				item.section = ADMIN_Translate(callerSlot, section.name);
 				if (p->fakePlayer || p->steamid64 == 0)
 				{
 					item.info = "#" + std::to_string(i);
@@ -704,11 +705,13 @@ namespace
 					std::vector<std::string> blocks;
 					if ((commFilter & COMM_MUTE) && (p->isMuted || p->isSessionMuted))
 					{
-						blocks.push_back("mute " + BlockRemaining(p->isSessionMuted, p->muteExpireTime));
+						blocks.push_back(
+							ADMIN_Format(callerSlot, "mute %s", BlockRemaining(callerSlot, p->isSessionMuted, p->muteExpireTime).c_str()));
 					}
 					if ((commFilter & COMM_GAG) && (p->isGagged || p->isSessionGagged))
 					{
-						blocks.push_back("gag " + BlockRemaining(p->isSessionGagged, p->gagExpireTime));
+						blocks.push_back(
+							ADMIN_Format(callerSlot, "gag %s", BlockRemaining(callerSlot, p->isSessionGagged, p->gagExpireTime).c_str()));
 					}
 					item.disabled = blocks.empty();
 					for (const std::string &block : blocks)
@@ -718,7 +721,7 @@ namespace
 				}
 				else if (team >= 2 && controller && !controller->m_bPawnIsAlive())
 				{
-					item.subtext = "Dead";
+					item.subtext = ADMIN_Translate(callerSlot, "Dead");
 				}
 				items.push_back(std::move(item));
 			}
@@ -727,7 +730,7 @@ namespace
 	}
 
 	// Duration menu items, labelled via ADMIN_FormatDuration, info = the minutes value.
-	std::vector<AdminMenuItem> BuildDurationItems()
+	std::vector<AdminMenuItem> BuildDurationItems(int slot)
 	{
 		std::vector<AdminMenuItem> items;
 		for (const std::string &tok : SplitCsv(g_CS2AConfig.menuDurations))
@@ -738,7 +741,7 @@ namespace
 				continue;
 			}
 			AdminMenuItem item;
-			item.text = ADMIN_FormatDuration(mins);
+			item.text = ADMIN_FormatDuration(slot, mins);
 			item.info = std::to_string(mins);
 			items.push_back(std::move(item));
 		}
@@ -746,7 +749,7 @@ namespace
 	}
 
 	// Reason presets with "Other" last, which asks in chat.
-	std::vector<std::string> ReasonOptions()
+	std::vector<std::string> ReasonOptions(int slot)
 	{
 		std::vector<std::string> reasons;
 		for (const std::string &reason : SplitCsv(g_CS2AConfig.menuReasons))
@@ -757,7 +760,7 @@ namespace
 				reasons.push_back(reason);
 			}
 		}
-		reasons.push_back("Other");
+		reasons.push_back(ADMIN_Translate(slot, "Other"));
 		return reasons;
 	}
 
@@ -766,21 +769,24 @@ namespace
 
 	// Duration when timed, Reason and a confirm row, on top of the menu before it. "Other" takes the reason from the admin's
 	// next chat line, the form hidden meanwhile and back on "cancel".
-	void ShowPunishForm(int slot, const std::string &title, const std::string &confirm, bool timed, PunishFn apply)
+	// `verb` is the action's phrase key, translated here for the title and the confirm row.
+	void ShowPunishForm(int slot, const std::string &verb, const std::string &name, bool timed, PunishFn apply)
 	{
-		std::vector<AdminMenuItem> durations = timed ? BuildDurationItems() : std::vector<AdminMenuItem>();
+		std::vector<AdminMenuItem> durations = timed ? BuildDurationItems(slot) : std::vector<AdminMenuItem>();
 		if (timed && durations.empty())
 		{
 			ADMIN_ReplyToCommandT(slot, "No menu durations configured. Check Menu > Durations in core.cfg\n");
 			return;
 		}
-		std::vector<std::string> reasons = ReasonOptions();
+		std::vector<std::string> reasons = ReasonOptions(slot);
+		const std::string confirm = ADMIN_Translate(slot, verb.c_str());
+		const std::string title = confirm + ": " + name;
 
 		std::vector<AdminFormField> fields;
 		if (timed)
 		{
 			AdminFormField duration;
-			duration.text = "Duration";
+			duration.text = ADMIN_Translate(slot, "Duration");
 			for (const AdminMenuItem &d : durations)
 			{
 				duration.options.push_back(d.text);
@@ -788,7 +794,7 @@ namespace
 			fields.push_back(std::move(duration));
 		}
 		AdminFormField reason;
-		reason.text = "Reason";
+		reason.text = ADMIN_Translate(slot, "Reason");
 		reason.options = reasons;
 		fields.push_back(std::move(reason));
 
@@ -832,7 +838,7 @@ namespace
 			return;
 		}
 
-		std::string pickTitle = verb + ": select player";
+		std::string pickTitle = ADMIN_Format(slot, "%s: select player", ADMIN_Translate(slot, verb.c_str()).c_str());
 		AdminMenuBridge::Options options;
 		options.push = push;
 		options.rebuild = [cmd, verb, timed, push](int s) { StartPunishFlow(s, cmd, verb, timed, push); };
@@ -840,7 +846,7 @@ namespace
 			slot, pickTitle.c_str(), players,
 			[cmd, verb, timed, players](int s, int item, const std::string &target)
 			{
-				ShowPunishForm(s, verb + ": " + players[item].text, verb, timed,
+				ShowPunishForm(s, verb, players[item].text, timed,
 							   [cmd, target](int s2, const std::string &minutes, const std::string &reason)
 							   {
 								   mmu::Args args;
@@ -852,18 +858,18 @@ namespace
 	}
 
 	// "42s ago", "12m ago" or "3h ago".
-	std::string FormatAgo(double seconds)
+	std::string FormatAgo(int slot, double seconds)
 	{
 		int secs = seconds > 0.0 ? static_cast<int>(seconds) : 0;
 		if (secs < 60)
 		{
-			return std::to_string(secs) + "s ago";
+			return ADMIN_Format(slot, "%ds ago", secs);
 		}
 		if (secs < 3600)
 		{
-			return std::to_string(secs / 60) + "m ago";
+			return ADMIN_Format(slot, "%dm ago", secs / 60);
 		}
-		return std::to_string(secs / 3600) + "h ago";
+		return ADMIN_Format(slot, "%dh ago", secs / 3600);
 	}
 
 	// recently disconnected -> duration and reason -> !addban <steamid64> time=<minutes> reason=<reason>
@@ -883,7 +889,7 @@ namespace
 			AdminMenuItem item;
 			item.text = dc.name;
 			item.info = std::to_string(dc.steamid64);
-			item.subtext = dc.disconnectTime > 0.0 ? FormatAgo(now - dc.disconnectTime) : std::string();
+			item.subtext = dc.disconnectTime > 0.0 ? FormatAgo(slot, now - dc.disconnectTime) : std::string();
 			items.push_back(std::move(item));
 		}
 		if (items.empty())
@@ -896,10 +902,10 @@ namespace
 		options.push = push;
 		options.rebuild = [push](int s) { StartOfflineBanFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, "Add ban: select player", items,
+			slot, ADMIN_Translate(slot, "Add ban: select player").c_str(), items,
 			[items](int s, int item, const std::string &steamid)
 			{
-				ShowPunishForm(s, "Ban: " + items[item].text, "Ban", true,
+				ShowPunishForm(s, "Ban", items[item].text, true,
 							   [steamid](int s2, const std::string &minutes, const std::string &reason)
 							   {
 								   mmu::Args args;
@@ -921,7 +927,7 @@ namespace
 			return;
 		}
 
-		std::string title = verb + ": select player";
+		std::string title = ADMIN_Format(slot, "%s: select player", ADMIN_Translate(slot, verb.c_str()).c_str());
 		AdminMenuBridge::Options options;
 		options.push = push;
 		options.rebuild = [cmd, verb, includeBots, excludeSelf, commFilter, push](int s)
@@ -996,7 +1002,7 @@ namespace
 		options.mapList = true;
 		options.rebuild = [push](int s) { StartMapFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, "Change Map", items, [](int s, int, const std::string &mapArg)
+			slot, ADMIN_Translate(slot, "Change Map").c_str(), items, [](int s, int, const std::string &mapArg)
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
 	}
 
@@ -1018,7 +1024,7 @@ namespace
 		AdminMenuBridge::Options options;
 		options.mapList = true;
 		g_AdminMenus.ShowMenu(
-			slot, "Matching Maps", items, [](int s, int, const std::string &mapArg)
+			slot, ADMIN_Translate(slot, "Matching Maps").c_str(), items, [](int s, int, const std::string &mapArg)
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
 	}
 
@@ -1109,7 +1115,7 @@ namespace
 	}
 
 	// A section per category, kWeapons keeps each one contiguous.
-	std::vector<AdminMenuItem> BuildWeaponItems()
+	std::vector<AdminMenuItem> BuildWeaponItems(int slot)
 	{
 		std::vector<AdminMenuItem> items;
 		for (const WeaponEntry &w : kWeapons)
@@ -1117,7 +1123,7 @@ namespace
 			AdminMenuItem item;
 			item.text = w.display;
 			item.info = w.classname;
-			item.section = w.category;
+			item.section = ADMIN_Translate(slot, w.category);
 			// Icons are named after the classname without its prefix.
 			const std::string classname = w.classname;
 			item.image = classname.substr(classname.find('_') + 1);
@@ -1134,7 +1140,7 @@ namespace
 		options.layout = MenuLayout::Grid;
 		options.tiles = MenuTileSize::Medium;
 		g_AdminMenus.ShowMenu(
-			slot, "Give: select weapon", BuildWeaponItems(),
+			slot, ADMIN_Translate(slot, "Give: select weapon").c_str(), BuildWeaponItems(slot),
 			[target](int s, int, const std::string &classname)
 			{
 				mmu::Args args;
@@ -1158,7 +1164,8 @@ namespace
 		options.push = push;
 		options.rebuild = [push](int s) { StartGiveFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, "Give: select player", players, [](int s, int, const std::string &target) { ShowWeaponPicker(s, target); }, options);
+			slot, ADMIN_Translate(slot, "Give: select player").c_str(), players,
+			[](int s, int, const std::string &target) { ShowWeaponPicker(s, target); }, options);
 	}
 
 	// The slot behind a picker's info, or -1 once that player is gone.
@@ -1195,7 +1202,7 @@ namespace
 		pickOptions.push = push;
 		pickOptions.rebuild = [push](int s) { StartCommsFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, "Gag / Mute: select player", players,
+			slot, ADMIN_Translate(slot, "Gag / Mute: select player").c_str(), players,
 			[players](int s, int item, const std::string &target)
 			{
 				PlayerInfo *p = g_CS2APlayerManager.GetPlayer(SlotFromTargetInfo(target));
@@ -1227,7 +1234,7 @@ namespace
 				{
 					if (action.show && g_CS2ACommandSystem.CanRun(s, action.cmd))
 					{
-						items.push_back({action.verb, action.cmd, false});
+						items.push_back({ADMIN_Translate(s, action.verb), action.cmd, false});
 					}
 				}
 				if (items.empty())
@@ -1240,7 +1247,7 @@ namespace
 				AdminMenuBridge::Options actionOptions;
 				actionOptions.push = true;
 				g_AdminMenus.ShowMenu(
-					s, ("Gag / Mute: " + name).c_str(), items,
+					s, (ADMIN_Translate(s, "Gag / Mute") + ": " + name).c_str(), items,
 					[name, target](int s2, int, const std::string &cmd)
 					{
 						if (cmd != "mute" && cmd != "gag" && cmd != "silence")
@@ -1249,7 +1256,7 @@ namespace
 							return;
 						}
 						std::string verb = cmd == "mute" ? "Mute" : (cmd == "gag" ? "Gag" : "Silence");
-						ShowPunishForm(s2, verb + ": " + name, verb, true,
+						ShowPunishForm(s2, verb, name, true,
 									   [cmd, target](int s3, const std::string &minutes, const std::string &reason)
 									   {
 										   mmu::Args args;
@@ -1312,9 +1319,9 @@ namespace
 			if (action.show && g_CS2ACommandSystem.CanRun(slot, action.cmd))
 			{
 				AdminMenuItem item;
-				item.text = action.label;
+				item.text = ADMIN_Translate(slot, action.label);
 				item.info = action.cmd;
-				item.section = action.section;
+				item.section = ADMIN_Translate(slot, action.section);
 				items.push_back(std::move(item));
 			}
 		}
@@ -1341,7 +1348,7 @@ namespace
 											 : cmd == "mute" ? "Mute"
 											 : cmd == "gag"  ? "Gag"
 															 : "Silence";
-					ShowPunishForm(s, verb + ": " + name, verb, timed,
+					ShowPunishForm(s, verb, name, timed,
 								   [cmd, target](int s2, const std::string &minutes, const std::string &reason)
 								   {
 									   mmu::Args args;
@@ -1372,7 +1379,9 @@ namespace
 		AdminMenuBridge::Options options;
 		options.push = push;
 		options.rebuild = [push](int s) { StartPlayersFlow(s, push); };
-		g_AdminMenus.ShowMenu(slot, "Players", players, [](int s, int, const std::string &target) { ShowPlayerPage(s, target, true); }, options);
+		g_AdminMenus.ShowMenu(
+			slot, ADMIN_Translate(slot, "Players").c_str(), players, [](int s, int, const std::string &target) { ShowPlayerPage(s, target, true); },
+			options);
 	}
 
 	// cfg/cs2admin/adminmenu_cfgs.txt, SourceMod's format.
@@ -1406,7 +1415,7 @@ namespace
 		options.push = push;
 		options.rebuild = [push](int s) { StartExecCfgFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, "Execute Config", items, [](int s, int, const std::string &file)
+			slot, ADMIN_Translate(slot, "Execute Config").c_str(), items, [](int s, int, const std::string &file)
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("execcfg", mmu::Args().Set("file", file), s); }, options);
 	}
 
@@ -1449,9 +1458,9 @@ namespace
 				continue;
 			}
 			AdminMenuItem item;
-			item.text = entry.label;
+			item.text = ADMIN_Translate(slot, entry.label);
 			item.info = std::to_string(i);
-			item.section = entry.section;
+			item.section = ADMIN_Translate(slot, entry.section);
 			items.push_back(std::move(item));
 		}
 		if (items.empty())
@@ -1462,7 +1471,8 @@ namespace
 		AdminMenuBridge::Options options;
 		options.rebuild = &StartAdminMenu;
 		g_AdminMenus.ShowMenu(
-			slot, "Admin Menu", items, [](int s, int, const std::string &info) { kAdminMenu[atoi(info.c_str())].open(s); }, options);
+			slot, ADMIN_Translate(slot, "Admin Menu").c_str(), items,
+			[](int s, int, const std::string &info) { kAdminMenu[atoi(info.c_str())].open(s); }, options);
 	}
 
 	// True when slot is a real player and the menu plugin can render a picker.
@@ -2267,17 +2277,17 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							AdminMenuItem item;
 							item.text = tag->id;
 							item.info = tag->id;
-							item.subtext = tag == shown ? "current" : "";
+							item.subtext = tag == shown ? ADMIN_Translate(slot, "current") : "";
 							items.push_back(item);
 						}
 						// Empty info is what SelectTag reads as "show nothing".
 						AdminMenuItem none;
-						none.text = "No tag";
+						none.text = ADMIN_Translate(slot, "No tag");
 						none.info = "";
-						none.subtext = shown ? "" : "current";
+						none.subtext = shown ? "" : ADMIN_Translate(slot, "current");
 						items.push_back(none);
 
-						g_AdminMenus.ShowMenu(slot, "Choose your tag", items,
+						g_AdminMenus.ShowMenu(slot, ADMIN_Translate(slot, "Choose your tag").c_str(), items,
 											  [](int s, int, const std::string &info)
 											  {
 												  if (!g_CS2ATagManager.SelectTag(s, info.c_str()))
@@ -2318,7 +2328,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							const DisconnectedPlayer &dc = disconnected[i];
 
 							std::string authid = SteamID64ToAuthId(dc.steamid64);
-							std::string timeAgo = FormatAgo(curtime > 0.0 && dc.disconnectTime > 0.0 ? curtime - dc.disconnectTime : 0.0);
+							std::string timeAgo = FormatAgo(slot, curtime > 0.0 && dc.disconnectTime > 0.0 ? curtime - dc.disconnectTime : 0.0);
 
 							ADMIN_ReplyToCommandT(slot, "  %s (%s) [%s] - %s\n", dc.name.c_str(), authid.c_str(), dc.ip.c_str(), timeAgo.c_str());
 						}
@@ -2557,11 +2567,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (!g_CS2AMapManager.ChangeMap(map.c_str(), error))
+						if (!g_CS2AMapManager.ChangeMap(slot, map.c_str(), error))
 						{
 							std::vector<const MapEntry *> matches;
 							std::string ambiguous;
-							if (MenuPickerAvailable(slot) && !g_CS2AMapManager.FindMap(map.c_str(), ambiguous, &matches) && matches.size() > 1)
+							if (MenuPickerAvailable(slot) && !g_CS2AMapManager.FindMap(slot, map.c_str(), ambiguous, &matches) && matches.size() > 1)
 							{
 								ShowMapMatches(slot, std::move(matches));
 								return;

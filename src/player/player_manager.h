@@ -136,6 +136,6 @@ int ADMIN_ParseDuration(const char *input);
 
 // Format a duration in minutes to a human-readable string.
 // e.g., 90 -> "1 hour", 1500 -> "1 day", 0 -> "permanent"
-std::string ADMIN_FormatDuration(int minutes);
+std::string ADMIN_FormatDuration(int slot, int minutes);
 
 #endif // _INCLUDE_ADMIN_PLAYER_MANAGER_H_

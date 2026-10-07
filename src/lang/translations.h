@@ -20,4 +20,7 @@ void ADMIN_LoadTranslations();
 // Convenience wrapper over g_CS2ATranslations for building menu titles and labels.
 std::string ADMIN_Translate(int slot, const char *phrase);
 
+// ADMIN_Translate with the phrase's format specifiers filled in.
+std::string ADMIN_Format(int slot, const char *phrase, ...);
+
 #endif // _INCLUDE_ADMIN_TRANSLATIONS_H_

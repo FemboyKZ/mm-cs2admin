@@ -6,307 +6,62 @@
 // Reasons and messages keep the line color. Console-only lines, list rows, usage lines and menu labels carry no tags.
 "Phrases"
 {
-	"[ADMIN] You are banned from this server. Reason: %s\n"
+	// General: permissions, targeting and availability
+	"You do not have permission to use this command.\n"
 	{
-		"en"	"[ADMIN] You are banned from this server. Reason: %s\n"
-		"chi"	"[ADMIN] 你已被此服务器封禁。原因: %s\n"
-	}
-	"Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n"
-	{
-		"en"	"Player \"{green}%s{default}\" ({green}%s{default}) has {green}%d{default} ban(s), {green}%d{default} mute(s), {green}%d{default} gag(s) on record.\n"
-		"chi"	"玩家 \"{green}%s{default}\" ({green}%s{default}) 曾有过 {green}%d{default} 次封禁、{green}%d{default} 次禁言(语音)、{green}%d{default} 次封禁(文字)。\n"
-	}
-	"You have been gagged for %d minute(s) for chat flooding.\n"
-	{
-		"en"	"{red}You have been gagged for {default}%d{red} minute(s) for chat flooding.\n"
-		"chi"	"{red}由于刷屏，你已被禁言 {default}%d{red} 分钟。\n"
-	}
-	"%s was auto-gagged for chat flooding.\n"
-	{
-		"en"	"{green}%s{default} was auto-gagged for chat flooding.\n"
-		"chi"	"{green}%s{default} 因刷屏被系统自动禁言。\n"
-	}
-	"Slow down! You are sending messages too fast.\n"
-	{
-		"en"	"{red}Slow down! You are sending messages too fast.\n"
-		"chi"	"{red}发太快了！请慢一点发言。\n"
-	}
-	"[ADMIN] You have been kicked. Reason: %s\n"
-	{
-		"en"	"[ADMIN] You have been kicked. Reason: %s\n"
-	}
-	"%s banned %s (%d min). Reason: %s\n"
-	{
-		"en"	"{green}%s{default} banned {green}%s{default} ({green}%d{default} min). Reason: %s\n"
-		"chi"	"{green}%s{default} 被封禁了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
-	}
-	"WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n"
-	{
-		"en"	"{red}WARNING: Player \"{default}%s{red}\" ({default}%s{red}) has {default}%d{red} matching IP ban(s).\n"
-		"chi"	"{red}警告：检测到玩家 \"{default}%s{red}\" ({default}%s{red}) 有 {default}%d{red} 个关联的 IP 封禁记录。\n"
-	}
-	"Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n"
-	{
-		"en"	"Sleuth auto-banned \"{green}%s{default}\" ({green}%s{default}) - {green}%d{default} IP ban(s) found.\n"
-		"chi"	"Sleuth 已自动封禁 \"{green}%s{default}\" ({green}%s{default}) - 因检测到 {green}%d{default} 个关联 IP 封禁。\n"
-	}
-	"Database not connected.\n"
-	{
-		"en"	"{red}Database not connected.\n"
-		"chi"	"{red}数据库未连接。\n"
-	}
-	"Query failed.\n"
-	{
-		"en"	"{red}Query failed.\n"
-		"chi"	"{red}查询失败。\n"
-	}
-	"No bans found for %s.\n"
-	{
-		"en"	"{red}No bans found for {default}%s{red}.\n"
-		"chi"	"{red}未找到关于 {default}%s{red} 的封禁记录。\n"
-	}
-	"Ban history for %s (last 10):\n"
-	{
-		"en"	"Ban history for {green}%s{default} (last 10):\n"
-		"chi"	"{green}%s{default} 的封禁历史记录（最近 10 条）：\n"
-	}
-	"  %-12s %-16s %-12s %-4s %s\n"
-	{
-		"en"	"  %-12s %-16s %-12s %-4s %s\n"
-		"chi"	"  %-12s %-16s %-12s %-4s %s\n"
-	}
-	"No comm blocks found for %s.\n"
-	{
-		"en"	"{red}No comm blocks found for {default}%s{red}.\n"
-		"chi"	"{red}未找到关于 {default}%s{red} 的禁言记录。\n"
-	}
-	"Comm history for %s (last 10):\n"
-	{
-		"en"	"Comm history for {green}%s{default} (last 10):\n"
-		"chi"	"{green}%s{default} 的禁言历史记录（最近 10 条）：\n"
-	}
-	"  %-12s %-16s %-6s %-12s %-4s %s\n"
-	{
-		"en"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
-		"chi"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
-	}
-	"You are permanently muted. Reason: %s\n"
-	{
-		"en"	"{red}You are permanently muted. Reason: {default}%s\n"
-		"chi"	"{red}你已被永久禁止使用语音。原因: {default}%s\n"
-	}
-	"You are muted (%d seconds remaining). Reason: %s\n"
-	{
-		"en"	"{red}You are muted ({default}%d{red} seconds remaining). Reason: {default}%s\n"
-		"chi"	"{red}你已被禁止使用语音（持续 {default}%d{red} 秒）。原因: {default}%s\n"
-	}
-	"You are permanently gagged. Reason: %s\n"
-	{
-		"en"	"{red}You are permanently gagged. Reason: {default}%s\n"
-		"chi"	"{red}你已被永久禁言。原因: {default}%s\n"
-	}
-	"You are gagged (%d seconds remaining). Reason: %s\n"
-	{
-		"en"	"{red}You are gagged ({default}%d{red} seconds remaining). Reason: {default}%s\n"
-		"chi"	"{red}你已被禁言（持续 {default}%d{red} 秒）。原因: {default}%s\n"
-	}
-	"You have been permanently muted. Reason: %s\n"
-	{
-		"en"	"{red}You have been permanently muted. Reason: {default}%s\n"
-		"chi"	"{red}你已被永久禁止使用语音。原因: {default}%s\n"
-	}
-	"You have been muted for %d minutes. Reason: %s\n"
-	{
-		"en"	"{red}You have been muted for {default}%d{red} minutes. Reason: {default}%s\n"
-		"chi"	"{red}你已被禁止使用语音 {default}%d{red} 分钟。原因: {default}%s\n"
-	}
-	"%s muted %s (%d min). Reason: %s\n"
-	{
-		"en"	"{green}%s{default} muted {green}%s{default} ({green}%d{default} min). Reason: %s\n"
-		"chi"	"{green}%s{default} 语音禁言了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
-	}
-	"You have been permanently gagged. Reason: %s\n"
-	{
-		"en"	"{red}You have been permanently gagged. Reason: {default}%s\n"
-		"chi"	"{red}你已被永久禁言。原因: {default}%s\n"
-	}
-	"You have been gagged for %d minutes. Reason: %s\n"
-	{
-		"en"	"{red}You have been gagged for {default}%d{red} minutes. Reason: {default}%s\n"
-		"chi"	"{red}你已被禁言 {default}%d{red} 分钟。原因: {default}%s\n"
-	}
-	"%s gagged %s (%d min). Reason: %s\n"
-	{
-		"en"	"{green}%s{default} gagged {green}%s{default} ({green}%d{default} min). Reason: %s\n"
-		"chi"	"{green}%s{default} 禁言了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
-	}
-	"You have been unmuted.\n"
-	{
-		"en"	"You have been unmuted.\n"
-		"chi"	"你的语音禁言已被解除。\n"
-	}
-	"%s unmuted %s.\n"
-	{
-		"en"	"{green}%s{default} unmuted {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 解除了 {green}%s{default} 的语音禁言。\n"
-	}
-	"You have been ungagged.\n"
-	{
-		"en"	"You have been ungagged.\n"
-		"chi"	"你的禁言已被解除。\n"
-	}
-	"%s ungagged %s.\n"
-	{
-		"en"	"{green}%s{default} ungagged {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 解除了 {green}%s{default} 的禁言。\n"
-	}
-	"You have been permanently silenced. Reason: %s\n"
-	{
-		"en"	"{red}You have been permanently silenced. Reason: {default}%s\n"
-	}
-	"You have been silenced for %d minutes. Reason: %s\n"
-	{
-		"en"	"{red}You have been silenced for {default}%d{red} minutes. Reason: {default}%s\n"
-	}
-	"%s silenced %s (%d min). Reason: %s\n"
-	{
-		"en"	"{green}%s{default} silenced {green}%s{default} ({green}%d{default} min). Reason: %s\n"
-	}
-	"You have been unsilenced.\n"
-	{
-		"en"	"You have been unsilenced.\n"
-	}
-	"%s unsilenced %s.\n"
-	{
-		"en"	"{green}%s{default} unsilenced {green}%s{default}.\n"
-	}
-	"%s is not muted.\n"
-	{
-		"en"	"%s{red} is not muted.\n"
-	}
-	"%s is not gagged.\n"
-	{
-		"en"	"%s{red} is not gagged.\n"
-	}
-	"%s is not muted or gagged.\n"
-	{
-		"en"	"%s{red} is not muted or gagged.\n"
-	}
-	"You have been muted for this session.\n"
-	{
-		"en"	"{red}You have been muted for this session.\n"
-		"chi"	"{red}你在本局游戏中已被禁止使用语音。\n"
-	}
-	"%s session-muted %s.\n"
-	{
-		"en"	"{green}%s{default} session-muted {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 禁用了 {green}%s{default} 的本局游戏语音。\n"
-	}
-	"You have been gagged for this session.\n"
-	{
-		"en"	"{red}You have been gagged for this session.\n"
-		"chi"	"{red}你在本局游戏中已被禁言。\n"
-	}
-	"%s session-gagged %s.\n"
-	{
-		"en"	"{green}%s{default} session-gagged {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 禁言了 {green}%s{default} 。\n"
-	}
-	"Your mute has expired.\n"
-	{
-		"en"	"Your mute has expired.\n"
-		"chi"	"你的语音禁言已到期。\n"
-	}
-	"Your gag has expired.\n"
-	{
-		"en"	"Your gag has expired.\n"
-		"chi"	"你的文字禁言已到期。\n"
-	}
-	"Invalid target.\n"
-	{
-		"en"	"{red}Invalid target.\n"
-		"chi"	"{red}无效的目标。\n"
-	}
-	"Comm status for \"%s\" (%s):\n"
-	{
-		"en"	"Comm status for \"{green}%s{default}\" ({green}%s{default}):\n"
-		"chi"	"\"{green}%s{default}\" ({green}%s{default}) 的禁言禁音状态：\n"
-	}
-	"  Muted: Session only\n"
-	{
-		"en"	"  Muted: Session only\n"
-		"chi"	"  语音禁言：仅本局游戏\n"
-	}
-	"  Muted: %d seconds remaining. Reason: %s\n"
-	{
-		"en"	"  Muted: %d seconds remaining. Reason: %s\n"
-		"chi"	"  语音禁言：剩余 %d 秒。原因: %s\n"
-	}
-	"  Muted: Permanent. Reason: %s\n"
-	{
-		"en"	"  Muted: Permanent. Reason: %s\n"
-		"chi"	"  语音禁言：永久。原因: %s\n"
-	}
-	"  Muted: No\n"
-	{
-		"en"	"  Muted: No\n"
-		"chi"	"  语音禁言：否\n"
-	}
-	"  Gagged: Session only\n"
-	{
-		"en"	"  Gagged: Session only\n"
-		"chi"	"  文字禁言：仅本局\n"
-	}
-	"  Gagged: %d seconds remaining. Reason: %s\n"
-	{
-		"en"	"  Gagged: %d seconds remaining. Reason: %s\n"
-		"chi"	"  文字禁言：剩余 %d 秒。原因: %s\n"
-	}
-	"  Gagged: Permanent. Reason: %s\n"
-	{
-		"en"	"  Gagged: Permanent. Reason: %s\n"
-		"chi"	"  文字禁言：永久。原因: %s\n"
-	}
-	"  Gagged: No\n"
-	{
-		"en"	"  Gagged: No\n"
-		"chi"	"  文字禁言：否\n"
-	}
-	"(no output)\n"
-	{
-		"en"	"(no output)\n"
-		"chi"	"(无输出)\n"
-	}
-	"[output truncated: too many lines]\n"
-	{
-		"en"	"[output truncated: too many lines]\n"
-		"chi"	"[输出截断：行数过多]\n"
-	}
-	"[output truncated]\n"
-	{
-		"en"	"[output truncated]\n"
-		"chi"	"[输出截断]\n"
+		"en"	"{red}You do not have permission to use this command.\n"
+		"chi"	"{red}你没有使用此命令的权限。\n"
 	}
 	"Cannot target this player (higher immunity).\n"
 	{
 		"en"	"{red}Cannot target this player (higher immunity).\n"
 		"chi"	"{red}无法对此玩家生效（其拥有更高的权限）。\n"
 	}
+	"Invalid target.\n"
+	{
+		"en"	"{red}Invalid target.\n"
+		"chi"	"{red}无效的目标。\n"
+	}
 	"No valid targets online.\n"
 	{
 		"en"	"{red}No valid targets online.\n"
 		"chi"	"{red}当前没有在线的有效目标。\n"
 	}
-	"No maps loaded. Check cfg/maplist.txt\n"
+	"No valid alive targets found.\n"
 	{
-		"en"	"{red}No maps loaded. Check cfg/maplist.txt\n"
-		"chi"	"{red}未加载任何地图。请检查 cfg/maplist.txt\n"
+		"en"	"{red}No valid alive targets found.\n"
+		"chi"	"{red}未找到存活的有效目标。\n"
 	}
-	"You do not have permission to use this command.\n"
+	"This command cannot be used from console.\n"
 	{
-		"en"	"{red}You do not have permission to use this command.\n"
-		"chi"	"{red}你没有使用此命令的权限。\n"
+		"en"	"{red}This command cannot be used from console.\n"
+		"chi"	"{red}无法在控制台中执行此指令。\n"
 	}
+	"This command cannot be used from the server console.\n"
+	{
+		"en"	"{red}This command cannot be used from the server console.\n"
+		"chi"	"{red}无法从服务器服务端控制台执行此命令。\n"
+	}
+	"This command is disabled on this server. Use the web panel instead.\n"
+	{
+		"en"	"{red}This command is disabled on this server. Use the web panel instead.\n"
+	}
+	"Database not connected.\n"
+	{
+		"en"	"{red}Database not connected.\n"
+		"chi"	"{red}数据库未连接。\n"
+	}
+	"Database not available.\n"
+	{
+		"en"	"{red}Database not available.\n"
+	}
+	"Query failed.\n"
+	{
+		"en"	"{red}Query failed.\n"
+		"chi"	"{red}查询失败。\n"
+	}
+
+	// General: command arguments
 	"Unknown key %s=.\n"
 	{
 		"en"	"{red}Unknown key {default}%s={red}.\n"
@@ -319,365 +74,42 @@
 	{
 		"en"	"{red}A quote is left open.\n"
 	}
-	"Usage: !ban <target> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-	{
-		"en"	"Usage: !ban <target> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !ban <目标> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
-	}
 	"Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
 	{
 		"en"	"{red}Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n"
 		"chi"	"{red}无效的时长。请输入分钟数（如 30）或后缀：h(小时)、d(天)、w(周)、m(月)。0 为永久。\n"
 	}
-	"Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n"
+
+	// General: target errors
+	"No matching players found."
 	{
-		"en"	"Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n"
-		"chi"	"用法: !unban <SteamID> (STEAM_0:X:Y、SteamID64 或 [U:1:X])\n"
+		"en"	"{red}No matching players found."
+		"chi"	"{red}未找到匹配的玩家。"
 	}
-	"Usage: !addban <steamid> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	"No player found matching that name."
 	{
-		"en"	"Usage: !addban <steamid> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !addban <SteamID> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"{red}No player found matching that name."
+		"chi"	"{red}未找到匹配该名字的玩家。"
 	}
-	"Usage: !mute <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	"No player found with exact name."
 	{
-		"en"	"Usage: !mute <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !mute <目标> [time=<时长>] [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+		"en"	"{red}No player found with exact name."
+		"chi"	"{red}未找到完全同名的玩家。"
 	}
-	"Usage: !unmute <target>\n"
+	"Multiple players match that name. Be more specific."
 	{
-		"en"	"Usage: !unmute <target>\n"
-		"chi"	"用法: !unmute <目标>\n"
-	}
-	"Usage: !gag <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-	{
-		"en"	"Usage: !gag <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !gag <目标> [time=<时长>] [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
-	}
-	"Usage: !ungag <target>\n"
-	{
-		"en"	"Usage: !ungag <target>\n"
-		"chi"	"用法: !ungag <目标>\n"
-	}
-	"Usage: !silence <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-	{
-		"en"	"Usage: !silence <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !silence <目标> [time=<时长>] [reason=<原因>] (双重禁言：语音+文字；时长单位: 分钟，或 1h/2d/1w/1m)\n"
-	}
-	"Usage: !unsilence <target>\n"
-	{
-		"en"	"Usage: !unsilence <target>\n"
-		"chi"	"用法: !unsilence <目标>\n"
-	}
-	"Usage: !banip <ip> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-	{
-		"en"	"Usage: !banip <ip> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
-		"chi"	"用法: !banip <IP地址> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
-	}
-	"Invalid IP address format.\n"
-	{
-		"en"	"{red}Invalid IP address format.\n"
-		"chi"	"{red}IP 地址格式无效。\n"
-	}
-	"Usage: !listbans <target|steamid>\n"
-	{
-		"en"	"Usage: !listbans <target|steamid>\n"
-		"chi"	"用法: !listbans <目标|SteamID>\n"
-	}
-	"Usage: !listcomms <target|steamid>\n"
-	{
-		"en"	"Usage: !listcomms <target|steamid>\n"
-		"chi"	"用法: !listcomms <目标|SteamID>\n"
-	}
-	"Usage: !comms [target]\n"
-	{
-		"en"	"Usage: !comms [target]\n"
-		"chi"	"用法: !comms [目标]\n"
-	}
-	"This command cannot be used from console.\n"
-	{
-		"en"	"{red}This command cannot be used from console.\n"
-		"chi"	"{red}无法在控制台中执行此指令。\n"
-	}
-	"Usage: !report <target> reason=<text>\n"
-	{
-		"en"	"Usage: !report <target> reason=<text>\n"
-		"chi"	"用法: !report <目标> reason=<原因>\n"
-	}
-	"You must wait %d seconds before reporting again.\n"
-	{
-		"en"	"{red}You must wait {default}%d{red} seconds before reporting again.\n"
-		"chi"	"{red}你必须等待 {default}%d{red} 秒后才能再次举报。\n"
-	}
-	"You cannot report yourself.\n"
-	{
-		"en"	"{red}You cannot report yourself.\n"
-		"chi"	"{red}你不能举报自己。\n"
-	}
-	"Report reason must be at least %d characters.\n"
-	{
-		"en"	"{red}Report reason must be at least {default}%d{red} characters.\n"
-		"chi"	"{red}举报原因至少需要 {default}%d{red} 个字符。\n"
-	}
-	"%s reported %s: %s\n"
-	{
-		"en"	"{green}%s{default} reported {green}%s{default}: %s\n"
-		"chi"	"{green}%s{default} 举报了 {green}%s{default}: %s\n"
-	}
-	"Report submitted against %s.\n"
-	{
-		"en"	"Report submitted against {green}%s{default}.\n"
-		"chi"	"已成功提交对 {green}%s{default} 的举报。\n"
-	}
-	"Usage: !kick <target> [reason=<text>]\n"
-	{
-		"en"	"Usage: !kick <target> [reason=<text>]\n"
-		"chi"	"用法: !kick <目标> [reason=<原因>]\n"
-	}
-	"You cannot kick yourself.\n"
-	{
-		"en"	"{red}You cannot kick yourself.\n"
-		"chi"	"{red}你不能踢出你自己。\n"
-	}
-	"%s kicked %s. Reason: %s\n"
-	{
-		"en"	"{green}%s{default} kicked {green}%s{default}. Reason: %s\n"
-		"chi"	"{green}%s{default} 踢出了 {green}%s{default}。原因: %s\n"
-	}
-	"Usage: !slay <target>\n"
-	{
-		"en"	"Usage: !slay <target>\n"
-		"chi"	"用法: !slay <目标>\n"
-	}
-	"%s slayed %d players.\n"
-	{
-		"en"	"{green}%s{default} slayed {green}%d{default} players.\n"
-		"chi"	"{green}%s{default} 处决了 {green}%d{default} 名玩家。\n"
-	}
-	"%s slayed %s.\n"
-	{
-		"en"	"{green}%s{default} slayed {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 处决了 {green}%s{default}。\n"
-	}
-	"Online Admins:\n"
-	{
-		"en"	"Online Admins:\n"
-		"chi"	"在线管理员：\n"
-	}
-	"  %s [%s] flags: %s imm: %d\n"
-	{
-		"en"	"  %s [%s] flags: %s imm: %d\n"
-		"chi"	"  %s [%s] flags: %s imm: %d\n"
-	}
-	"  No admins currently online.\n"
-	{
-		"en"	"  No admins currently online.\n"
-		"chi"	"  当前没有管理员在线。\n"
-	}
-	"Usage: !who [target]\n"
-	{
-		"en"	"Usage: !who [target]\n"
-		"chi"	"用法: !who [目标]\n"
-	}
-	"%d admin(s) online\n"
-	{
-		"en"	"{green}%d{default} admin(s) online\n"
-		"chi"	"当前有 {green}%d{default} 名管理员在线\n"
-	}
-	"No recently disconnected players.\n"
-	{
-		"en"	"{red}No recently disconnected players.\n"
-		"chi"	"{red}最近没有断开连接的玩家。\n"
-	}
-	"Recently Disconnected Players:\n"
-	{
-		"en"	"Recently Disconnected Players:\n"
-		"chi"	"最近断开连接的玩家：\n"
-	}
-	"  %s (%s) [%s] - %s\n"
-	{
-		"en"	"  %s (%s) [%s] - %s\n"
-		"chi"	"  %s (%s) [%s] - %s\n"
-	}
-	"%d player(s) recently disconnected\n"
-	{
-		"en"	"{green}%d{default} player(s) recently disconnected\n"
-		"chi"	"最近有 {green}%d{default} 名玩家断开连接\n"
-	}
-	"Commands (page %d/%d):\n"
-	{
-		"en"	"Commands (page {green}%d{default}/{green}%d{default}):\n"
-		"chi"	"指令列表 (页码 {green}%d{default}/{green}%d{default}):\n"
-	}
-	"  %s%s\n"
-	{
-		"en"	"  %s%s\n"
-		"chi"	"  %s%s\n"
-	}
-	"Use !adminhelp %d for next page.\n"
-	{
-		"en"	"Use {green}!adminhelp %d{default} for next page.\n"
-		"chi"	"使用 {green}!adminhelp %d{default} 查看下一页。\n"
-	}
-	"Usage: !adminhelp [page]\n"
-	{
-		"en"	"Usage: !adminhelp [page]\n"
-		"chi"	"用法: !adminhelp [页码]\n"
-	}
-	"Usage: !find <text>\n"
-	{
-		"en"	"Usage: !find <text>\n"
-		"chi"	"用法: !find <文本>\n"
-	}
-	"No commands found matching '%s'.\n"
-	{
-		"en"	"{red}No commands found matching '{default}%s{red}'.\n"
-		"chi"	"{red}未找到匹配 '{default}%s{red}' 的指令。\n"
-	}
-	"Commands matching '%s':\n"
-	{
-		"en"	"Commands matching '{green}%s{default}':\n"
-		"chi"	"匹配 '{green}%s{default}' 的指令：\n"
-	}
-	"Usage: !rcon <command>\n"
-	{
-		"en"	"Usage: !rcon <command>\n"
-		"chi"	"用法: !rcon <指令>\n"
-	}
-	"Queued: %s\n"
-	{
-		"en"	"Queued: {green}%s\n"
-		"chi"	"已入队: {green}%s\n"
-	}
-	"Executed: %s, check console for output.\n"
-	{
-		"en"	"Executed: {green}%s{default}, check console for output.\n"
-		"chi"	"已执行: {green}%s{default}，请在控制台查看输出。\n"
-	}
-	"Usage: !pm <target> message=<text>\n"
-	{
-		"en"	"Usage: !pm <target> message=<text>\n"
-		"chi"	"用法: !pm <目标> message=<私聊消息>\n"
-	}
-	"[PM from %s] %s\n"
-	{
-		"en"	"{orchid}[PM from %s]{default} %s\n"
-		"chi"	"{orchid}[来自 %s 的私聊]{default} %s\n"
-	}
-	"[PM to %s] %s\n"
-	{
-		"en"	"{orchid}[PM to %s]{default} %s\n"
-		"chi"	"{orchid}[发给 %s 的私聊]{default} %s\n"
-	}
-	"[PM %s -> %s] %s\n"
-	{
-		"en"	"{yellow}[PM %s -> %s]{default} %s\n"
-		"chi"	"{yellow}[私聊 %s -> %s]{default} %s\n"
-	}
-	"Usage: !map <mapname|workshopid|url>\n"
-	{
-		"en"	"Usage: !map <mapname|workshopid|url>\n"
-		"chi"	"用法: !map <地图名|创意工坊ID>\n"
-	}
-	"%s changed map to %s.\n"
-	{
-		"en"	"{green}%s{default} changed map to {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 将地图更换为了 {green}%s{default}。\n"
-	}
-	"Maps (page %d/%d):\n"
-	{
-		"en"	"Maps (page {green}%d{default}/{green}%d{default}):\n"
-		"chi"	"地图列表 (页码 {green}%d{default}/{green}%d{default}):\n"
-	}
-	"  %s [ws:%s]\n"
-	{
-		"en"	"  %s [ws:%s]\n"
-		"chi"	"  %s [ws:%s]\n"
-	}
-	"  %s\n"
-	{
-		"en"	"  %s\n"
-		"chi"	"  %s\n"
-	}
-	"Use !maps %d for next page.\n"
-	{
-		"en"	"Use {green}!maps %d{default} for next page.\n"
-		"chi"	"使用 {green}!maps %d{default} 查看下一页。\n"
-	}
-	"Usage: !maps [page]\n"
-	{
-		"en"	"Usage: !maps [page]\n"
-		"chi"	"用法: !maps [页码]\n"
-	}
-	"Usage: !entfire <entity> input=<input> [value=<value>]\n"
-	{
-		"en"	"Usage: !entfire <entity> input=<input> [value=<value>]\n"
-		"chi"	"用法: !entfire <实体> input=<输入信号> [value=<参数值>]\n"
-	}
-	"Fired: %s %s%s\n"
-	{
-		"en"	"Fired: {green}%s %s%s\n"
-		"chi"	"已触发实体: {green}%s %s%s\n"
-	}
-	"Usage: !give <target> weapon=<weapon>\n"
-	{
-		"en"	"Usage: !give <target> weapon=<weapon>\n"
-		"chi"	"用法: !give <目标> weapon=<武器代码>\n"
-	}
-	"%s gave %s to %d players.\n"
-	{
-		"en"	"{green}%s{default} gave {green}%s{default} to {green}%d{default} players.\n"
-		"chi"	"{green}%s{default} 给予了 {green}%s{default} 名玩家 {green}%d{default}。\n"
-	}
-	"%s gave %s to %s.\n"
-	{
-		"en"	"{green}%s{default} gave {green}%s{default} to {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 给予了 {green}%s{default} {green}%s{default}。\n"
-	}
-	"No valid alive targets found.\n"
-	{
-		"en"	"{red}No valid alive targets found.\n"
-		"chi"	"{red}未找到存活的有效目标。\n"
-	}
-	"Usage: !strip <target>\n"
-	{
-		"en"	"Usage: !strip <target>\n"
-		"chi"	"用法: !strip <目标>\n"
-	}
-	"%s stripped weapons from %d players.\n"
-	{
-		"en"	"{green}%s{default} stripped weapons from {green}%d{default} players.\n"
-		"chi"	"{green}%s{default} 剥夺了 {green}%d{default} 名玩家的武器。\n"
-	}
-	"%s stripped weapons from %s.\n"
-	{
-		"en"	"{green}%s{default} stripped weapons from {green}%s{default}.\n"
-		"chi"	"{green}%s{default} 剥夺了 {green}%s{default} 的武器。\n"
+		"en"	"{red}Multiple players match that name. Be more specific."
+		"chi"	"{red}有多个玩家匹配该名字，请输入更精确的名称。"
 	}
 	"Multiple players matched. Use a more specific target."
 	{
 		"en"	"{red}Multiple players matched. Use a more specific target."
 		"chi"	"{red}匹配到多名玩家，请使用更具体的名称或目标。"
 	}
-	"[ADMIN] %s"
+	"Player not found with that slot/userid."
 	{
-		"en"	"[ADMIN] %s"
-		"chi"	"[ADMIN] %s"
-	}
-	" %s%s%s"
-	{
-		"en"	" %s%s%s"
-		"chi"	" %s%s%s"
-	}
-	"You are not in-game."
-	{
-		"en"	"{red}You are not in-game."
-		"chi"	"{red}你当前不在游戏中。"
-	}
-	"No matching players found."
-	{
-		"en"	"{red}No matching players found."
-		"chi"	"{red}未找到匹配的玩家。"
+		"en"	"{red}Player not found with that slot/userid."
+		"chi"	"{red}未找到该 Slot 或 UserID 对应的玩家。"
 	}
 	"Invalid SteamID64."
 	{
@@ -688,231 +120,13 @@
 	{
 		"en"	"{red}No player with that SteamID is online."
 	}
-	"No player found with exact name."
+	"You are not in-game."
 	{
-		"en"	"{red}No player found with exact name."
-		"chi"	"{red}未找到完全同名的玩家。"
-	}
-	"Player not found with that slot/userid."
-	{
-		"en"	"{red}Player not found with that slot/userid."
-		"chi"	"{red}未找到该 Slot 或 UserID 对应的玩家。"
-	}
-	"Multiple players match that name. Be more specific."
-	{
-		"en"	"{red}Multiple players match that name. Be more specific."
-		"chi"	"{red}有多个玩家匹配该名字，请输入更精确的名称。"
-	}
-	"No player found matching that name."
-	{
-		"en"	"{red}No player found matching that name."
-		"chi"	"{red}未找到匹配该名字的玩家。"
-	}
-	"This command cannot be used from the server console.\n"
-	{
-		"en"	"{red}This command cannot be used from the server console.\n"
-		"chi"	"{red}无法从服务器服务端控制台执行此命令。\n"
-	}
-	"Tags are disabled on this server.\n"
-	{
-		"en"	"{red}Tags are disabled on this server.\n"
-		"chi"	"{red}本服务器已禁用称号/称号标签功能。\n"
-	}
-	"Tags are unavailable while %s is handling chat.\n"
-	{
-		"en"	"{red}Tags are unavailable while {default}%s{red} is handling chat.\n"
-		"chi"	"{red}当 {default}%s{red} 接管聊天框时，称号功能暂不可用。\n"
-	}
-	"You do not have any tags.\n"
-	{
-		"en"	"{red}You do not have any tags.\n"
-		"chi"	"{red}你当前没有任何称号。\n"
-	}
-	"Usage: !tag [name|none]\n"
-	{
-		"en"	"Usage: !tag [name|none]\n"
-		"chi"	"用法: !tag [标签名|none]\n"
-	}
-	"Your tag is now hidden.\n"
-	{
-		"en"	"Your tag is now hidden.\n"
-		"chi"	"你的称号现已隐藏。\n"
-	}
-	"Your tag is now \"%s\".\n"
-	{
-		"en"	"Your tag is now \"{green}%s{default}\".\n"
-		"chi"	"你的称号现已佩戴为 \"{green}%s{default}\"。\n"
-	}
-	"You do not have a tag called \"%s\".\n"
-	{
-		"en"	"{red}You do not have a tag called \"{default}%s{red}\".\n"
-		"chi"	"{red}你没有名为 \"{default}%s{red}\" 的称号。\n"
-	}
-	"That tag is no longer available to you.\n"
-	{
-		"en"	"{red}That tag is no longer available to you.\n"
-		"chi"	"{red}你已无法使用该称号。\n"
-	}
-	"Your tags:\n"
-	{
-		"en"	"Your tags:\n"
-		"chi"	"你的称号列表：\n"
-	}
-	"Use %stag <name>, or %stag none to hide it.\n"
-	{
-		"en"	"Use {green}%stag <name>{default}, or {green}%stag none{default} to hide it.\n"
-		"chi"	"使用 {green}%stag <称号名称>{default} 佩戴，或输入 {green}%stag none{default} 隐藏称号。\n"
+		"en"	"{red}You are not in-game."
+		"chi"	"{red}你当前不在游戏中。"
 	}
 
-	// Workshop downloads
-	"Downloading %s, the map will change once it finishes."
-	{
-		"en"	"Downloading {green}%s{default}, the map will change once it finishes."
-	}
-	"Downloading %s... %d%%"
-	{
-		"en"	"Downloading {green}%s{default}... {green}%d%%"
-	}
-	"%s could not be downloaded in time. Staying on the current map."
-	{
-		"en"	"%s{red} could not be downloaded in time. Staying on the current map."
-	}
-	"%s could not be downloaded. Staying on the current map."
-	{
-		"en"	"%s{red} could not be downloaded. Staying on the current map."
-	}
-	"Workshop item %s was not found or is not a CS2 map."
-	{
-		"en"	"{red}Workshop item {default}%s{red} was not found or is not a CS2 map."
-	}
-	"%s is not installed and no download could be started."
-	{
-		"en"	"%s{red} is not installed and no download could be started."
-	}
-	"Map change to %s failed."
-	{
-		"en"	"{red}Map change to {default}%s{red} failed."
-	}
-	"Vote skipped, the map is already changing to %s."
-	{
-		"en"	"Vote skipped, the map is already changing to {green}%s{default}."
-	}
-	"You cannot ban yourself.\n"
-	{
-		"en"	"{red}You cannot ban yourself.\n"
-	}
-	"Bots cannot be banned.\n"
-	{
-		"en"	"{red}Bots cannot be banned.\n"
-	}
-	"[ADMIN] Visit %s for more information.\n"
-	{
-		"en"	"[ADMIN] Visit %s for more information.\n"
-	}
-	"This command is disabled on this server. Use the web panel instead.\n"
-	{
-		"en"	"{red}This command is disabled on this server. Use the web panel instead.\n"
-	}
-	"You cannot issue blocks longer than %s.\n"
-	{
-		"en"	"{red}You cannot issue blocks longer than {default}%s{red}.\n"
-	}
-	"You cannot lift a block placed by an admin with higher immunity.\n"
-	{
-		"en"	"{red}You cannot lift a block placed by an admin with higher immunity.\n"
-	}
-	"Type the reason in chat, or cancel to stop.\n"
-	{
-		"en"	"Type the reason in chat, or {green}cancel{default} to stop.\n"
-	}
-	"Cancelled.\n"
-	{
-		"en"	"Cancelled.\n"
-	}
-	"No menu durations configured. Check Menu > Durations in core.cfg\n"
-	{
-		"en"	"{red}No menu durations configured. Check Menu > Durations in core.cfg\n"
-	}
-	"[current]"
-	{
-		"en"	"[current]"
-	}
-	"The admin menu needs the mm-cs2menus plugin.\n"
-	{
-		"en"	"{red}The admin menu needs the mm-cs2menus plugin.\n"
-	}
-	"Admin cache has been refreshed.\n"
-	{
-		"en"	"Admin cache has been refreshed.\n"
-	}
-	"Usage: !execcfg <file>\n"
-	{
-		"en"	"Usage: !execcfg <file>\n"
-	}
-	"Invalid config file '%s'.\n"
-	{
-		"en"	"{red}Invalid config file '{default}%s{red}'.\n"
-	}
-	"Executed config %s.\n"
-	{
-		"en"	"Executed config {green}%s{default}.\n"
-	}
-	"%s is not an admin.\n"
-	{
-		"en"	"%s{red} is not an admin.\n"
-	}
-	"No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n"
-	{
-		"en"	"{red}No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n"
-	}
-	"Config not found: %s\n"
-	{
-		"en"	"{red}Config not found: {default}%s\n"
-	}
-	"Database not available.\n"
-	{
-		"en"	"{red}Database not available.\n"
-	}
-	"Unknown weapon '%s'.\n"
-	{
-		"en"	"{red}Unknown weapon '{default}%s{red}'.\n"
-	}
-	"Tags are unavailable while %s is loaded.\n"
-	{
-		"en"	"{red}Tags are unavailable while {default}%s{red} is loaded.\n"
-	}
-
-	// Map change errors
-	"No map specified."
-	{
-		"en"	"{red}No map specified."
-	}
-	"Multiple maps match '%s':"
-	{
-		"en"	"{red}Multiple maps match '{default}%s{red}':{default}"
-	}
-	"No map found matching '%s'."
-	{
-		"en"	"{red}No map found matching '{default}%s{red}'."
-	}
-	"Engine not available."
-	{
-		"en"	"{red}Engine not available."
-	}
-	"Already working on '%s', try again once it is loaded."
-	{
-		"en"	"{red}Already working on '{default}%s{red}', try again once it is loaded."
-	}
-	"Map '%s' is not installed on this server."
-	{
-		"en"	"{red}Map '{default}%s{red}' is not installed on this server."
-	}
-	"Map '%s' is not installed and no download could be started."
-	{
-		"en"	"{red}Map '{default}%s{red}' is not installed and no download could be started."
-	}
-
-	// Durations, also shown in menus
+	// Durations, in chat, the history tables and the admin menu
 	"permanent"
 	{
 		"en"	"permanent"
@@ -978,7 +192,337 @@
 		"en"	"%dh ago"
 	}
 
-	// History and admin list columns
+	// Bans: !ban, !addban, !unban and !banip
+	"Usage: !ban <target> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !ban <target> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !ban <目标> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+	}
+	"Usage: !addban <steamid> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !addban <steamid> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !addban <SteamID> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+	}
+	"Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n"
+	{
+		"en"	"Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n"
+		"chi"	"用法: !unban <SteamID> (STEAM_0:X:Y、SteamID64 或 [U:1:X])\n"
+	}
+	"Usage: !banip <ip> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !banip <ip> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !banip <IP地址> time=<时长> [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+	}
+	"Invalid IP address format.\n"
+	{
+		"en"	"{red}Invalid IP address format.\n"
+		"chi"	"{red}IP 地址格式无效。\n"
+	}
+	"You cannot ban yourself.\n"
+	{
+		"en"	"{red}You cannot ban yourself.\n"
+	}
+	"Bots cannot be banned.\n"
+	{
+		"en"	"{red}Bots cannot be banned.\n"
+	}
+	"%s banned %s (%d min). Reason: %s\n"
+	{
+		"en"	"{green}%s{default} banned {green}%s{default} ({green}%d{default} min). Reason: %s\n"
+		"chi"	"{green}%s{default} 被封禁了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
+	}
+
+	// Bans: notices when a player connects
+	"[ADMIN] You are banned from this server. Reason: %s\n"
+	{
+		"en"	"[ADMIN] You are banned from this server. Reason: %s\n"
+		"chi"	"[ADMIN] 你已被此服务器封禁。原因: %s\n"
+	}
+	"[ADMIN] Visit %s for more information.\n"
+	{
+		"en"	"[ADMIN] Visit %s for more information.\n"
+	}
+	"Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n"
+	{
+		"en"	"Player \"{green}%s{default}\" ({green}%s{default}) has {green}%d{default} ban(s), {green}%d{default} mute(s), {green}%d{default} gag(s) on record.\n"
+		"chi"	"玩家 \"{green}%s{default}\" ({green}%s{default}) 曾有过 {green}%d{default} 次封禁、{green}%d{default} 次禁言(语音)、{green}%d{default} 次封禁(文字)。\n"
+	}
+	"WARNING: Player \"%s\" (%s) has %d matching IP ban(s).\n"
+	{
+		"en"	"{red}WARNING: Player \"{default}%s{red}\" ({default}%s{red}) has {default}%d{red} matching IP ban(s).\n"
+		"chi"	"{red}警告：检测到玩家 \"{default}%s{red}\" ({default}%s{red}) 有 {default}%d{red} 个关联的 IP 封禁记录。\n"
+	}
+	"Sleuth auto-banned \"%s\" (%s) - %d IP ban(s) found.\n"
+	{
+		"en"	"Sleuth auto-banned \"{green}%s{default}\" ({green}%s{default}) - {green}%d{default} IP ban(s) found.\n"
+		"chi"	"Sleuth 已自动封禁 \"{green}%s{default}\" ({green}%s{default}) - 因检测到 {green}%d{default} 个关联 IP 封禁。\n"
+	}
+
+	// Kick and slay: !kick and !slay
+	"Usage: !kick <target> [reason=<text>]\n"
+	{
+		"en"	"Usage: !kick <target> [reason=<text>]\n"
+		"chi"	"用法: !kick <目标> [reason=<原因>]\n"
+	}
+	"You cannot kick yourself.\n"
+	{
+		"en"	"{red}You cannot kick yourself.\n"
+		"chi"	"{red}你不能踢出你自己。\n"
+	}
+	"[ADMIN] You have been kicked. Reason: %s\n"
+	{
+		"en"	"[ADMIN] You have been kicked. Reason: %s\n"
+	}
+	"%s kicked %s. Reason: %s\n"
+	{
+		"en"	"{green}%s{default} kicked {green}%s{default}. Reason: %s\n"
+		"chi"	"{green}%s{default} 踢出了 {green}%s{default}。原因: %s\n"
+	}
+	"Usage: !slay <target>\n"
+	{
+		"en"	"Usage: !slay <target>\n"
+		"chi"	"用法: !slay <目标>\n"
+	}
+	"%s slayed %s.\n"
+	{
+		"en"	"{green}%s{default} slayed {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 处决了 {green}%s{default}。\n"
+	}
+	"%s slayed %d players.\n"
+	{
+		"en"	"{green}%s{default} slayed {green}%d{default} players.\n"
+		"chi"	"{green}%s{default} 处决了 {green}%d{default} 名玩家。\n"
+	}
+
+	// Mute, gag and silence: commands
+	"Usage: !mute <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !mute <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !mute <目标> [time=<时长>] [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+	}
+	"Usage: !unmute <target>\n"
+	{
+		"en"	"Usage: !unmute <target>\n"
+		"chi"	"用法: !unmute <目标>\n"
+	}
+	"Usage: !gag <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !gag <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !gag <目标> [time=<时长>] [reason=<原因>] (时长单位: 分钟，或 1h/2d/1w/1m)\n"
+	}
+	"Usage: !ungag <target>\n"
+	{
+		"en"	"Usage: !ungag <target>\n"
+		"chi"	"用法: !ungag <目标>\n"
+	}
+	"Usage: !silence <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+	{
+		"en"	"Usage: !silence <target> [time=<time>] [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n"
+		"chi"	"用法: !silence <目标> [time=<时长>] [reason=<原因>] (双重禁言：语音+文字；时长单位: 分钟，或 1h/2d/1w/1m)\n"
+	}
+	"Usage: !unsilence <target>\n"
+	{
+		"en"	"Usage: !unsilence <target>\n"
+		"chi"	"用法: !unsilence <目标>\n"
+	}
+	"You cannot issue blocks longer than %s.\n"
+	{
+		"en"	"{red}You cannot issue blocks longer than {default}%s{red}.\n"
+	}
+	"You cannot lift a block placed by an admin with higher immunity.\n"
+	{
+		"en"	"{red}You cannot lift a block placed by an admin with higher immunity.\n"
+	}
+	"%s is not muted.\n"
+	{
+		"en"	"%s{red} is not muted.\n"
+	}
+	"%s is not gagged.\n"
+	{
+		"en"	"%s{red} is not gagged.\n"
+	}
+	"%s is not muted or gagged.\n"
+	{
+		"en"	"%s{red} is not muted or gagged.\n"
+	}
+
+	// Mute, gag and silence: told to the player
+	"You have been muted for %d minutes. Reason: %s\n"
+	{
+		"en"	"{red}You have been muted for {default}%d{red} minutes. Reason: {default}%s\n"
+		"chi"	"{red}你已被禁止使用语音 {default}%d{red} 分钟。原因: {default}%s\n"
+	}
+	"You have been permanently muted. Reason: %s\n"
+	{
+		"en"	"{red}You have been permanently muted. Reason: {default}%s\n"
+		"chi"	"{red}你已被永久禁止使用语音。原因: {default}%s\n"
+	}
+	"You have been muted for this session.\n"
+	{
+		"en"	"{red}You have been muted for this session.\n"
+		"chi"	"{red}你在本局游戏中已被禁止使用语音。\n"
+	}
+	"You have been unmuted.\n"
+	{
+		"en"	"You have been unmuted.\n"
+		"chi"	"你的语音禁言已被解除。\n"
+	}
+	"Your mute has expired.\n"
+	{
+		"en"	"Your mute has expired.\n"
+		"chi"	"你的语音禁言已到期。\n"
+	}
+	"You have been gagged for %d minutes. Reason: %s\n"
+	{
+		"en"	"{red}You have been gagged for {default}%d{red} minutes. Reason: {default}%s\n"
+		"chi"	"{red}你已被禁言 {default}%d{red} 分钟。原因: {default}%s\n"
+	}
+	"You have been permanently gagged. Reason: %s\n"
+	{
+		"en"	"{red}You have been permanently gagged. Reason: {default}%s\n"
+		"chi"	"{red}你已被永久禁言。原因: {default}%s\n"
+	}
+	"You have been gagged for this session.\n"
+	{
+		"en"	"{red}You have been gagged for this session.\n"
+		"chi"	"{red}你在本局游戏中已被禁言。\n"
+	}
+	"You have been ungagged.\n"
+	{
+		"en"	"You have been ungagged.\n"
+		"chi"	"你的禁言已被解除。\n"
+	}
+	"Your gag has expired.\n"
+	{
+		"en"	"Your gag has expired.\n"
+		"chi"	"你的文字禁言已到期。\n"
+	}
+	"You have been silenced for %d minutes. Reason: %s\n"
+	{
+		"en"	"{red}You have been silenced for {default}%d{red} minutes. Reason: {default}%s\n"
+	}
+	"You have been permanently silenced. Reason: %s\n"
+	{
+		"en"	"{red}You have been permanently silenced. Reason: {default}%s\n"
+	}
+	"You have been unsilenced.\n"
+	{
+		"en"	"You have been unsilenced.\n"
+	}
+
+	// Mute, gag and silence: a block still running when the player connects
+	"You are muted (%d seconds remaining). Reason: %s\n"
+	{
+		"en"	"{red}You are muted ({default}%d{red} seconds remaining). Reason: {default}%s\n"
+		"chi"	"{red}你已被禁止使用语音（持续 {default}%d{red} 秒）。原因: {default}%s\n"
+	}
+	"You are permanently muted. Reason: %s\n"
+	{
+		"en"	"{red}You are permanently muted. Reason: {default}%s\n"
+		"chi"	"{red}你已被永久禁止使用语音。原因: {default}%s\n"
+	}
+	"You are gagged (%d seconds remaining). Reason: %s\n"
+	{
+		"en"	"{red}You are gagged ({default}%d{red} seconds remaining). Reason: {default}%s\n"
+		"chi"	"{red}你已被禁言（持续 {default}%d{red} 秒）。原因: {default}%s\n"
+	}
+	"You are permanently gagged. Reason: %s\n"
+	{
+		"en"	"{red}You are permanently gagged. Reason: {default}%s\n"
+		"chi"	"{red}你已被永久禁言。原因: {default}%s\n"
+	}
+
+	// Mute, gag and silence: announced to everyone
+	"%s muted %s (%d min). Reason: %s\n"
+	{
+		"en"	"{green}%s{default} muted {green}%s{default} ({green}%d{default} min). Reason: %s\n"
+		"chi"	"{green}%s{default} 语音禁言了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
+	}
+	"%s session-muted %s.\n"
+	{
+		"en"	"{green}%s{default} session-muted {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 禁用了 {green}%s{default} 的本局游戏语音。\n"
+	}
+	"%s unmuted %s.\n"
+	{
+		"en"	"{green}%s{default} unmuted {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 解除了 {green}%s{default} 的语音禁言。\n"
+	}
+	"%s gagged %s (%d min). Reason: %s\n"
+	{
+		"en"	"{green}%s{default} gagged {green}%s{default} ({green}%d{default} min). Reason: %s\n"
+		"chi"	"{green}%s{default} 禁言了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
+	}
+	"%s session-gagged %s.\n"
+	{
+		"en"	"{green}%s{default} session-gagged {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 禁言了 {green}%s{default} 。\n"
+	}
+	"%s ungagged %s.\n"
+	{
+		"en"	"{green}%s{default} ungagged {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 解除了 {green}%s{default} 的禁言。\n"
+	}
+	"%s silenced %s (%d min). Reason: %s\n"
+	{
+		"en"	"{green}%s{default} silenced {green}%s{default} ({green}%d{default} min). Reason: %s\n"
+	}
+	"%s unsilenced %s.\n"
+	{
+		"en"	"{green}%s{default} unsilenced {green}%s{default}.\n"
+	}
+
+	// Chat flood protection
+	"Slow down! You are sending messages too fast.\n"
+	{
+		"en"	"{red}Slow down! You are sending messages too fast.\n"
+		"chi"	"{red}发太快了！请慢一点发言。\n"
+	}
+
+	// History: !listbans and !listcomms
+	"Usage: !listbans <target|steamid>\n"
+	{
+		"en"	"Usage: !listbans <target|steamid>\n"
+		"chi"	"用法: !listbans <目标|SteamID>\n"
+	}
+	"Ban history for %s (last 10):\n"
+	{
+		"en"	"Ban history for {green}%s{default} (last 10):\n"
+		"chi"	"{green}%s{default} 的封禁历史记录（最近 10 条）：\n"
+	}
+	"  %-12s %-16s %-12s %-4s %s\n"
+	{
+		"en"	"  %-12s %-16s %-12s %-4s %s\n"
+		"chi"	"  %-12s %-16s %-12s %-4s %s\n"
+	}
+	"No bans found for %s.\n"
+	{
+		"en"	"{red}No bans found for {default}%s{red}.\n"
+		"chi"	"{red}未找到关于 {default}%s{red} 的封禁记录。\n"
+	}
+	"Usage: !listcomms <target|steamid>\n"
+	{
+		"en"	"Usage: !listcomms <target|steamid>\n"
+		"chi"	"用法: !listcomms <目标|SteamID>\n"
+	}
+	"Comm history for %s (last 10):\n"
+	{
+		"en"	"Comm history for {green}%s{default} (last 10):\n"
+		"chi"	"{green}%s{default} 的禁言历史记录（最近 10 条）：\n"
+	}
+	"  %-12s %-16s %-6s %-12s %-4s %s\n"
+	{
+		"en"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
+		"chi"	"  %-12s %-16s %-6s %-12s %-4s %s\n"
+	}
+	"No comm blocks found for %s.\n"
+	{
+		"en"	"{red}No comm blocks found for {default}%s{red}.\n"
+		"chi"	"{red}未找到关于 {default}%s{red} 的禁言记录。\n"
+	}
+
+	// History: column titles and fallbacks
+	// The Type column shows Mute or Gag, which sit with the admin menu's actions.
 	"Date"
 	{
 		"en"	"Date"
@@ -986,10 +530,6 @@
 	"Banned By"
 	{
 		"en"	"Banned By"
-	}
-	"Length"
-	{
-		"en"	"Length"
 	}
 	"Admin"
 	{
@@ -999,16 +539,509 @@
 	{
 		"en"	"Type"
 	}
+	"Length"
+	{
+		"en"	"Length"
+	}
+	"Reason"
+	{
+		"en"	"Reason"
+	}
 	"Unknown"
 	{
 		"en"	"Unknown"
+	}
+
+	// Comm status: !comms
+	"Usage: !comms [target]\n"
+	{
+		"en"	"Usage: !comms [target]\n"
+		"chi"	"用法: !comms [目标]\n"
+	}
+	"Comm status for \"%s\" (%s):\n"
+	{
+		"en"	"Comm status for \"{green}%s{default}\" ({green}%s{default}):\n"
+		"chi"	"\"{green}%s{default}\" ({green}%s{default}) 的禁言禁音状态：\n"
+	}
+	"  Muted: No\n"
+	{
+		"en"	"  Muted: No\n"
+		"chi"	"  语音禁言：否\n"
+	}
+	"  Muted: Session only\n"
+	{
+		"en"	"  Muted: Session only\n"
+		"chi"	"  语音禁言：仅本局游戏\n"
+	}
+	"  Muted: %d seconds remaining. Reason: %s\n"
+	{
+		"en"	"  Muted: %d seconds remaining. Reason: %s\n"
+		"chi"	"  语音禁言：剩余 %d 秒。原因: %s\n"
+	}
+	"  Muted: Permanent. Reason: %s\n"
+	{
+		"en"	"  Muted: Permanent. Reason: %s\n"
+		"chi"	"  语音禁言：永久。原因: %s\n"
+	}
+	"  Gagged: No\n"
+	{
+		"en"	"  Gagged: No\n"
+		"chi"	"  文字禁言：否\n"
+	}
+	"  Gagged: Session only\n"
+	{
+		"en"	"  Gagged: Session only\n"
+		"chi"	"  文字禁言：仅本局\n"
+	}
+	"  Gagged: %d seconds remaining. Reason: %s\n"
+	{
+		"en"	"  Gagged: %d seconds remaining. Reason: %s\n"
+		"chi"	"  文字禁言：剩余 %d 秒。原因: %s\n"
+	}
+	"  Gagged: Permanent. Reason: %s\n"
+	{
+		"en"	"  Gagged: Permanent. Reason: %s\n"
+		"chi"	"  文字禁言：永久。原因: %s\n"
+	}
+
+	// Reports: !report
+	"Usage: !report <target> reason=<text>\n"
+	{
+		"en"	"Usage: !report <target> reason=<text>\n"
+		"chi"	"用法: !report <目标> reason=<原因>\n"
+	}
+	"You cannot report yourself.\n"
+	{
+		"en"	"{red}You cannot report yourself.\n"
+		"chi"	"{red}你不能举报自己。\n"
+	}
+	"Report reason must be at least %d characters.\n"
+	{
+		"en"	"{red}Report reason must be at least {default}%d{red} characters.\n"
+		"chi"	"{red}举报原因至少需要 {default}%d{red} 个字符。\n"
+	}
+	"You must wait %d seconds before reporting again.\n"
+	{
+		"en"	"{red}You must wait {default}%d{red} seconds before reporting again.\n"
+		"chi"	"{red}你必须等待 {default}%d{red} 秒后才能再次举报。\n"
+	}
+	"Report submitted against %s.\n"
+	{
+		"en"	"Report submitted against {green}%s{default}.\n"
+		"chi"	"已成功提交对 {green}%s{default} 的举报。\n"
+	}
+	"%s reported %s: %s\n"
+	{
+		"en"	"{green}%s{default} reported {green}%s{default}: %s\n"
+		"chi"	"{green}%s{default} 举报了 {green}%s{default}: %s\n"
+	}
+
+	// Admin lists: !who and !listdc
+	"Usage: !who [target]\n"
+	{
+		"en"	"Usage: !who [target]\n"
+		"chi"	"用法: !who [目标]\n"
+	}
+	"Online Admins:\n"
+	{
+		"en"	"Online Admins:\n"
+		"chi"	"在线管理员：\n"
+	}
+	"  %s [%s] flags: %s imm: %d\n"
+	{
+		"en"	"  %s [%s] flags: %s imm: %d\n"
+		"chi"	"  %s [%s] flags: %s imm: %d\n"
 	}
 	"(no group)"
 	{
 		"en"	"(no group)"
 	}
+	"  No admins currently online.\n"
+	{
+		"en"	"  No admins currently online.\n"
+		"chi"	"  当前没有管理员在线。\n"
+	}
+	"%d admin(s) online\n"
+	{
+		"en"	"{green}%d{default} admin(s) online\n"
+		"chi"	"当前有 {green}%d{default} 名管理员在线\n"
+	}
+	"%s is not an admin.\n"
+	{
+		"en"	"%s{red} is not an admin.\n"
+	}
+	"Recently Disconnected Players:\n"
+	{
+		"en"	"Recently Disconnected Players:\n"
+		"chi"	"最近断开连接的玩家：\n"
+	}
+	"  %s (%s) [%s] - %s\n"
+	{
+		"en"	"  %s (%s) [%s] - %s\n"
+		"chi"	"  %s (%s) [%s] - %s\n"
+	}
+	"%d player(s) recently disconnected\n"
+	{
+		"en"	"{green}%d{default} player(s) recently disconnected\n"
+		"chi"	"最近有 {green}%d{default} 名玩家断开连接\n"
+	}
+	"No recently disconnected players.\n"
+	{
+		"en"	"{red}No recently disconnected players.\n"
+		"chi"	"{red}最近没有断开连接的玩家。\n"
+	}
 
-	// Admin menu
+	// Help: !adminhelp and !find
+	"Usage: !adminhelp [page]\n"
+	{
+		"en"	"Usage: !adminhelp [page]\n"
+		"chi"	"用法: !adminhelp [页码]\n"
+	}
+	"Commands (page %d/%d):\n"
+	{
+		"en"	"Commands (page {green}%d{default}/{green}%d{default}):\n"
+		"chi"	"指令列表 (页码 {green}%d{default}/{green}%d{default}):\n"
+	}
+	"  %s%s\n"
+	{
+		"en"	"  %s%s\n"
+		"chi"	"  %s%s\n"
+	}
+	"Use !adminhelp %d for next page.\n"
+	{
+		"en"	"Use {green}!adminhelp %d{default} for next page.\n"
+		"chi"	"使用 {green}!adminhelp %d{default} 查看下一页。\n"
+	}
+	"Usage: !find <text>\n"
+	{
+		"en"	"Usage: !find <text>\n"
+		"chi"	"用法: !find <文本>\n"
+	}
+	"Commands matching '%s':\n"
+	{
+		"en"	"Commands matching '{green}%s{default}':\n"
+		"chi"	"匹配 '{green}%s{default}' 的指令：\n"
+	}
+	"No commands found matching '%s'.\n"
+	{
+		"en"	"{red}No commands found matching '{default}%s{red}'.\n"
+		"chi"	"{red}未找到匹配 '{default}%s{red}' 的指令。\n"
+	}
+
+	// Private messages: !pm
+	"Usage: !pm <target> message=<text>\n"
+	{
+		"en"	"Usage: !pm <target> message=<text>\n"
+		"chi"	"用法: !pm <目标> message=<私聊消息>\n"
+	}
+	"[PM from %s] %s\n"
+	{
+		"en"	"{orchid}[PM from %s]{default} %s\n"
+		"chi"	"{orchid}[来自 %s 的私聊]{default} %s\n"
+	}
+	"[PM to %s] %s\n"
+	{
+		"en"	"{orchid}[PM to %s]{default} %s\n"
+		"chi"	"{orchid}[发给 %s 的私聊]{default} %s\n"
+	}
+	"[PM %s -> %s] %s\n"
+	{
+		"en"	"{yellow}[PM %s -> %s]{default} %s\n"
+		"chi"	"{yellow}[私聊 %s -> %s]{default} %s\n"
+	}
+
+	// Maps: !map and !maps
+	"Usage: !map <mapname|workshopid|url>\n"
+	{
+		"en"	"Usage: !map <mapname|workshopid|url>\n"
+		"chi"	"用法: !map <地图名|创意工坊ID>\n"
+	}
+	"%s changed map to %s.\n"
+	{
+		"en"	"{green}%s{default} changed map to {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 将地图更换为了 {green}%s{default}。\n"
+	}
+	"Usage: !maps [page]\n"
+	{
+		"en"	"Usage: !maps [page]\n"
+		"chi"	"用法: !maps [页码]\n"
+	}
+	"Maps (page %d/%d):\n"
+	{
+		"en"	"Maps (page {green}%d{default}/{green}%d{default}):\n"
+		"chi"	"地图列表 (页码 {green}%d{default}/{green}%d{default}):\n"
+	}
+	"  %s [ws:%s]\n"
+	{
+		"en"	"  %s [ws:%s]\n"
+		"chi"	"  %s [ws:%s]\n"
+	}
+	"  %s\n"
+	{
+		"en"	"  %s\n"
+		"chi"	"  %s\n"
+	}
+	"Use !maps %d for next page.\n"
+	{
+		"en"	"Use {green}!maps %d{default} for next page.\n"
+		"chi"	"使用 {green}!maps %d{default} 查看下一页。\n"
+	}
+	"No maps loaded. Check cfg/maplist.txt\n"
+	{
+		"en"	"{red}No maps loaded. Check cfg/maplist.txt\n"
+		"chi"	"{red}未加载任何地图。请检查 cfg/maplist.txt\n"
+	}
+
+	// Maps: lookup and change errors
+	"No map specified."
+	{
+		"en"	"{red}No map specified."
+	}
+	"No map found matching '%s'."
+	{
+		"en"	"{red}No map found matching '{default}%s{red}'."
+	}
+	"Multiple maps match '%s':"
+	{
+		"en"	"{red}Multiple maps match '{default}%s{red}':{default}"
+	}
+	"Engine not available."
+	{
+		"en"	"{red}Engine not available."
+	}
+	"Already working on '%s', try again once it is loaded."
+	{
+		"en"	"{red}Already working on '{default}%s{red}', try again once it is loaded."
+	}
+	"Map '%s' is not installed on this server."
+	{
+		"en"	"{red}Map '{default}%s{red}' is not installed on this server."
+	}
+	"Map '%s' is not installed and no download could be started."
+	{
+		"en"	"{red}Map '{default}%s{red}' is not installed and no download could be started."
+	}
+
+	// Maps: workshop downloads
+	"Downloading %s, the map will change once it finishes."
+	{
+		"en"	"Downloading {green}%s{default}, the map will change once it finishes."
+	}
+	"Downloading %s... %d%%"
+	{
+		"en"	"Downloading {green}%s{default}... {green}%d%%"
+	}
+	"%s could not be downloaded in time. Staying on the current map."
+	{
+		"en"	"%s{red} could not be downloaded in time. Staying on the current map."
+	}
+	"%s could not be downloaded. Staying on the current map."
+	{
+		"en"	"%s{red} could not be downloaded. Staying on the current map."
+	}
+	"Workshop item %s was not found or is not a CS2 map."
+	{
+		"en"	"{red}Workshop item {default}%s{red} was not found or is not a CS2 map."
+	}
+	"%s is not installed and no download could be started."
+	{
+		"en"	"%s{red} is not installed and no download could be started."
+	}
+	"Map change to %s failed."
+	{
+		"en"	"{red}Map change to {default}%s{red} failed."
+	}
+	"Vote skipped, the map is already changing to %s."
+	{
+		"en"	"Vote skipped, the map is already changing to {green}%s{default}."
+	}
+
+	// Server commands: !rcon, !execcfg, !entfire and !reloadadmins
+	"Usage: !rcon <command>\n"
+	{
+		"en"	"Usage: !rcon <command>\n"
+		"chi"	"用法: !rcon <指令>\n"
+	}
+	"Executed: %s, check console for output.\n"
+	{
+		"en"	"Executed: {green}%s{default}, check console for output.\n"
+		"chi"	"已执行: {green}%s{default}，请在控制台查看输出。\n"
+	}
+	"Queued: %s\n"
+	{
+		"en"	"Queued: {green}%s\n"
+		"chi"	"已入队: {green}%s\n"
+	}
+	"(no output)\n"
+	{
+		"en"	"(no output)\n"
+		"chi"	"(无输出)\n"
+	}
+	"[output truncated]\n"
+	{
+		"en"	"[output truncated]\n"
+		"chi"	"[输出截断]\n"
+	}
+	"[output truncated: too many lines]\n"
+	{
+		"en"	"[output truncated: too many lines]\n"
+		"chi"	"[输出截断：行数过多]\n"
+	}
+	"Usage: !execcfg <file>\n"
+	{
+		"en"	"Usage: !execcfg <file>\n"
+	}
+	"Executed config %s.\n"
+	{
+		"en"	"Executed config {green}%s{default}.\n"
+	}
+	"Invalid config file '%s'.\n"
+	{
+		"en"	"{red}Invalid config file '{default}%s{red}'.\n"
+	}
+	"Config not found: %s\n"
+	{
+		"en"	"{red}Config not found: {default}%s\n"
+	}
+	"Usage: !entfire <entity> input=<input> [value=<value>]\n"
+	{
+		"en"	"Usage: !entfire <entity> input=<input> [value=<value>]\n"
+		"chi"	"用法: !entfire <实体> input=<输入信号> [value=<参数值>]\n"
+	}
+	"Fired: %s %s%s\n"
+	{
+		"en"	"Fired: {green}%s %s%s\n"
+		"chi"	"已触发实体: {green}%s %s%s\n"
+	}
+	"Admin cache has been refreshed.\n"
+	{
+		"en"	"Admin cache has been refreshed.\n"
+	}
+
+	// Items: !give and !strip
+	"Usage: !give <target> weapon=<weapon>\n"
+	{
+		"en"	"Usage: !give <target> weapon=<weapon>\n"
+		"chi"	"用法: !give <目标> weapon=<武器代码>\n"
+	}
+	"%s gave %s to %s.\n"
+	{
+		"en"	"{green}%s{default} gave {green}%s{default} to {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 给予了 {green}%s{default} {green}%s{default}。\n"
+	}
+	"%s gave %s to %d players.\n"
+	{
+		"en"	"{green}%s{default} gave {green}%s{default} to {green}%d{default} players.\n"
+		"chi"	"{green}%s{default} 给予了 {green}%s{default} 名玩家 {green}%d{default}。\n"
+	}
+	"Unknown weapon '%s'.\n"
+	{
+		"en"	"{red}Unknown weapon '{default}%s{red}'.\n"
+	}
+	"Usage: !strip <target>\n"
+	{
+		"en"	"Usage: !strip <target>\n"
+		"chi"	"用法: !strip <目标>\n"
+	}
+	"%s stripped weapons from %s.\n"
+	{
+		"en"	"{green}%s{default} stripped weapons from {green}%s{default}.\n"
+		"chi"	"{green}%s{default} 剥夺了 {green}%s{default} 的武器。\n"
+	}
+	"%s stripped weapons from %d players.\n"
+	{
+		"en"	"{green}%s{default} stripped weapons from {green}%d{default} players.\n"
+		"chi"	"{green}%s{default} 剥夺了 {green}%d{default} 名玩家的武器。\n"
+	}
+
+	// Tags: !tag
+	"Usage: !tag [name|none]\n"
+	{
+		"en"	"Usage: !tag [name|none]\n"
+		"chi"	"用法: !tag [标签名|none]\n"
+	}
+	"Your tags:\n"
+	{
+		"en"	"Your tags:\n"
+		"chi"	"你的称号列表：\n"
+	}
+	"Use %stag <name>, or %stag none to hide it.\n"
+	{
+		"en"	"Use {green}%stag <name>{default}, or {green}%stag none{default} to hide it.\n"
+		"chi"	"使用 {green}%stag <称号名称>{default} 佩戴，或输入 {green}%stag none{default} 隐藏称号。\n"
+	}
+	"Your tag is now \"%s\".\n"
+	{
+		"en"	"Your tag is now \"{green}%s{default}\".\n"
+		"chi"	"你的称号现已佩戴为 \"{green}%s{default}\"。\n"
+	}
+	"Your tag is now hidden.\n"
+	{
+		"en"	"Your tag is now hidden.\n"
+		"chi"	"你的称号现已隐藏。\n"
+	}
+	"You do not have any tags.\n"
+	{
+		"en"	"{red}You do not have any tags.\n"
+		"chi"	"{red}你当前没有任何称号。\n"
+	}
+	"You do not have a tag called \"%s\".\n"
+	{
+		"en"	"{red}You do not have a tag called \"{default}%s{red}\".\n"
+		"chi"	"{red}你没有名为 \"{default}%s{red}\" 的称号。\n"
+	}
+	"That tag is no longer available to you.\n"
+	{
+		"en"	"{red}That tag is no longer available to you.\n"
+		"chi"	"{red}你已无法使用该称号。\n"
+	}
+	"Tags are disabled on this server.\n"
+	{
+		"en"	"{red}Tags are disabled on this server.\n"
+		"chi"	"{red}本服务器已禁用称号/称号标签功能。\n"
+	}
+	"Tags are unavailable while %s is loaded.\n"
+	{
+		"en"	"{red}Tags are unavailable while {default}%s{red} is loaded.\n"
+	}
+
+	// Tags: the tag menu
+	"Choose your tag"
+	{
+		"en"	"Choose your tag"
+	}
+	"No tag"
+	{
+		"en"	"No tag"
+	}
+	"current"
+	{
+		"en"	"current"
+	}
+
+	// Admin menu: chat lines around it
+	"The admin menu needs the mm-cs2menus plugin.\n"
+	{
+		"en"	"{red}The admin menu needs the mm-cs2menus plugin.\n"
+	}
+	"No menu durations configured. Check Menu > Durations in core.cfg\n"
+	{
+		"en"	"{red}No menu durations configured. Check Menu > Durations in core.cfg\n"
+	}
+	"No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n"
+	{
+		"en"	"{red}No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n"
+	}
+	"Type the reason in chat, or cancel to stop.\n"
+	{
+		"en"	"Type the reason in chat, or {green}cancel{default} to stop.\n"
+	}
+	"Cancelled.\n"
+	{
+		"en"	"Cancelled.\n"
+	}
+
+	// Admin menu: title, categories and entries
 	"Admin Menu"
 	{
 		"en"	"Admin Menu"
@@ -1016,10 +1049,6 @@
 	"Player Commands"
 	{
 		"en"	"Player Commands"
-	}
-	"Server Commands"
-	{
-		"en"	"Server Commands"
 	}
 	"Players"
 	{
@@ -1053,10 +1082,6 @@
 	{
 		"en"	"Strip Weapons"
 	}
-	"Strip"
-	{
-		"en"	"Strip"
-	}
 	"Ban History"
 	{
 		"en"	"Ban History"
@@ -1065,25 +1090,17 @@
 	{
 		"en"	"Comm History"
 	}
-	"List Bans"
-	{
-		"en"	"List Bans"
-	}
-	"List Comms"
-	{
-		"en"	"List Comms"
-	}
 	"Ban Disconnected"
 	{
 		"en"	"Ban Disconnected"
 	}
+	"Server Commands"
+	{
+		"en"	"Server Commands"
+	}
 	"Change Map"
 	{
 		"en"	"Change Map"
-	}
-	"Matching Maps"
-	{
-		"en"	"Matching Maps"
 	}
 	"Reload Admins"
 	{
@@ -1092,6 +1109,24 @@
 	"Execute Config"
 	{
 		"en"	"Execute Config"
+	}
+
+	// Admin menu: a player's page
+	"Punish"
+	{
+		"en"	"Punish"
+	}
+	"Chat"
+	{
+		"en"	"Chat"
+	}
+	"Items"
+	{
+		"en"	"Items"
+	}
+	"Info"
+	{
+		"en"	"Info"
 	}
 	"Mute"
 	{
@@ -1117,29 +1152,32 @@
 	{
 		"en"	"Unsilence"
 	}
-	"Punish"
-	{
-		"en"	"Punish"
-	}
-	"Chat"
-	{
-		"en"	"Chat"
-	}
-	"Items"
-	{
-		"en"	"Items"
-	}
-	"Info"
-	{
-		"en"	"Info"
-	}
+
+	// Admin menu: picker titles
+	// %s is one of the actions above, or Strip, List Bans or List Comms.
 	"%s: select player"
 	{
 		"en"	"%s: select player"
 	}
+	"Strip"
+	{
+		"en"	"Strip"
+	}
+	"List Bans"
+	{
+		"en"	"List Bans"
+	}
+	"List Comms"
+	{
+		"en"	"List Comms"
+	}
 	"Add ban: select player"
 	{
 		"en"	"Add ban: select player"
+	}
+	"Gag / Mute: select player"
+	{
+		"en"	"Gag / Mute: select player"
 	}
 	"Give: select player"
 	{
@@ -1149,34 +1187,16 @@
 	{
 		"en"	"Give: select weapon"
 	}
-	"Gag / Mute: select player"
+	"Matching Maps"
 	{
-		"en"	"Gag / Mute: select player"
+		"en"	"Matching Maps"
 	}
-	"Duration"
+	"[current]"
 	{
-		"en"	"Duration"
+		"en"	"[current]"
 	}
-	"Reason"
-	{
-		"en"	"Reason"
-	}
-	"Other"
-	{
-		"en"	"Other"
-	}
-	"Dead"
-	{
-		"en"	"Dead"
-	}
-	"mute %s"
-	{
-		"en"	"mute %s"
-	}
-	"gag %s"
-	{
-		"en"	"gag %s"
-	}
+
+	// Admin menu: the player list
 	"Counter-Terrorists"
 	{
 		"en"	"Counter-Terrorists"
@@ -1193,6 +1213,31 @@
 	{
 		"en"	"Unassigned"
 	}
+	"Dead"
+	{
+		"en"	"Dead"
+	}
+	"mute %s"
+	{
+		"en"	"mute %s"
+	}
+	"gag %s"
+	{
+		"en"	"gag %s"
+	}
+
+	// Admin menu: the punish form
+	// Its Reason row uses the history tables' Reason.
+	"Duration"
+	{
+		"en"	"Duration"
+	}
+	"Other"
+	{
+		"en"	"Other"
+	}
+
+	// Admin menu: weapon categories
 	"Pistols"
 	{
 		"en"	"Pistols"
@@ -1220,17 +1265,5 @@
 	"Equipment"
 	{
 		"en"	"Equipment"
-	}
-	"Choose your tag"
-	{
-		"en"	"Choose your tag"
-	}
-	"No tag"
-	{
-		"en"	"No tag"
-	}
-	"current"
-	{
-		"en"	"current"
 	}
 }

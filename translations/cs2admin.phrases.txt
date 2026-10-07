@@ -570,9 +570,9 @@
 		"en"	"{yellow}[PM %s -> %s]{default} %s\n"
 		"chi"	"{yellow}[私聊 %s -> %s]{default} %s\n"
 	}
-	"Usage: !map <mapname|workshopid>\n"
+	"Usage: !map <mapname|workshopid|url>\n"
 	{
-		"en"	"Usage: !map <mapname|workshopid>\n"
+		"en"	"Usage: !map <mapname|workshopid|url>\n"
 		"chi"	"用法: !map <地图名|创意工坊ID>\n"
 	}
 	"%s changed map to %s.\n"
@@ -772,6 +772,26 @@
 	"%s could not be downloaded in time. Staying on the current map."
 	{
 		"en"	"{red}%s could not be downloaded in time.{default} Staying on the current map."
+	}
+	"%s could not be downloaded. Staying on the current map."
+	{
+		"en"	"{red}%s could not be downloaded.{default} Staying on the current map."
+	}
+	"Workshop item %s was not found or is not a CS2 map."
+	{
+		"en"	"{red}Workshop item {gold}%s{red} was not found or is not a CS2 map."
+	}
+	"%s is not installed and no download could be started."
+	{
+		"en"	"{red}%s is not installed and no download could be started."
+	}
+	"Map change to %s failed."
+	{
+		"en"	"{red}Map change to %s failed."
+	}
+	"Vote skipped, the map is already changing to %s."
+	{
+		"en"	"{green}Vote skipped, the map is already changing to {gold}%s{green}."
 	}
 	"You cannot ban yourself.\n"
 	{

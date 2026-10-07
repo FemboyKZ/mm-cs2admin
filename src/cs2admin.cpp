@@ -26,7 +26,6 @@ void ShutdownConsoleCommands();
 #include "game/cvarquery.h"
 #include "sdk/entity/ccsplayercontroller.h"
 #include "sdk/entity/entity_system.h"
-#include "sdk/gamesystem.h"
 #include "utils/log.h"
 #include "utils/str.h"
 #include "game/voice_block.h"
@@ -122,13 +121,6 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	MMU_LOG_INFO("CS2Admin %s loading...%s\n", PLUGIN_FULL_VERSION, late ? " (late)" : "");
 
-	// Engine-native workshop map checks.
-	// On failure EnsureWorkshopMapReady silently falls back to the .vpk folder scan + ACF prune path.
-	if (!mmu::gamesystem::Resolve(reinterpret_cast<const void *>(g_pServerGameDLL)))
-	{
-		MMU_LOG_WARN("Game system list unresolved; workshop map checks fall back to ACF pruning.\n");
-	}
-
 	char configPath[512];
 	snprintf(configPath, sizeof(configPath), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
 
@@ -204,6 +196,7 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// Cancel any open external menus and drop the ICS2Menus pointer before our code unloads,
 	// so mm-cs2menus never invokes a lambda inside this binary.
 	g_AdminMenus.Shutdown();
+	g_CS2AMapManager.ShutdownRtv();
 
 	// Unregister and delete all dynamically created mm_* ConCommands.
 	g_CS2ACommandSystem.Shutdown();
@@ -447,6 +440,7 @@ void CS2APlugin::AllPluginsLoaded()
 {
 	// Resolve the optional mm-cs2menus interface now that all plugins are up.
 	g_AdminMenus.Init();
+	g_CS2AMapManager.RefreshRtv();
 
 	// Everything is loaded, so any other chat owner has registered its convars by now.
 	g_CS2AForeignPlugins.Refresh();
@@ -566,6 +560,7 @@ void CS2APlugin::OnPluginLoad(PluginId /*id*/)
 	g_AdminMenus.Refresh();
 	// A chat owner may have just loaded, in which case we have to stop owning chat.
 	g_CS2AForeignPlugins.Refresh();
+	g_CS2AMapManager.RefreshRtv();
 }
 
 void CS2APlugin::OnPluginUnload(PluginId id)
@@ -574,6 +569,7 @@ void CS2APlugin::OnPluginUnload(PluginId id)
 	g_AdminMenus.Refresh();
 	// The departing plugin's convars and interface may still be registered at this point.
 	g_CS2AForeignPlugins.Refresh(id);
+	g_CS2AMapManager.RefreshRtv(id);
 }
 
 void CS2APlugin::LookupServerID(bool allowAutoAdd)
@@ -980,9 +976,7 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 		return {KHook::Action::Ignore};
 	}
 
-	float curtime = globals->curtime;
-
-	g_CS2AMapManager.Tick(curtime);
+	g_CS2AMapManager.Tick();
 	g_CS2ATagManager.ReassertClanTags();
 
 	const double now = Plat_FloatTime();

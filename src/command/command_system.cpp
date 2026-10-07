@@ -971,7 +971,7 @@ namespace
 		return items;
 	}
 
-	// map list -> !map <mapname|workshopid>
+	// map list -> !map <mapname|workshopid|url>
 	void StartMapFlow(int slot, bool push = false)
 	{
 		std::vector<AdminMenuItem> items = BuildRtvMapItems(slot);
@@ -1000,7 +1000,7 @@ namespace
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
 	}
 
-	// !map <partial name> with several matches -> !map <mapname|workshopid>
+	// !map <partial name> with several matches -> !map <mapname|workshopid|url>
 	void ShowMapMatches(int slot, std::vector<const MapEntry *> matches)
 	{
 		auto name = [](const MapEntry *m) -> const std::string & { return m->displayName.empty() ? m->mapName : m->displayName; };
@@ -2526,8 +2526,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						ADMIN_LogAction(slot, (std::string("PM to ") + targetName + ": " + message).c_str());
 					});
 
-	// !map <mapname|workshopid> - Change the current map
-	RegisterCommand("map", "basecommands", ADMFLAG_CHANGEMAP, {{{"map"}}, "map"}, "Usage: !map <mapname|workshopid>\n",
+	// !map <mapname|workshopid|url> - Change the current map
+	RegisterCommand("map", "basecommands", ADMFLAG_CHANGEMAP, {{{"map"}}, "map"}, "Usage: !map <mapname|workshopid|url>\n",
 					[](int slot, const mmu::Args &args, bool silent)
 					{
 						if (args.Empty())
@@ -2541,7 +2541,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						const std::string &map = *args.Get("map");
+						// A pasted workshop link is cut down to the addon id in its id= parameter.
+						std::string map = *args.Get("map");
+						if (const size_t idParam = map.find("id="); idParam != std::string::npos)
+						{
+							const size_t digits = idParam + 3;
+							map = map.substr(digits, map.find_first_not_of("0123456789", digits) - digits);
+						}
+
 						std::string error;
 						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
@@ -2563,13 +2570,16 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						// A workshop map still downloading has already announced itself.
-						if (!g_CS2AMapManager.IsChangePending())
+						// A workshop map still to be looked up and downloaded announces itself, and can still be turned down.
+						const bool pending = g_CS2AMapManager.IsChangePending();
+						if (!pending)
 						{
+							// A pending one cancels the vote from CS2AMapManager::Tick, once Steam confirms the map.
+							g_CS2AMapManager.CancelRtvVote();
 							ADMIN_ChatToAllT("%s changed map to %s.\n", adminName.c_str(), map.c_str());
 						}
-						ADMIN_LogAction(slot, (std::string("Changed map to ") + map).c_str());
-						NotifyDiscordOnText(slot, "Map Change", map.c_str());
+						ADMIN_LogAction(slot, (std::string(pending ? "Requested map change to " : "Changed map to ") + map).c_str());
+						NotifyDiscordOnText(slot, pending ? "Map Change Requested" : "Map Change", map.c_str());
 					});
 
 	// !maps [page] - List available maps from maplist

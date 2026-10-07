@@ -89,7 +89,7 @@ This means the following articles are valid here too:
 | `!give`         | `!give <target> weapon=<weapon>`           | `n` (Cheats)    | Give a weapon to player(s). Auto-prepends `weapon_` if missing. Supports multi-target.       |
 | `!strip`        | `!strip <target>`                          | `n` (Cheats)    | Strip all weapons from player(s). Supports multi-target selectors.                           |
 | `!rcon`         | `!rcon <command>`                          | `m` (RCON)      | Execute a server console command.                                                            |
-| `!map`          | `!map <mapname\|workshopid>`               | `g` (Changemap) | Change the current map. Supports partial name match from maplist or raw workshop IDs.        |
+| `!map`          | `!map <mapname\|workshopid\|url>`          | `g` (Changemap) | Change the current map. Supports partial name match from maplist, workshop IDs or links.     |
 | `!maps`         | `!maps [page]`                             | `g` (Changemap) | List available maps from the maplist (paginated).                                            |
 | `!pm`           | `!pm <target> message=<text>`              | `j` (Chat)      | Private message a player. Echoes to all online admins.                                       |
 | `!entfire`      | `!entfire <entity> input=<input> [value=]` | `n` (Cheats)    | Fire an input on a map entity via `ent_fire`.                                                |

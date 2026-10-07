@@ -2,6 +2,9 @@
 #define _INCLUDE_ADMIN_MAP_MANAGER_H_
 
 #include "game/workshop.h"
+#include "interfaces/cs2rockthevote/forwards.h"
+
+#include <ISmmPlugin.h>
 
 #include <cstdint>
 #include <string>
@@ -30,7 +33,7 @@ public:
 	bool ChangeMap(const char *input, std::string &error);
 
 	// Drives a deferred workshop change. Call once per frame.
-	void Tick(float curtime);
+	void Tick();
 
 	// True while a change is waiting on a workshop download.
 	bool IsChangePending() const
@@ -40,6 +43,16 @@ public:
 
 	// Drops a deferred change. The map already moved, so honouring it would be a surprise.
 	void OnMapStart();
+
+	// An admin's map change outranks rtv. This drops its running vote or scheduled change,
+	// and RefreshRtv's vote start hook keeps a new one from starting while ours is busy.
+	void CancelRtvVote();
+
+	// Call from AllPluginsLoaded, OnPluginLoad and, with the departing plugin's id, OnPluginUnload.
+	void RefreshRtv(PluginId unloading = 0);
+
+	// Call from Unload, rtv must not keep a callback into this binary.
+	void ShutdownRtv();
 
 	// Get number of loaded maps.
 	int GetMapCount() const
@@ -66,6 +79,7 @@ private:
 
 	// host_workshop_map on an addon that isn't on disk drops the server onto the "error" map,
 	// so an absent one is downloaded before the change is issued.
+	// Refused while an earlier workshop change is still being worked on.
 	bool BeginWorkshopChange(const std::string &workshopId, const std::string &label, std::string &error);
 	void ClearPendingChange();
 
@@ -75,6 +89,9 @@ private:
 	mmu::workshop::PendingDownload m_pending;
 	std::string m_pendingWorkshopId;
 	std::string m_pendingLabel;
+
+	ICS2RTVForwards *m_rtvForwards = nullptr;
+	RTVForwardHandle m_rtvVoteStartHandle = kInvalidRTVForwardHandle;
 };
 
 extern CS2AMapManager g_CS2AMapManager;

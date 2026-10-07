@@ -4,6 +4,7 @@
 #include "utils/maplist.h"
 #include "src/common.h"
 #include "game/workshop.h"
+#include "interfaces/cs2rockthevote/ics2rtv.h"
 #include "src/config/config.h"
 #include "src/utils/print_utils.h"
 
@@ -290,6 +291,7 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 		}
 
 		error.clear();
+		ClearPendingChange();
 		g_pEngine->ChangeLevel(resolved.c_str(), nullptr);
 		return true;
 	}
@@ -299,6 +301,8 @@ bool CS2AMapManager::ChangeMap(const char *input, std::string &error)
 		return BeginWorkshopChange(entry->workshopId, MapLabel(*entry), error);
 	}
 
+	// A workshop change still waiting on its download would otherwise fire later on top of this one.
+	ClearPendingChange();
 	g_pEngine->ChangeLevel(entry->mapName.c_str(), nullptr);
 	return true;
 }
@@ -307,9 +311,18 @@ bool CS2AMapManager::BeginWorkshopChange(const std::string &workshopId, const st
 {
 	uint64_t fileId = std::strtoull(workshopId.c_str(), nullptr, 10);
 
-	if (fileId == 0 || mmu::workshop::IsReady(fileId, g_AdminSteamAPI))
+	if (m_pending.Busy())
+	{
+		error = "Already working on '" + m_pendingLabel + "', try again once it is loaded.";
+		return false;
+	}
+
+	if (fileId == 0 || mmu::workshop::IsReady(fileId))
 	{
 		IssueWorkshopChange(workshopId);
+		m_pending.WatchEngine(fileId);
+		m_pendingWorkshopId = workshopId;
+		m_pendingLabel = label;
 		return true;
 	}
 
@@ -319,25 +332,14 @@ bool CS2AMapManager::BeginWorkshopChange(const std::string &workshopId, const st
 		return false;
 	}
 
-	// Drops an ACF entry left behind by a deleted addon,
-	// otherwise Steam still thinks the map is installed and the download below is a no-op.
-	mmu::EnsureWorkshopMapReady(workshopId, g_AdminSteamAPI);
-
-	if (!mmu::workshop::StartDownload(fileId, g_AdminSteamAPI))
+	// The download itself starts from Tick, once Steam has confirmed the id is a CS2 map.
+	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.workshopDownloadTimeout), g_AdminSteamAPI))
 	{
 		error = "Map '" + label + "' is not installed and no download could be started.";
 		return false;
 	}
-
-	CGlobalVars *globals = GetGameGlobals();
-	float now = globals ? globals->curtime : 0.0f;
-
-	m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.workshopDownloadTimeout), now);
 	m_pendingWorkshopId = workshopId;
 	m_pendingLabel = label;
-
-	MMU_LOG_INFO("Downloading workshop map '%s' (%s) before changing.\n", label.c_str(), workshopId.c_str());
-	ADMIN_ChatToAllT("Downloading %s, the map will change once it finishes.", label.c_str());
 	return true;
 }
 
@@ -353,20 +355,99 @@ void CS2AMapManager::OnMapStart()
 	ClearPendingChange();
 }
 
-void CS2AMapManager::Tick(float curtime)
+void CS2AMapManager::CancelRtvVote()
+{
+	// Not cached, rtv may unload.
+	if (ICS2RTV *rtv = static_cast<ICS2RTV *>(g_SMAPI->MetaFactory(CS2RTV_INTERFACE, nullptr, nullptr)))
+	{
+		rtv->CancelVote();
+	}
+}
+
+void CS2AMapManager::RefreshRtv(PluginId unloading)
+{
+	int ret = META_IFACE_FAILED;
+	PluginId id = 0;
+	void *iface = g_SMAPI->MetaFactory(CS2RTV_FORWARDS_INTERFACE, &ret, &id);
+	bool usable = iface && ret == META_IFACE_OK && (unloading == 0 || id != unloading);
+	ICS2RTVForwards *forwards = usable ? static_cast<ICS2RTVForwards *>(iface) : nullptr;
+	if (forwards == m_rtvForwards)
+	{
+		return;
+	}
+
+	// An rtv that went away took its forward list with it, so there is nothing to unregister on the old one.
+	m_rtvForwards = forwards;
+	m_rtvVoteStartHandle = kInvalidRTVForwardHandle;
+	if (forwards)
+	{
+		m_rtvVoteStartHandle = forwards->RegisterOnMapVoteStart(
+			[](bool)
+			{
+				if (!g_CS2AMapManager.m_pending.Busy())
+				{
+					return false;
+				}
+				ADMIN_ChatToAllT("Vote skipped, the map is already changing to %s.", g_CS2AMapManager.m_pendingLabel.c_str());
+				return true;
+			});
+	}
+}
+
+void CS2AMapManager::ShutdownRtv()
+{
+	if (m_rtvForwards)
+	{
+		m_rtvForwards->UnregisterOnMapVoteStart(m_rtvVoteStartHandle);
+	}
+	m_rtvForwards = nullptr;
+	m_rtvVoteStartHandle = kInvalidRTVForwardHandle;
+}
+
+void CS2AMapManager::Tick()
 {
 	int percent = 0;
 
-	switch (m_pending.Poll(curtime, g_AdminSteamAPI))
+	switch (m_pending.Poll(g_AdminSteamAPI))
 	{
-		case mmu::workshop::PendingDownload::Status::Settled:
-		{
-			// Copy before ClearPendingChange drops it.
-			std::string id = m_pendingWorkshopId;
-			ClearPendingChange();
-			IssueWorkshopChange(id);
+		case mmu::workshop::PendingDownload::Status::Started:
+			// A raw id from the command has no name of its own.
+			if (m_pendingLabel == m_pendingWorkshopId && !m_pending.Title().empty())
+			{
+				m_pendingLabel = m_pending.Title();
+			}
+			// Held back until here so a mistyped id does not cost the players their vote.
+			CancelRtvVote();
+			MMU_LOG_INFO("Downloading workshop map '%s' (%s) before changing.\n", m_pendingLabel.c_str(), m_pendingWorkshopId.c_str());
+			ADMIN_ChatToAllT("Downloading %s, the map will change once it finishes.", m_pendingLabel.c_str());
 			break;
-		}
+		case mmu::workshop::PendingDownload::Status::Settled:
+			// The id and label stay for the engine watch that takes over from here.
+			IssueWorkshopChange(m_pendingWorkshopId);
+			m_pending.WatchEngine(std::strtoull(m_pendingWorkshopId.c_str(), nullptr, 10));
+			break;
+		case mmu::workshop::PendingDownload::Status::Rejected:
+			MMU_LOG_WARN("Workshop item %s was not found or is not a CS2 map.\n", m_pendingWorkshopId.c_str());
+			ADMIN_ChatToAllT("Workshop item %s was not found or is not a CS2 map.", m_pendingLabel.c_str());
+			ClearPendingChange();
+			break;
+		case mmu::workshop::PendingDownload::Status::StartFailed:
+			MMU_LOG_WARN("Workshop map '%s' (%s) is not installed and no download could be started.\n", m_pendingLabel.c_str(),
+						 m_pendingWorkshopId.c_str());
+			ADMIN_ChatToAllT("%s is not installed and no download could be started.", m_pendingLabel.c_str());
+			ClearPendingChange();
+			break;
+		case mmu::workshop::PendingDownload::Status::DownloadFailed:
+			MMU_LOG_WARN("Workshop map '%s' (%s) failed to download, staying on the current map.\n", m_pendingLabel.c_str(),
+						 m_pendingWorkshopId.c_str());
+			ADMIN_ChatToAllT("%s could not be downloaded. Staying on the current map.", m_pendingLabel.c_str());
+			ClearPendingChange();
+			break;
+		case mmu::workshop::PendingDownload::Status::ChangeFailed:
+			MMU_LOG_WARN("The engine dropped the change to workshop map '%s' (%s).\n", m_pendingLabel.c_str(), m_pendingWorkshopId.c_str());
+			ADMIN_ChatToAllT("Map change to %s failed.", m_pendingLabel.c_str());
+			ClearPendingChange();
+			break;
 		case mmu::workshop::PendingDownload::Status::TimedOut:
 			MMU_LOG_WARN("Workshop map '%s' (%s) did not download in time, staying on the current map.\n", m_pendingLabel.c_str(),
 						 m_pendingWorkshopId.c_str());

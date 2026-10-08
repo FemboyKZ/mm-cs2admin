@@ -38,7 +38,6 @@ void ShutdownConsoleCommands();
 #include <networksystem/inetworkmessages.h>
 #include <engine/igameeventsystem.h>
 #include <filesystem.h>
-#include "steam/steam_gameserver.h"
 
 // Entity system global (declared extern in common.h)
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
@@ -59,10 +58,8 @@ IVEngineServer *g_pEngine = nullptr;
 IGameEventManager2 *g_pGameEvents = nullptr;
 ICvar *g_pICvar = nullptr;
 IGameEventSystem *g_pGameEventSystem = nullptr;
-// g_pFullFileSystem is defined by interfaces.lib
 
-// Steam game-server API context used for workshop validation (ISteamUGC).
-CSteamGameServerAPIContext g_AdminSteamAPI;
+// g_pFullFileSystem is defined by interfaces.lib
 
 std::string ADMIN_SlotLanguage(int slot)
 {
@@ -87,7 +84,6 @@ CS2APlugin::CS2APlugin()
 	  m_OnClientConnected(&IServerGameClients::OnClientConnected, this, &CS2APlugin::Hook_OnClientConnected, nullptr),
 	  m_ClientConnect(&IServerGameClients::ClientConnect, this, &CS2APlugin::Hook_ClientConnect, nullptr),
 	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &CS2APlugin::Hook_DispatchConCommand, &CS2APlugin::Hook_DispatchConCommandPost),
-	  m_GameServerSteamAPIActivated(&IServerGameDLL::GameServerSteamAPIActivated, this, nullptr, &CS2APlugin::Hook_GameServerSteamAPIActivated),
 	  m_PostEvent(static_cast<void (IGameEventSystem::*)(CSplitScreenSlot, bool, int, const uint64 *, INetworkMessageInternal *, const CNetMessage *,
 														 unsigned long, NetChannelBufType_t)>(&IGameEventSystem::PostEventAbstract),
 				  this, &CS2APlugin::Hook_PostEvent, nullptr),
@@ -149,7 +145,6 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	m_OnClientConnected.Add(g_pGameClients);
 	m_ClientConnect.Add(g_pGameClients);
 	m_DispatchConCommand.Add(g_pICvar);
-	m_GameServerSteamAPIActivated.Add(g_pServerGameDLL);
 	m_PostEvent.Add(g_pGameEventSystem);
 	m_PostEventFilter.Add(g_pGameEventSystem);
 
@@ -181,7 +176,6 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	m_OnClientConnected.Remove(g_pGameClients);
 	m_ClientConnect.Remove(g_pGameClients);
 	m_DispatchConCommand.Remove(g_pICvar);
-	m_GameServerSteamAPIActivated.Remove(g_pServerGameDLL);
 	m_PostEvent.Remove(g_pGameEventSystem);
 	m_PostEventFilter.Remove(g_pGameEventSystem);
 
@@ -218,9 +212,6 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// Mark DB as shutting down (blocks new Query() calls) then destroy the
 	// connection, which cancels any pending sql_mm callbacks in its queue.
 	g_CS2ADatabase.Shutdown();
-
-	// Clear the cached Steam API context
-	g_AdminSteamAPI.Clear();
 
 	MMU_LOG_INFO("Plugin unloaded.\n");
 
@@ -955,16 +946,6 @@ KHook::Return<void> CS2APlugin::Hook_ClientSettingsChanged(IServerGameClients *,
 		MMU_LOG_INFO("Player \"%s\" (%s) is now \"%s\".\n", player->name.c_str(), player->authid.c_str(), name);
 		player->name = name;
 	}
-	return {KHook::Action::Ignore};
-}
-
-KHook::Return<void> CS2APlugin::Hook_GameServerSteamAPIActivated(IServerGameDLL *)
-{
-	if (g_AdminSteamAPI.SteamUGC())
-	{
-		return {KHook::Action::Ignore};
-	}
-	g_AdminSteamAPI.Init();
 	return {KHook::Action::Ignore};
 }
 

@@ -4,7 +4,6 @@
 #include "sdk/entity/ccsplayercontroller.h"
 #include "utils/log.h"
 #include "game/print.h"
-#include "sdk/recipient_filter.h"
 
 #include "src/compat/foreign_plugins.h"
 #include "src/config/config.h"
@@ -15,6 +14,7 @@
 #include <networksystem/inetworkmessages.h>
 #include <networksystem/inetworkserializer.h>
 #include <networksystem/netmessage.h>
+#include <recipientfilter.h>
 #include <usermessages.pb.h>
 
 #include <string>
@@ -210,7 +210,8 @@ void CS2AChatProcessor::RenderPending(int slot, const CPlayerBitVec &recipients)
 	}
 	PendingSay &say = m_says.back();
 
-	CMultiRecipientFilter filter;
+	CRecipientFilter filter;
+	filter.MakeReliable();
 	std::vector<int> fresh;
 	for (int i = 0; i < recipients.GetNumBits() && i < say.sentTo.GetNumBits(); i++)
 	{

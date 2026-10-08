@@ -9,8 +9,6 @@
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
 
-extern CSteamGameServerAPIContext g_AdminSteamAPI;
-
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -33,7 +31,7 @@ static const char *MapLabel(const MapEntry &entry)
 
 static void IssueWorkshopChange(const std::string &workshopId)
 {
-	mmu::EnsureWorkshopMapReady(workshopId, g_AdminSteamAPI);
+	mmu::EnsureWorkshopMapReady(workshopId);
 	char cmd[256];
 	snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", workshopId.c_str());
 	g_pEngine->ServerCommand(cmd);
@@ -328,7 +326,7 @@ bool CS2AMapManager::BeginWorkshopChange(int slot, const std::string &workshopId
 	}
 
 	// The download itself starts from Tick, once Steam has confirmed the id is a CS2 map.
-	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.workshopDownloadTimeout), g_AdminSteamAPI))
+	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.workshopDownloadTimeout)))
 	{
 		error = ADMIN_Format(slot, "Map '%s' is not installed and no download could be started.", label.c_str());
 		return false;
@@ -403,7 +401,7 @@ void CS2AMapManager::Tick()
 {
 	int percent = 0;
 
-	switch (m_pending.Poll(g_AdminSteamAPI))
+	switch (m_pending.Poll())
 	{
 		case mmu::workshop::PendingDownload::Status::Started:
 			// A raw id from the command has no name of its own.
@@ -450,7 +448,7 @@ void CS2AMapManager::Tick()
 			ClearPendingChange();
 			break;
 		case mmu::workshop::PendingDownload::Status::Announce:
-			if (m_pending.Percent(g_AdminSteamAPI, percent))
+			if (m_pending.Percent(percent))
 			{
 				ADMIN_ChatToAllT("Downloading %s... %d%%", m_pendingLabel.c_str(), percent);
 			}

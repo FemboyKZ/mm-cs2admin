@@ -25,7 +25,6 @@ void ShutdownConsoleCommands();
 #include "utils/chat_command.h"
 #include "game/cvarquery.h"
 #include "sdk/entity/ccsplayercontroller.h"
-#include "sdk/entity/entity_system.h"
 #include "utils/log.h"
 #include "utils/str.h"
 #include "game/voice_block.h"
@@ -42,12 +41,6 @@ void ShutdownConsoleCommands();
 // Entity system global (declared extern in common.h)
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
 CGameEntitySystem *g_pEntitySystem = nullptr;
-
-// Called by the SDK's entity2 code.
-CGameEntitySystem *GameEntitySystem()
-{
-	return mmu::EntitySystem();
-}
 
 CS2APlugin g_CS2APlugin;
 CS2AForwards g_CS2AForwards;

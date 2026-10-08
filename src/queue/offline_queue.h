@@ -2,6 +2,7 @@
 #define _INCLUDE_ADMIN_OFFLINE_QUEUE_H_
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -14,7 +15,8 @@ class CS2AOfflineQueue
 {
 public:
 	// Persist a write, then send it if the DB is connected.
-	void Submit(const std::string &query);
+	// `onWritten` runs once the database has it. It does not survive a restart.
+	void Submit(const std::string &query, std::function<void()> onWritten = nullptr);
 
 	// Re-send entries that are not already in flight.
 	// Called periodically from GameFrame and after a (re)connect.
@@ -45,15 +47,14 @@ private:
 		uint64_t id = 0;
 		std::string query;
 		int attempts = 0;
-		// Plat_FloatTime of the send still waiting for a callback, 0 when idle.
-		double sentAt = 0.0;
+		// Sent and not answered yet.
+		bool inFlight = false;
+		std::function<void()> onWritten;
 	};
 
 	void Send(Entry &entry);
-	void OnSuccess(uint64_t id);
+	void OnAnswer(uint64_t id, bool written);
 
-	// A send that produced no callback within this many seconds is assumed dead and may be retried.
-	static constexpr double IN_FLIGHT_TIMEOUT = 60.0;
 	static constexpr int MAX_ATTEMPTS = 5;
 
 	std::vector<Entry> m_entries;

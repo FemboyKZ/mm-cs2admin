@@ -16,7 +16,9 @@ struct PlayerInfo
 	std::string ip;
 	bool fakePlayer = false;
 
-	// Auth state
+	// Past ClientPutInServer.
+	bool inGame = false;
+	// Steam has confirmed steamid64. Until then it is only what the client claimed, so nothing may be granted on it.
 	bool authenticated = false;
 
 	// Comm state
@@ -49,6 +51,7 @@ struct PlayerInfo
 		name.clear();
 		ip.clear();
 		fakePlayer = false;
+		inGame = false;
 		authenticated = false;
 		isMuted = false;
 		isGagged = false;

@@ -390,32 +390,32 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 
 void CS2AAdminManager::LoadDatabaseAdmins(uint32_t generation, std::function<void()> onComplete)
 {
-	LoadGroups(generation,
-			   [this, generation, onComplete]()
-			   {
-				   LoadGroupOverrides(generation,
-									  [this, generation, onComplete]()
-									  {
-										  LoadGlobalOverrides(generation,
-															  [this, generation, onComplete]()
-															  {
-																  LoadAdminsFromDB(generation,
-																				   [this, onComplete]()
-																				   {
-																					   CommitLoadedData();
-																					   if (g_CS2AConfig.backupConfigs && !m_loadingDbFailed
-																						   && g_CS2ADatabase.IsConnected())
-																					   {
-																						   SaveBackup();
-																					   }
-																					   MergeAndApplyAll();
-																					   g_CS2ATagManager.UpdateAllClanTags();
-																					   if (onComplete)
-																					   {
-																						   onComplete();
-																					   }
-																				   });
-															  });
-									  });
-			   });
+	auto finish = [this, onComplete]()
+	{
+		// A failed query leaves the staging set short, and committing it would strip DB admins of their rights.
+		if (m_loadingDbFailed)
+		{
+			MMU_LOG_WARN("Admin reload could not read the database, keeping the admins already loaded.\n");
+		}
+		else
+		{
+			CommitLoadedData();
+			if (g_CS2AConfig.backupConfigs && g_CS2ADatabase.IsConnected())
+			{
+				SaveBackup();
+			}
+		}
+		MergeAndApplyAll();
+		g_CS2ATagManager.UpdateAllClanTags();
+		if (onComplete)
+		{
+			onComplete();
+		}
+	};
+
+	// Last stage first: each one starts the next once its query has answered.
+	auto loadAdmins = [this, generation, finish]() { LoadAdminsFromDB(generation, finish); };
+	auto loadGlobalOverrides = [this, generation, loadAdmins]() { LoadGlobalOverrides(generation, loadAdmins); };
+	auto loadGroupOverrides = [this, generation, loadGlobalOverrides]() { LoadGroupOverrides(generation, loadGlobalOverrides); };
+	LoadGroups(generation, loadGroupOverrides);
 }

@@ -4,6 +4,7 @@
 #include "src/common.h"
 #include <string>
 #include <functional>
+#include <vector>
 
 class ISQLQuery;
 
@@ -13,6 +14,9 @@ public:
 	// Check if a connecting player is banned. Called from OnClientConnected.
 	// Callback receives (isBanned, banReason).
 	void VerifyBan(int slot, uint64_t steamid64, const char *ip, std::function<void(bool banned, const std::string &reason)> callback);
+
+	// Call every frame.
+	void RunFrame();
 
 	// Ban a player by SteamID.
 	// time = ban duration in minutes (0 = permanent).
@@ -55,6 +59,28 @@ public:
 private:
 	// Insert a ban row into the database.
 	void InsertBan(const char *ip, const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot);
+
+	// A ban the database has not confirmed writing. VerifyBan answers from these first,
+	// so a ban holds while the DB is down or its row is still in the offline queue.
+	struct PendingBan
+	{
+		uint64_t id;
+		// "Y:Z", empty for an IP ban.
+		std::string authSuffix;
+		// Empty for a SteamID ban.
+		std::string ip;
+		// Unix time, 0 for permanent.
+		long long ends;
+		std::string reason;
+	};
+
+	// Queues the row and keeps the ban pending until it is written.
+	void SubmitBan(const std::string &query, const std::string &authSuffix, const std::string &ip, int lengthSec, const char *reason);
+
+	std::vector<PendingBan> m_pendingBans;
+	uint64_t m_nextPendingId = 1;
+	// VerifyBan answers held for RunFrame.
+	std::vector<std::function<void()>> m_dueAnswers;
 };
 
 extern CS2ABanManager g_CS2ABanManager;

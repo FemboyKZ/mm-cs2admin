@@ -143,6 +143,39 @@ static void ReplyConsoleOutput(int slot, const std::string &text, bool truncated
 	}
 }
 
+// A password or token typed into !rcon would otherwise be stored in the log table and posted to Discord.
+static bool RconTextIsSecret(const std::string &cmd)
+{
+	const std::string lower = str::ToLower(cmd);
+	for (const char *word : {"password", "secret", "token", "setsteamaccount"})
+	{
+		if (lower.find(word) != std::string::npos)
+		{
+			return true;
+		}
+	}
+
+	// Whatever else the engine marks as not to be shown.
+	for (size_t pos = 0; pos < cmd.size();)
+	{
+		size_t end = cmd.find_first_of(" \t;\"", pos);
+		if (end == std::string::npos)
+		{
+			end = cmd.size();
+		}
+		if (end > pos)
+		{
+			ConVarRefAbstract cvar(cmd.substr(pos, end - pos).c_str());
+			if (cvar.IsConVarDataValid() && cvar.IsFlagSet(FCVAR_PROTECTED))
+			{
+				return true;
+			}
+		}
+		pos = end + 1;
+	}
+	return false;
+}
+
 // Validate an IPv4 address string (e.g. "192.168.1.1").
 static bool IsValidIPv4(const char *ip)
 {
@@ -2483,10 +2516,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							ADMIN_ReplyToCommandT(slot, "Queued: %s\n", cmd.c_str());
 						}
 
-						ADMIN_LogAction(slot, (std::string("RCON: ") + cmd).c_str());
+						const bool secret = RconTextIsSecret(cmd);
+						const std::string logged = secret ? cmd.substr(0, cmd.find_first_of(" \t;\"")) + " [redacted]" : cmd;
+						ADMIN_LogAction(slot, (std::string("RCON: ") + logged).c_str());
 
-						const char *discordOutput = dispatched && !listener.Buffer().empty() ? listener.Buffer().c_str() : nullptr;
-						NotifyDiscordOnText(slot, "RCON", cmd.c_str(), nullptr, -1, discordOutput);
+						const char *discordOutput = dispatched && !secret && !listener.Buffer().empty() ? listener.Buffer().c_str() : nullptr;
+						NotifyDiscordOnText(slot, "RCON", logged.c_str(), nullptr, -1, discordOutput);
 					});
 
 	// !pm <target> message=<message> - Private message a player

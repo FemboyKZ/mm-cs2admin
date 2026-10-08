@@ -398,7 +398,7 @@ void ADMIN_RecheckConnectedPlayers()
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
 		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
-		if (!p || !p->connected || p->fakePlayer || !p->authenticated)
+		if (!p || !p->connected || p->fakePlayer || !p->inGame)
 		{
 			continue;
 		}
@@ -439,7 +439,7 @@ void CS2APlugin::AllPluginsLoaded()
 
 	// Always load flat-file admins regardless of DB state.
 	// ReloadAdmins takes its flat-file-only path when the DB is not connected,
-	// and its flat-file half is synchronous, so the late-load pass below already sees those admins.
+	// and its flat-file half is synchronous, so the players the late-load pass below registers are authorized against those admins.
 	g_CS2AAdminManager.ReloadAdmins();
 
 	// Registering existing players cannot wait for the DB: without a PlayerInfo they cannot chat or run commands at all.
@@ -660,7 +660,7 @@ KHook::Return<void> CS2APlugin::Hook_OnClientConnected(IServerGameClients *, CPl
 	// Whoever had this slot before may have been an admin, and their flags must not carry over.
 	g_CS2AAdminManager.ClearPlayerAdmin(slotIdx);
 
-	// Track player - but defer ban/admin checks until authentication is confirmed (ClientPutInServer)
+	// Track player - but defer the ban check until ClientPutInServer, and admin until Steam confirms the SteamID
 	g_CS2APlayerManager.OnClientConnected(slotIdx, pszName, xuid, pszNetworkID, pszAddress, bFakePlayer);
 	mmu::cvarquery::OnClientConnected(slotIdx, bFakePlayer);
 
@@ -692,14 +692,10 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 		return {KHook::Action::Ignore};
 	}
 
-	// Player entity is created and Steam auth is confirmed - safe to check bans/admins
-	player->authenticated = true;
-
-	MMU_LOG_INFO("Client authenticated: \"%s\" (%s) slot=%d\n", player->name.c_str(), player->authid.c_str(), slotIdx);
-
-	g_CS2AForwards.FireOnClientAuthorized(slotIdx, player->authid.c_str(), player->steamid64);
+	player->inGame = true;
 
 	// Check for active bans
+	// On the SteamID the client claims: Steam may not have confirmed it yet, and a ban must not wait on that.
 	std::string playerIP = player->ip;
 	uint64_t steamid64 = player->steamid64;
 
@@ -723,13 +719,6 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 	// If the player turns out banned, the comm result is dropped once their slot is gone.
 	g_CS2ACommManager.VerifyComms(slotIdx, steamid64);
 
-	// Assign admin permissions (merges DB + flat file entries)
-	g_CS2AAdminManager.AssignAdminToPlayer(slotIdx);
-
-	// Needs the admin entry above, since eligibility reads flags/group/immunity.
-	g_CS2ATagManager.LoadPlayerPref(slotIdx, steamid64);
-	g_CS2ATagManager.UpdateClanTag(slotIdx);
-
 	// Check ban/comm history to notify admins on connect
 	if (g_CS2AConfig.printCheckOnConnect && g_CS2ADatabase.IsConnected())
 	{
@@ -748,12 +737,39 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 									  });
 	}
 
+	// Steam was faster than the client's loading screen.
+	if (player->authenticated)
+	{
+		OnClientAuthorized(slotIdx);
+	}
+	return {KHook::Action::Ignore};
+}
+
+// In server and confirmed by Steam, whichever came last.
+void CS2APlugin::OnClientAuthorized(int slot)
+{
+	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	if (!player)
+	{
+		return;
+	}
+
+	MMU_LOG_INFO("Client authenticated: \"%s\" (%s) slot=%d\n", player->name.c_str(), player->authid.c_str(), slot);
+
+	g_CS2AForwards.FireOnClientAuthorized(slot, player->authid.c_str(), player->steamid64);
+
+	// Assign admin permissions (merges DB + flat file entries)
+	g_CS2AAdminManager.AssignAdminToPlayer(slot);
+
+	// Needs the admin entry above, since eligibility reads flags/group/immunity.
+	g_CS2ATagManager.LoadPlayerPref(slot, player->steamid64);
+	g_CS2ATagManager.UpdateClanTag(slot);
+
 	// check for ban evasion
 	if (g_CS2AConfig.sleuthActions > 0 && g_CS2ADatabase.IsConnected())
 	{
-		g_CS2ABanManager.CheckSleuth(slotIdx, steamid64, playerIP.c_str());
+		g_CS2ABanManager.CheckSleuth(slot, player->steamid64, player->ip.c_str());
 	}
-	return {KHook::Action::Ignore};
 }
 
 KHook::Return<void> CS2APlugin::Hook_ClientDisconnect(IServerGameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
@@ -806,7 +822,7 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 	// A client that isn't put in server yet can't legitimately chat, and the game can print its line as a console message.
 	PlayerInfo *speaker = g_CS2APlayerManager.GetPlayer(slotIdx);
-	if (!speaker || (!speaker->fakePlayer && !speaker->authenticated))
+	if (!speaker || (!speaker->fakePlayer && !speaker->inGame))
 	{
 		MMU_LOG_INFO("Blocked chat from slot %d, not fully in game.\n", slotIdx);
 		return {KHook::Action::Supersede};
@@ -959,6 +975,22 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 
 	g_CS2AMapManager.Tick();
 	g_CS2ATagManager.ReassertClanTags();
+	g_CS2ABanManager.RunFrame();
+
+	// Steam confirms a SteamID some time after the client connects, before or after ClientPutInServer.
+	for (int i = 0; i <= MAXPLAYERS; i++)
+	{
+		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
+		if (!player || player->fakePlayer || player->authenticated || !g_pEngine->IsClientFullyAuthenticated(CPlayerSlot(i)))
+		{
+			continue;
+		}
+		player->authenticated = true;
+		if (player->inGame)
+		{
+			OnClientAuthorized(i);
+		}
+	}
 
 	const double now = Plat_FloatTime();
 
@@ -1042,11 +1074,6 @@ void CS2APlugin::OnLateLoad()
 			continue; // No player in this slot
 		}
 
-		if (!g_pEngine->IsClientFullyAuthenticated(slot))
-		{
-			continue;
-		}
-
 		PlayerInfo *existing = g_CS2APlayerManager.GetPlayer(i);
 		if (!existing)
 		{
@@ -1059,7 +1086,9 @@ void CS2APlugin::OnLateLoad()
 			continue;
 		}
 
-		player->authenticated = true;
+		// ClientPutInServer fired before the plugin was there to see it. Hook_GameFrame authorizes the ones Steam has confirmed.
+		// The ban and comm checks need the DB, so they run from ADMIN_RecheckConnectedPlayers once it is ready.
+		player->inGame = true;
 
 		if (player->authid.empty() && player->steamid64 != 0)
 		{
@@ -1084,12 +1113,6 @@ void CS2APlugin::OnLateLoad()
 		}
 
 		MMU_LOG_INFO("Late load: processing player (%s) in slot %d\n", player->authid.c_str(), i);
-
-		// The ban and comm checks need the DB, so they run from ADMIN_RecheckConnectedPlayers once it is ready.
-		g_CS2AAdminManager.AssignAdminToPlayer(i);
-
-		g_CS2ATagManager.LoadPlayerPref(i, player->steamid64);
-		g_CS2ATagManager.UpdateClanTag(i);
 	}
 }
 

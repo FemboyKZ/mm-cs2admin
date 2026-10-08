@@ -96,6 +96,7 @@ private:
 	// Shared by the first connect and every reconnect.
 	void OnDatabaseReady();
 	void OnLateLoad();
+	void OnClientAuthorized(int slot);
 
 	bool m_bLateLoaded = false;
 	bool m_bConfigLoaded = false;

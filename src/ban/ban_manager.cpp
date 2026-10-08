@@ -33,8 +33,53 @@ int CS2ABanManager::GetServerID() const
 	return g_CS2AConfig.serverID;
 }
 
+void CS2ABanManager::SubmitBan(const std::string &query, const std::string &authSuffix, const std::string &ip, int lengthSec, const char *reason)
+{
+	const uint64_t id = m_nextPendingId++;
+	const long long ends = lengthSec > 0 ? (long long)std::time(nullptr) + lengthSec : 0;
+	m_pendingBans.push_back({id, authSuffix, ip, ends, reason ? reason : "Banned"});
+
+	g_CS2AOfflineQueue.Submit(
+		query,
+		[this, id]()
+		{
+			m_pendingBans.erase(std::remove_if(m_pendingBans.begin(), m_pendingBans.end(), [id](const PendingBan &ban) { return ban.id == id; }),
+								m_pendingBans.end());
+		});
+}
+
+void CS2ABanManager::RunFrame()
+{
+	// An answer can kick, and the kick can ask again.
+	std::vector<std::function<void()>> due;
+	due.swap(m_dueAnswers);
+	for (const auto &answer : due)
+	{
+		answer();
+	}
+}
+
 void CS2ABanManager::VerifyBan(int slot, uint64_t steamid64, const char *ip, std::function<void(bool banned, const std::string &reason)> callback)
 {
+	const std::string ownSuffix = SteamID64ToSuffix(steamid64);
+	long long now = (long long)std::time(nullptr);
+	for (const PendingBan &ban : m_pendingBans)
+	{
+		if (ban.ends != 0 && ban.ends <= now)
+		{
+			continue;
+		}
+		if (ban.authSuffix == ownSuffix || (!ban.ip.empty() && ip && ban.ip == ip))
+		{
+			// Next frame: this runs inside ClientPutInServer, and the answer kicks the client the engine is still setting up.
+			if (callback)
+			{
+				m_dueAnswers.push_back([callback, reason = ban.reason]() { callback(true, reason); });
+			}
+			return;
+		}
+	}
+
 	if (!g_CS2ADatabase.IsConnected())
 	{
 		if (callback)
@@ -44,11 +89,10 @@ void CS2ABanManager::VerifyBan(int slot, uint64_t steamid64, const char *ip, std
 		return;
 	}
 
-	std::string suffix = g_CS2ADatabase.Escape(SteamID64ToSuffix(steamid64).c_str());
+	std::string suffix = g_CS2ADatabase.Escape(ownSuffix.c_str());
 	std::string escapedIP = ip ? g_CS2ADatabase.Escape(ip) : "";
 	std::string prefix = g_CS2AConfig.database.prefix;
 
-	long long now = (long long)std::time(nullptr);
 	std::string authCond = CS2ADatabase::AuthMatch("authid", suffix);
 
 	char query[1024];
@@ -201,7 +245,7 @@ bool CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 			 prefix.c_str(), escapedIP.c_str(), now, now + lengthSec, lengthSec, escapedReason.c_str(), prefix.c_str(), adminAuth.c_str(),
 			 adminMatch.c_str(), adminIP.c_str(), sid);
 
-	g_CS2AOfflineQueue.Submit(query);
+	SubmitBan(query, "", ip, lengthSec, reason);
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Banned IP %s for %d min. Reason: %s", ip, time, reason ? reason : "No reason");
@@ -266,7 +310,7 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 			 prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(), adminIP.c_str(), sid);
 
 	// Otherwise the kicked player walks straight back in.
-	g_CS2AOfflineQueue.Submit(query);
+	SubmitBan(query, ExtractAuthSuffix(authid ? authid : ""), "", lengthSec, reason);
 }
 
 bool CS2ABanManager::Unban(const char *authid, int adminSlot)
@@ -302,6 +346,11 @@ bool CS2ABanManager::Unban(const char *authid, int adminSlot)
 	snprintf(logMsg, sizeof(logMsg), "Unbanned %s", authid);
 	ADMIN_LogAction(adminSlot, logMsg);
 
+	const std::string rawSuffix = ExtractAuthSuffix(std::string(authid));
+	m_pendingBans.erase(
+		std::remove_if(m_pendingBans.begin(), m_pendingBans.end(), [&rawSuffix](const PendingBan &ban) { return ban.authSuffix == rawSuffix; }),
+		m_pendingBans.end());
+
 	g_CS2AOfflineQueue.Submit(query);
 	return true;
 }
@@ -335,6 +384,9 @@ bool CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Unbanned IP %s", ip);
 	ADMIN_LogAction(adminSlot, logMsg);
+
+	m_pendingBans.erase(std::remove_if(m_pendingBans.begin(), m_pendingBans.end(), [ip](const PendingBan &ban) { return ban.ip == ip; }),
+						m_pendingBans.end());
 
 	g_CS2AOfflineQueue.Submit(query);
 	return true;

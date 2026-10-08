@@ -17,6 +17,7 @@
 #include <recipientfilter.h>
 #include <usermessages.pb.h>
 
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -87,6 +88,13 @@ namespace
 			text.replace(pos, zeroWidthSpace.size(), "\"");
 			pos += 1;
 		}
+	}
+
+	// Chat color codes and line breaks, which would let a player recolor the line or fake a second one.
+	std::string StripControlChars(std::string text)
+	{
+		text.erase(std::remove_if(text.begin(), text.end(), [](unsigned char c) { return c < 0x20; }), text.end());
+		return text;
 	}
 
 	// The palette color standing in for a team, straight from config.
@@ -276,8 +284,8 @@ std::string CS2AChatProcessor::ComposeLine(int slot, const char *message, bool t
 		{"msgcolor", (tag && !tag->msgColor.empty()) ? tag->msgColor : CHAT_COLOR_DEFAULT},
 		{"teamcolor", teamColor},
 		{"teamname", TeamName(team)},
-		{"name", player ? player->name : ""},
-		{"msg", body},
+		{"name", player ? StripControlChars(player->name) : ""},
+		{"msg", StripControlChars(body)},
 	};
 
 	return ExpandTokens(mmu::ResolveColorTags(*format), tokens);

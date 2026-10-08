@@ -310,7 +310,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 	}
 
 	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
-	if (!player || !player->connected)
+	if (!player || !player->connected || !player->authenticated)
 	{
 		return;
 	}

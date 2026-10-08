@@ -255,7 +255,7 @@ bool CS2ATagManager::PlayerMatches(int slot, const TagDef &tag) const
 	// Identity matches don't need an admin entry.
 	if (tag.match == TagMatch::SteamID)
 	{
-		return player->steamid64 == tag.steamid64;
+		return player->authenticated && player->steamid64 == tag.steamid64;
 	}
 	if (tag.match == TagMatch::IP)
 	{

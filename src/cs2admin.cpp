@@ -554,6 +554,7 @@ void CS2APlugin::OnPluginUnload(PluginId id)
 	// The departing plugin's convars and interface may still be registered at this point.
 	g_CS2AForeignPlugins.Refresh(id);
 	g_CS2AMapManager.RefreshRtv(id);
+	g_CS2AForwards.DropOwnedBy(id);
 }
 
 void CS2APlugin::LookupServerID(bool allowAutoAdd)

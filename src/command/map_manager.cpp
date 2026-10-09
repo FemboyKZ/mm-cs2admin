@@ -374,16 +374,16 @@ void CS2AMapManager::RefreshRtv(PluginId unloading)
 	m_rtvVoteStartHandle = kInvalidRTVForwardHandle;
 	if (forwards)
 	{
-		m_rtvVoteStartHandle = forwards->RegisterOnMapVoteStart(
-			[](bool)
+		auto onVoteStart = [](bool)
+		{
+			if (!g_CS2AMapManager.m_pending.Busy())
 			{
-				if (!g_CS2AMapManager.m_pending.Busy())
-				{
-					return false;
-				}
-				ADMIN_ChatToAllT("Vote skipped, the map is already changing to %s.", g_CS2AMapManager.m_pendingLabel.c_str());
-				return true;
-			});
+				return false;
+			}
+			ADMIN_ChatToAllT("Vote skipped, the map is already changing to %s.", g_CS2AMapManager.m_pendingLabel.c_str());
+			return true;
+		};
+		m_rtvVoteStartHandle = forwards->RegisterOnMapVoteStart(g_PLID, onVoteStart);
 	}
 }
 

@@ -124,11 +124,12 @@ for task in MMSPlugin.binaries:
     builder.AddFolder(cfg_path)
     for cfg in [
         "core.cfg",
-        "admins.cfg",
-        "admins_simple.ini",
-        "admin_groups.cfg",
-        "admin_overrides.cfg",
+        "admins.example.cfg",
+        "admins_simple.example.ini",
+        "admin_groups.example.cfg",
+        "admin_overrides.example.cfg",
         "adminmenu_cfgs.txt",
+        "tags.example.cfg",
     ]:
         src = os.path.join(builder.sourcePath, "configs", cfg)
         if os.path.isfile(src):

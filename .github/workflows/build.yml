@@ -60,7 +60,8 @@ jobs:
           mkdir -p staging/addons
           cp -r build/package/addons/* staging/addons/
           mkdir -p staging/cfg/cs2admin
-          cp configs/*.cfg configs/*.ini staging/cfg/cs2admin/
+          cp configs/*.cfg configs/*.ini configs/adminmenu_cfgs.txt staging/cfg/cs2admin/
+          cp configs/maplist.example.txt staging/cfg/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -126,7 +127,8 @@ jobs:
           New-Item -ItemType Directory -Force -Path staging/addons | Out-Null
           Copy-Item -Recurse build/package/addons/* staging/addons/
           New-Item -ItemType Directory -Force -Path staging/cfg/cs2admin | Out-Null
-          Copy-Item configs/*.cfg, configs/*.ini staging/cfg/cs2admin/
+          Copy-Item configs/*.cfg, configs/*.ini, configs/adminmenu_cfgs.txt staging/cfg/cs2admin/
+          Copy-Item configs/maplist.example.txt staging/cfg/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7

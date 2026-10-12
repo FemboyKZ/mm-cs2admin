@@ -257,7 +257,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 	{
 		// Standalone SQLite mode: load ALL admins directly
 		snprintf(query, sizeof(query),
-				 "SELECT a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity "
+				 "SELECT a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password "
 				 "FROM %s_admins AS a",
 				 prefix.c_str());
 	}
@@ -284,14 +284,14 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 		snprintf(ipStr, sizeof(ipStr), "%d.%d.%d.%d", (hostip >> 24) & 0xFF, (hostip >> 16) & 0xFF, (hostip >> 8) & 0xFF, hostip & 0xFF);
 
 		snprintf(query, sizeof(query),
-				 "SELECT a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity "
+				 "SELECT a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password "
 				 "FROM %s_admins_servers_groups AS asg "
 				 "LEFT JOIN %s_admins AS a ON a.aid = asg.admin_id "
 				 "WHERE (server_id = (SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%d' LIMIT 1) "
 				 "OR srv_group_id IN (SELECT group_id FROM %s_servers_groups "
 				 "WHERE server_id = (SELECT sid FROM %s_servers WHERE ip = '%s' AND port = '%d' LIMIT 1))) "
 				 "%s"
-				 "GROUP BY a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity",
+				 "GROUP BY a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password",
 				 prefix.c_str(), prefix.c_str(), prefix.c_str(), g_CS2ADatabase.Escape(ipStr).c_str(), hostport, prefix.c_str(), prefix.c_str(),
 				 g_CS2ADatabase.Escape(ipStr).c_str(), hostport,
 				 g_CS2AConfig.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
@@ -299,13 +299,13 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 	else
 	{
 		snprintf(query, sizeof(query),
-				 "SELECT a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity "
+				 "SELECT a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password "
 				 "FROM %s_admins_servers_groups AS asg "
 				 "LEFT JOIN %s_admins AS a ON a.aid = asg.admin_id "
 				 "WHERE (server_id = %d "
 				 "OR srv_group_id IN (SELECT group_id FROM %s_servers_groups WHERE server_id = %d)) "
 				 "%s"
-				 "GROUP BY a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity",
+				 "GROUP BY a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password",
 				 prefix.c_str(), prefix.c_str(), g_CS2AConfig.serverID, prefix.c_str(), g_CS2AConfig.serverID,
 				 g_CS2AConfig.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
 	}
@@ -346,6 +346,9 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 
 				entry.immunity = rs->GetInt(5);
 
+				const char *password = rs->GetString(6);
+				entry.password = password ? password : "";
+
 				if (!entry.identity.empty())
 				{
 					// If there's already a DB entry for this identity (e.g., multiple group assignments), merge flags additively
@@ -353,6 +356,10 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 					if (existing != m_loadingDbAdmins.end())
 					{
 						existing->second.flags |= entry.flags;
+						if (existing->second.password.empty())
+						{
+							existing->second.password = entry.password;
+						}
 						if (entry.immunity > existing->second.immunity)
 						{
 							existing->second.immunity = entry.immunity;

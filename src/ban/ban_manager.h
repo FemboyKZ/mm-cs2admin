@@ -56,6 +56,9 @@ public:
 	// Display comm history for a player ingame (!listcomms)
 	void ListComms(int callerSlot, const char *authid);
 
+	// Rebuilds a pending ban from its queue note, null for other notes.
+	std::function<void()> RestorePending(const std::string &note);
+
 private:
 	// Insert a ban row into the database.
 	void InsertBan(const char *ip, const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot);
@@ -64,15 +67,18 @@ private:
 	// so a ban holds while the DB is down or its row is still in the offline queue.
 	struct PendingBan
 	{
-		uint64_t id;
+		uint64_t id = 0;
 		// "Y:Z", empty for an IP ban.
 		std::string authSuffix;
 		// Empty for a SteamID ban.
 		std::string ip;
 		// Unix time, 0 for permanent.
-		long long ends;
+		long long ends = 0;
 		std::string reason;
 	};
+
+	// Returns the callback that drops it once written.
+	std::function<void()> TrackPending(PendingBan ban);
 
 	// Queues the row and keeps the ban pending until it is written.
 	void SubmitBan(const std::string &query, const std::string &authSuffix, const std::string &ip, int lengthSec, const char *reason);

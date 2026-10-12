@@ -469,7 +469,13 @@ void CS2APlugin::StartDatabase()
 	// Read once, before anything can be queued.
 	// Enqueue rewrites the file from memory, so a later read would either come too late to save the old entries or load duplicates of new ones.
 	// Still the first read, since nothing is queued before Init succeeds and it only succeeds once.
-	g_CS2AOfflineQueue.LoadFromFile();
+	// Queued bans and blocks go back to being enforced from memory.
+	g_CS2AOfflineQueue.LoadFromFile(
+		[](const std::string &note)
+		{
+			std::function<void()> written = g_CS2ABanManager.RestorePending(note);
+			return written ? written : g_CS2ACommManager.RestorePending(note);
+		});
 
 	g_CS2ADatabase.Connect(
 		[this](bool success)
@@ -1048,6 +1054,13 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	return {KHook::Action::Ignore};
 }
 
+// A bot has no XUID, only FL_FAKECLIENT on its controller.
+static bool ControllerIsBot(CCSPlayerController *controller)
+{
+	const int16_t offset = schema::GetOffset("CBaseEntity", FNV1a("CBaseEntity"), "m_fFlags", FNV1a("m_fFlags"));
+	return controller && offset > 0 && (*reinterpret_cast<uint32_t *>(reinterpret_cast<uintptr_t>(controller) + offset) & (1u << 8));
+}
+
 void CS2APlugin::OnLateLoad()
 {
 	MMU_LOG_INFO("Late load detected - processing existing players...\n");
@@ -1068,7 +1081,8 @@ void CS2APlugin::OnLateLoad()
 	{
 		CPlayerSlot slot(i);
 		uint64 xuid = g_pEngine->GetClientXUID(slot);
-		if (xuid == 0)
+		CCSPlayerController *bot = xuid == 0 ? CCSPlayerController::FromSlot(i) : nullptr;
+		if (xuid == 0 && !ControllerIsBot(bot))
 		{
 			continue; // No player in this slot
 		}
@@ -1076,7 +1090,7 @@ void CS2APlugin::OnLateLoad()
 		PlayerInfo *existing = g_CS2APlayerManager.GetPlayer(i);
 		if (!existing)
 		{
-			g_CS2APlayerManager.OnClientConnected(i, "", xuid, "", "", false);
+			g_CS2APlayerManager.OnClientConnected(i, bot ? bot->GetPlayerName() : "", xuid, "", "", bot != nullptr);
 		}
 
 		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);

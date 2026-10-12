@@ -14,7 +14,9 @@
 #include "interfaces/sql_mm/sql_mm.h"
 #include <algorithm>
 #include <climits>
+#include <cstdlib>
 #include <ctime>
+#include <sstream>
 #include <vector>
 
 CS2ABanManager g_CS2ABanManager;
@@ -35,17 +37,53 @@ int CS2ABanManager::GetServerID() const
 
 void CS2ABanManager::SubmitBan(const std::string &query, const std::string &authSuffix, const std::string &ip, int lengthSec, const char *reason)
 {
-	const uint64_t id = m_nextPendingId++;
-	const long long ends = lengthSec > 0 ? (long long)std::time(nullptr) + lengthSec : 0;
-	m_pendingBans.push_back({id, authSuffix, ip, ends, reason ? reason : "Banned"});
+	PendingBan ban;
+	ban.authSuffix = authSuffix;
+	ban.ip = ip;
+	ban.ends = lengthSec > 0 ? (long long)std::time(nullptr) + lengthSec : 0;
+	ban.reason = reason ? reason : "Banned";
 
-	g_CS2AOfflineQueue.Submit(
-		query,
-		[this, id]()
-		{
-			m_pendingBans.erase(std::remove_if(m_pendingBans.begin(), m_pendingBans.end(), [id](const PendingBan &ban) { return ban.id == id; }),
-								m_pendingBans.end());
-		});
+	const std::string note = "ban\t" + ban.authSuffix + "\t" + ban.ip + "\t" + std::to_string(ban.ends) + "\t" + ban.reason;
+	g_CS2AOfflineQueue.Submit(query, TrackPending(std::move(ban)), note);
+}
+
+std::function<void()> CS2ABanManager::TrackPending(PendingBan ban)
+{
+	const uint64_t id = m_nextPendingId++;
+	ban.id = id;
+	m_pendingBans.push_back(std::move(ban));
+	return [this, id]()
+	{
+		m_pendingBans.erase(std::remove_if(m_pendingBans.begin(), m_pendingBans.end(), [id](const PendingBan &b) { return b.id == id; }),
+							m_pendingBans.end());
+	};
+}
+
+std::function<void()> CS2ABanManager::RestorePending(const std::string &note)
+{
+	std::stringstream ss(note);
+	std::string kind, ends;
+	PendingBan ban;
+	std::getline(ss, kind, '\t');
+
+	// Notes replay in queue order, so a later unban undoes its ban.
+	if (kind == "unban" || kind == "unbanip")
+	{
+		std::string target;
+		std::getline(ss, target);
+		m_pendingBans.erase(std::remove_if(m_pendingBans.begin(), m_pendingBans.end(),
+										   [&](const PendingBan &b) { return !target.empty() && (kind == "unban" ? b.authSuffix : b.ip) == target; }),
+							m_pendingBans.end());
+		return nullptr;
+	}
+
+	if (kind != "ban" || !std::getline(ss, ban.authSuffix, '\t') || !std::getline(ss, ban.ip, '\t') || !std::getline(ss, ends, '\t'))
+	{
+		return nullptr;
+	}
+	std::getline(ss, ban.reason);
+	ban.ends = std::atoll(ends.c_str());
+	return TrackPending(std::move(ban));
 }
 
 void CS2ABanManager::RunFrame()
@@ -365,7 +403,7 @@ bool CS2ABanManager::Unban(const char *authid, int adminSlot)
 		std::remove_if(m_pendingBans.begin(), m_pendingBans.end(), [&rawSuffix](const PendingBan &ban) { return ban.authSuffix == rawSuffix; }),
 		m_pendingBans.end());
 
-	g_CS2AOfflineQueue.Submit(query);
+	g_CS2AOfflineQueue.Submit(query, nullptr, "unban\t" + rawSuffix);
 	return true;
 }
 
@@ -402,7 +440,7 @@ bool CS2ABanManager::UnbanIP(const char *ip, int adminSlot)
 	m_pendingBans.erase(std::remove_if(m_pendingBans.begin(), m_pendingBans.end(), [ip](const PendingBan &ban) { return ban.ip == ip; }),
 						m_pendingBans.end());
 
-	g_CS2AOfflineQueue.Submit(query);
+	g_CS2AOfflineQueue.Submit(query, nullptr, std::string("unbanip\t") + ip);
 	return true;
 }
 

@@ -257,6 +257,7 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 	if (flatIt != m_flatFileAdmins.end())
 	{
 		merged.flags |= flatIt->second.flags;
+		merged.password = flatIt->second.password;
 		if (flatIt->second.immunity > merged.immunity)
 		{
 			merged.immunity = flatIt->second.immunity;
@@ -288,6 +289,10 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 	if (dbIt != m_dbAdmins.end())
 	{
 		merged.flags |= dbIt->second.flags;
+		if (merged.password.empty())
+		{
+			merged.password = dbIt->second.password;
+		}
 		if (dbIt->second.immunity > merged.immunity)
 		{
 			merged.immunity = dbIt->second.immunity;
@@ -335,6 +340,12 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 	bool found = LookupAdmin(normalized.c_str(), merged);
 	merged.name = player->name;
 
+	if (found && !merged.password.empty() && merged.password != m_playerPassword[slot])
+	{
+		MMU_LOG_INFO("Admin \"%s\" (%s) has not given their password, no rights assigned.\n", player->name.c_str(), normalized.c_str());
+		found = false;
+	}
+
 	m_playerHasAdmin[slot] = found;
 	m_playerAdmins[slot] = merged;
 
@@ -353,6 +364,24 @@ void CS2AAdminManager::ClearPlayerAdmin(int slot)
 	}
 	m_playerHasAdmin[slot] = false;
 	m_playerAdmins[slot] = {};
+	m_playerPassword[slot].clear();
+	m_passwordFailures[slot] = 0;
+}
+
+bool CS2AAdminManager::SubmitPassword(int slot, const std::string &password)
+{
+	if (slot < 0 || slot > MAXPLAYERS || m_passwordFailures[slot] >= MAX_PASSWORD_TRIES)
+	{
+		return false;
+	}
+
+	m_playerPassword[slot] = password;
+	AssignAdminToPlayer(slot);
+	if (!m_playerHasAdmin[slot])
+	{
+		m_passwordFailures[slot]++;
+	}
+	return m_playerHasAdmin[slot];
 }
 
 bool CS2AAdminManager::PlayerHasFlag(int slot, uint32_t flag)
@@ -499,5 +528,7 @@ void CS2AAdminManager::Clear()
 	{
 		m_playerHasAdmin[i] = false;
 		m_playerAdmins[i] = {};
+		m_playerPassword[i].clear();
+		m_passwordFailures[i] = 0;
 	}
 }

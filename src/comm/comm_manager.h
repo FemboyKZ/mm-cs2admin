@@ -6,6 +6,7 @@
 
 #include <string>
 #include <functional>
+#include <vector>
 
 // Comm punishment types for mute/gag DB entries
 enum CommPunishType
@@ -49,6 +50,12 @@ public:
 
 	// Session-only gag (no DB record, clears on disconnect). The forward gets time -1.
 	bool SessionGagPlayer(int targetSlot, int adminSlot);
+
+	// Both, behind OnSilencePlayer. Returns the bits that applied.
+	int SessionSilencePlayer(int targetSlot, int adminSlot);
+
+	// Rebuilds a pending block from its queue note, null for other notes.
+	std::function<void()> RestorePending(const std::string &note);
 
 	// SourceComms' unblock rule. The issuer, the console, the cheats flag,
 	// or at least the issuer's immunity unless DisableUnblockImmunityCheck is set.
@@ -98,6 +105,26 @@ private:
 
 	void InsertComm(const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot, int type);
 	void RemoveComm(const char *authid, int adminSlot, int type);
+
+	// A block the database has not confirmed writing, like PendingBan.
+	struct PendingComm
+	{
+		uint64_t id = 0;
+		std::string authSuffix;
+		int type = COMM_NONE;
+		// Unix time, 0 for permanent.
+		long long ends = 0;
+		std::string reason;
+		int issuerImmunity = 0;
+		uint64_t issuerSteamid64 = 0;
+	};
+
+	// Returns the callback that drops it once written.
+	std::function<void()> TrackPending(PendingComm comm);
+	bool HasPendingComm(uint64_t steamid64, int type) const;
+
+	std::vector<PendingComm> m_pendingComms;
+	uint64_t m_nextPendingId = 1;
 
 	uint32_t m_commGeneration[MAXPLAYERS + 1] = {};
 };

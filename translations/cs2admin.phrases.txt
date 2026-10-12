@@ -7,6 +7,18 @@
 "Phrases"
 {
 	// General: permissions, targeting and availability
+	"Usage: !adminpass <password>\n"
+	{
+		"en"	"Usage: !adminpass <password>\n"
+	}
+	"No admin rights were unlocked.\n"
+	{
+		"en"	"{red}No admin rights were unlocked.\n"
+	}
+	"Admin rights unlocked.\n"
+	{
+		"en"	"{green}Admin rights unlocked.\n"
+	}
 	"You do not have permission to use this command.\n"
 	{
 		"en"	"{red}You do not have permission to use this command.\n"

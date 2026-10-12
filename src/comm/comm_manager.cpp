@@ -10,8 +10,11 @@
 #include "src/utils/print_utils.h"
 
 #include "interfaces/sql_mm/sql_mm.h"
+#include <algorithm>
 #include <climits>
+#include <cstdlib>
 #include <ctime>
+#include <sstream>
 
 CS2ACommManager g_CS2ACommManager;
 
@@ -85,23 +88,66 @@ bool CS2ACommManager::IsAllowedLength(int callerSlot, int minutes) const
 	return minutes != 0 && minutes <= maxLength;
 }
 
-void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
+// A block from a comms row or a pending write. remaining is in seconds, 0 for permanent.
+static void ApplyStoredBlock(int slot, PlayerInfo *player, int type, int remaining, const char *reason, int issuerImmunity, uint64_t issuerSteamid64)
 {
-	if (!g_CS2ADatabase.IsConnected())
+	const bool mute = type == COMM_MUTE;
+	bool &active = mute ? player->isMuted : player->isGagged;
+	std::string &why = mute ? player->muteReason : player->gagReason;
+
+	// A reload re-verifies everyone, so only announce a block the player didn't already have.
+	const bool announce = !active;
+	active = true;
+	(mute ? player->isSessionMuted : player->isSessionGagged) = false;
+	why = reason ? reason : "";
+	(mute ? player->muteExpireTime : player->gagExpireTime) = remaining > 0 ? Plat_FloatTime() + remaining : 0.0;
+	(mute ? player->muteIssuerImmunity : player->gagIssuerImmunity) = issuerImmunity;
+	(mute ? player->muteIssuerSteamid64 : player->gagIssuerSteamid64) = issuerSteamid64;
+	if (!announce)
 	{
 		return;
 	}
 
+	if (remaining <= 0)
+	{
+		ADMIN_PrintToChatT(slot, mute ? "You are permanently muted. Reason: %s\n" : "You are permanently gagged. Reason: %s\n", why.c_str());
+	}
+	else
+	{
+		ADMIN_PrintToChatT(slot, mute ? "You are muted (%d seconds remaining). Reason: %s\n" : "You are gagged (%d seconds remaining). Reason: %s\n",
+						   remaining, why.c_str());
+	}
+	MMU_LOG_INFO("Player \"%s\" has active %s. Reason: %s\n", player->name.c_str(), mute ? "mute" : "gag", why.c_str());
+}
+
+void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
+{
 	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
 	if (!player)
 	{
 		return;
 	}
 
-	std::string suffix = g_CS2ADatabase.Escape(SteamID64ToSuffix(steamid64).c_str());
+	// Blocks the database does not have yet.
+	const std::string ownSuffix = SteamID64ToSuffix(steamid64);
+	long long now = (long long)std::time(nullptr);
+	for (const PendingComm &comm : m_pendingComms)
+	{
+		if (comm.authSuffix == ownSuffix && (comm.ends == 0 || comm.ends > now))
+		{
+			ApplyStoredBlock(slot, player, comm.type, comm.ends == 0 ? 0 : static_cast<int>(comm.ends - now), comm.reason.c_str(),
+							 comm.issuerImmunity, comm.issuerSteamid64);
+		}
+	}
+
+	if (!g_CS2ADatabase.IsConnected())
+	{
+		return;
+	}
+
+	std::string suffix = g_CS2ADatabase.Escape(ownSuffix.c_str());
 	std::string prefix = g_CS2AConfig.database.prefix;
 
-	long long now = (long long)std::time(nullptr);
 	std::string authCond = CS2ADatabase::AuthMatch("c.authid", suffix);
 
 	char query[1024];
@@ -121,146 +167,100 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 			 "ORDER BY CASE WHEN c.length = '0' THEN 1 ELSE 0 END ASC, c.ends ASC",
 			 now, prefix.c_str(), prefix.c_str(), prefix.c_str(), authCond.c_str(), now);
 
-	g_CS2ADatabase.Query(
-		query,
-		[slot, steamid64, generation = m_commGeneration[slot]](ISQLQuery *result)
-		{
-			if (!result)
-			{
-				return;
-			}
+	g_CS2ADatabase.Query(query,
+						 [slot, steamid64, generation = m_commGeneration[slot]](ISQLQuery *result)
+						 {
+							 if (!result)
+							 {
+								 return;
+							 }
 
-			PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
-			if (!player || !player->connected || player->steamid64 != steamid64)
-			{
-				return;
-			}
+							 PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+							 if (!player || !player->connected || player->steamid64 != steamid64)
+							 {
+								 return;
+							 }
 
-			// An admin changed this player's blocks while the query was in flight, so this answer is already out of date.
-			if (generation != g_CS2ACommManager.Generation(slot))
-			{
-				return;
-			}
+							 // An admin changed this player's blocks while the query was in flight, so this answer is already out of date.
+							 if (generation != g_CS2ACommManager.Generation(slot))
+							 {
+								 return;
+							 }
 
-			ISQLResult *rs = result->GetResultSet();
-			if (!rs)
-			{
-				return;
-			}
+							 ISQLResult *rs = result->GetResultSet();
+							 if (!rs)
+							 {
+								 return;
+							 }
 
-			bool foundMute = false;
-			bool foundGag = false;
-			while (rs->MoreRows())
-			{
-				ISQLRow *row = rs->FetchRow();
-				if (!row)
-				{
-					break;
-				}
+							 bool foundMute = false;
+							 bool foundGag = false;
+							 while (rs->MoreRows())
+							 {
+								 ISQLRow *row = rs->FetchRow();
+								 if (!row)
+								 {
+									 break;
+								 }
 
-				// Column 0 = remaining seconds
-				// Column 1 = length (0 = permanent)
-				// Column 2 = type (1 = mute, 2 = gag)
-				// Column 4 = reason
-				int remaining = rs->GetInt(0);
-				int length = rs->GetInt(1);
-				int type = rs->GetInt(2);
-				const char *reason = rs->GetString(4);
+								 // Column 0 = remaining seconds
+								 // Column 1 = length (0 = permanent)
+								 // Column 2 = type (1 = mute, 2 = gag)
+								 // Column 4 = reason
+								 int remaining = rs->GetInt(0);
+								 int length = rs->GetInt(1);
+								 int type = rs->GetInt(2);
+								 const char *reason = rs->GetString(4);
 
-				// Column 6 = issuer immunity, 7 = issuer aid, 9 = issuer authid, 10 = issuer IP
-				int issuerImmunity = rs->GetInt(6);
-				const char *issuerIP = rs->GetString(10);
-				bool noAid = rs->GetInt(7) == 0;
-				// aid 0 is also any admin missing from the admins table, like a flat-file one. Only the console has no IP.
-				bool byConsole = noAid && (!issuerIP || !*issuerIP);
-				if (byConsole && g_CS2AConfig.consoleImmunity > issuerImmunity)
-				{
-					issuerImmunity = g_CS2AConfig.consoleImmunity;
-				}
-				else if (noAid && !byConsole)
-				{
-					// Unknown issuer, so any admin may lift it.
-					issuerImmunity = -1;
-				}
-				const char *issuerAuth = rs->GetString(9);
-				uint64_t issuerSteamid64 =
-					(noAid || !issuerAuth) ? 0 : CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(issuerAuth).c_str());
+								 // Column 6 = issuer immunity, 7 = issuer aid, 9 = issuer authid, 10 = issuer IP
+								 int issuerImmunity = rs->GetInt(6);
+								 const char *issuerIP = rs->GetString(10);
+								 bool noAid = rs->GetInt(7) == 0;
+								 // aid 0 is also any admin missing from the admins table, like a flat-file one. Only the console has no IP.
+								 bool byConsole = noAid && (!issuerIP || !*issuerIP);
+								 if (byConsole && g_CS2AConfig.consoleImmunity > issuerImmunity)
+								 {
+									 issuerImmunity = g_CS2AConfig.consoleImmunity;
+								 }
+								 else if (noAid && !byConsole)
+								 {
+									 // Unknown issuer, so any admin may lift it.
+									 issuerImmunity = -1;
+								 }
+								 const char *issuerAuth = rs->GetString(9);
+								 uint64_t issuerSteamid64 =
+									 (noAid || !issuerAuth)
+										 ? 0
+										 : CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(issuerAuth).c_str());
 
-				if (type == COMM_MUTE)
-				{
-					foundMute = true;
-					// A reload re-verifies everyone, so only announce a block the player didn't already have.
-					bool announce = !player->isMuted;
-					player->isMuted = true;
-					player->isSessionMuted = false;
-					player->muteReason = reason ? reason : "";
-					player->muteExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
-					player->muteIssuerImmunity = issuerImmunity;
-					player->muteIssuerSteamid64 = issuerSteamid64;
-					if (!announce)
-					{
-						continue;
-					}
-					if (length == 0)
-					{
-						ADMIN_PrintToChatT(slot, "You are permanently muted. Reason: %s\n", player->muteReason.c_str());
-					}
-					else
-					{
-						ADMIN_PrintToChatT(slot, "You are muted (%d seconds remaining). Reason: %s\n", remaining, player->muteReason.c_str());
-					}
-					MMU_LOG_INFO("Player \"%s\" has active mute. Reason: %s\n", player->name.c_str(), player->muteReason.c_str());
-				}
-				else if (type == COMM_GAG)
-				{
-					foundGag = true;
-					bool announce = !player->isGagged;
-					player->isGagged = true;
-					player->isSessionGagged = false;
-					player->gagReason = reason ? reason : "";
-					player->gagExpireTime = (length != 0 && remaining > 0) ? Plat_FloatTime() + remaining : 0.0;
-					player->gagIssuerImmunity = issuerImmunity;
-					player->gagIssuerSteamid64 = issuerSteamid64;
-					if (!announce)
-					{
-						continue;
-					}
-					if (length == 0)
-					{
-						ADMIN_PrintToChatT(slot, "You are permanently gagged. Reason: %s\n", player->gagReason.c_str());
-					}
-					else
-					{
-						ADMIN_PrintToChatT(slot, "You are gagged (%d seconds remaining). Reason: %s\n", remaining, player->gagReason.c_str());
-					}
-					MMU_LOG_INFO("Player \"%s\" has active gag. Reason: %s\n", player->name.c_str(), player->gagReason.c_str());
-				}
-			}
+								 if (type != COMM_MUTE && type != COMM_GAG)
+								 {
+									 continue;
+								 }
+								 (type == COMM_MUTE ? foundMute : foundGag) = true;
+								 ApplyStoredBlock(slot, player, type, length == 0 ? 0 : remaining, reason, issuerImmunity, issuerSteamid64);
+							 }
 
-			// A block lifted elsewhere (web panel, another server) has no row any more.
-			// Session blocks never had one, so they stay.
-			// Nor has a block whose insert is still queued.
-			if (g_CS2AOfflineQueue.HasItems())
-			{
-				return;
-			}
-			if (!foundMute && player->isMuted && !player->isSessionMuted)
-			{
-				player->isMuted = false;
-				player->muteExpireTime = 0.0;
-				player->muteReason.clear();
-				ADMIN_PrintToChatT(slot, "You have been unmuted.\n");
-				MMU_LOG_INFO("Mute for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
-			}
-			if (!foundGag && player->isGagged && !player->isSessionGagged)
-			{
-				player->isGagged = false;
-				player->gagExpireTime = 0.0;
-				player->gagReason.clear();
-				ADMIN_PrintToChatT(slot, "You have been ungagged.\n");
-				MMU_LOG_INFO("Gag for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
-			}
-		});
+							 // A block lifted elsewhere (web panel, another server) has no row any more.
+							 // Session blocks never had one, so they stay.
+							 // Nor has a block whose insert is still queued.
+							 if (!foundMute && player->isMuted && !player->isSessionMuted && !g_CS2ACommManager.HasPendingComm(steamid64, COMM_MUTE))
+							 {
+								 player->isMuted = false;
+								 player->muteExpireTime = 0.0;
+								 player->muteReason.clear();
+								 ADMIN_PrintToChatT(slot, "You have been unmuted.\n");
+								 MMU_LOG_INFO("Mute for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
+							 }
+							 if (!foundGag && player->isGagged && !player->isSessionGagged && !g_CS2ACommManager.HasPendingComm(steamid64, COMM_GAG))
+							 {
+								 player->isGagged = false;
+								 player->gagExpireTime = 0.0;
+								 player->gagReason.clear();
+								 ADMIN_PrintToChatT(slot, "You have been ungagged.\n");
+								 MMU_LOG_INFO("Gag for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
+							 }
+						 });
 }
 
 bool CS2ACommManager::IsGagged(int slot)
@@ -306,8 +306,68 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 			 prefix.c_str(), escapedAuth.c_str(), escapedName.c_str(), now, now + lengthSec, lengthSec, escapedReason.c_str(), prefix.c_str(),
 			 adminAuth.c_str(), adminMatch.c_str(), adminIP.c_str(), sid, type);
 
+	PendingComm pending;
+	pending.authSuffix = ExtractAuthSuffix(authid);
+	pending.type = type;
+	pending.ends = lengthSec > 0 ? now + lengthSec : 0;
+	pending.reason = reason ? reason : "";
+	RecordIssuer(adminSlot, pending.issuerImmunity, pending.issuerSteamid64);
+
+	const std::string note = "comm\t" + pending.authSuffix + "\t" + std::to_string(type) + "\t" + std::to_string(pending.ends) + "\t"
+							 + std::to_string(pending.issuerImmunity) + "\t" + std::to_string(pending.issuerSteamid64) + "\t" + pending.reason;
+
 	// Otherwise the block only lives until the player reconnects.
-	g_CS2AOfflineQueue.Submit(query);
+	g_CS2AOfflineQueue.Submit(query, TrackPending(std::move(pending)), note);
+}
+
+std::function<void()> CS2ACommManager::TrackPending(PendingComm comm)
+{
+	const uint64_t id = m_nextPendingId++;
+	comm.id = id;
+	m_pendingComms.push_back(std::move(comm));
+	return [this, id]()
+	{
+		m_pendingComms.erase(std::remove_if(m_pendingComms.begin(), m_pendingComms.end(), [id](const PendingComm &c) { return c.id == id; }),
+							 m_pendingComms.end());
+	};
+}
+
+std::function<void()> CS2ACommManager::RestorePending(const std::string &note)
+{
+	std::stringstream ss(note);
+	std::string kind, type, ends, immunity, issuer;
+	PendingComm comm;
+	if (!std::getline(ss, kind, '\t') || (kind != "comm" && kind != "uncomm") || !std::getline(ss, comm.authSuffix, '\t')
+		|| !std::getline(ss, type, '\t'))
+	{
+		return nullptr;
+	}
+	comm.type = std::atoi(type.c_str());
+
+	// Notes replay in queue order, so a later unblock undoes its block.
+	if (kind == "uncomm")
+	{
+		m_pendingComms.erase(std::remove_if(m_pendingComms.begin(), m_pendingComms.end(),
+											[&](const PendingComm &c) { return c.type == comm.type && c.authSuffix == comm.authSuffix; }),
+							 m_pendingComms.end());
+		return nullptr;
+	}
+
+	if (!std::getline(ss, ends, '\t') || !std::getline(ss, immunity, '\t') || !std::getline(ss, issuer, '\t'))
+	{
+		return nullptr;
+	}
+	std::getline(ss, comm.reason);
+	comm.ends = std::atoll(ends.c_str());
+	comm.issuerImmunity = std::atoi(immunity.c_str());
+	comm.issuerSteamid64 = std::strtoull(issuer.c_str(), nullptr, 10);
+	return TrackPending(std::move(comm));
+}
+
+bool CS2ACommManager::HasPendingComm(uint64_t steamid64, int type) const
+{
+	const std::string suffix = SteamID64ToSuffix(steamid64);
+	return std::any_of(m_pendingComms.begin(), m_pendingComms.end(), [&](const PendingComm &c) { return c.type == type && c.authSuffix == suffix; });
 }
 
 void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
@@ -339,8 +399,13 @@ void CS2ACommManager::RemoveComm(const char *authid, int adminSlot, int type)
 			 "AND RemoveType IS NULL",
 			 prefix.c_str(), prefix.c_str(), adminAuth.c_str(), adminMatch.c_str(), now, targetMatch.c_str(), type, now);
 
+	const std::string rawSuffix = ExtractAuthSuffix(std::string(authid));
+	m_pendingComms.erase(std::remove_if(m_pendingComms.begin(), m_pendingComms.end(),
+										[&](const PendingComm &c) { return c.type == type && c.authSuffix == rawSuffix; }),
+						 m_pendingComms.end());
+
 	// Otherwise the next reload or reconnect reads the row back and puts the block on again.
-	g_CS2AOfflineQueue.Submit(query);
+	g_CS2AOfflineQueue.Submit(query, nullptr, "uncomm\t" + rawSuffix + "\t" + std::to_string(type));
 }
 
 bool CS2ACommManager::MutePlayer(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
@@ -687,6 +752,17 @@ bool CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 	snprintf(logMsg, sizeof(logMsg), "Session-gagged \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
 	ADMIN_LogAction(adminSlot, logMsg);
 	return true;
+}
+
+int CS2ACommManager::SessionSilencePlayer(int targetSlot, int adminSlot)
+{
+	if (g_CS2AForwards.FireOnSilencePlayer(targetSlot, adminSlot, -1, "Session silence"))
+	{
+		return 0;
+	}
+	bool muted = SessionMutePlayer(targetSlot, adminSlot);
+	bool gagged = SessionGagPlayer(targetSlot, adminSlot);
+	return (muted ? COMM_MUTE : 0) | (gagged ? COMM_GAG : 0);
 }
 
 void CS2ACommManager::CheckExpiredComms()

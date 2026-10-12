@@ -136,6 +136,9 @@ public:
 	// Forget a slot's admin state, so the next player to take it does not inherit it.
 	void ClearPlayerAdmin(int slot);
 
+	// !adminpass. True when the slot has admin rights afterwards.
+	bool SubmitPassword(int slot, const std::string &password);
+
 	// Merge the flat-file, DB and group data for a SteamID that need not be connected.
 	// False when it is not an admin, in which case `out` still carries the normalized identity.
 	bool LookupAdmin(const char *authid, AdminEntry &out) const;
@@ -224,6 +227,11 @@ private:
 	uint32_t m_reloadGeneration = 0;
 
 	static constexpr double RELOAD_TIMEOUT = 30.0;
+
+	// Per slot, the !adminpass input and wrong tries.
+	std::string m_playerPassword[MAXPLAYERS + 1];
+	int m_passwordFailures[MAXPLAYERS + 1] = {};
+	static constexpr int MAX_PASSWORD_TRIES = 5;
 
 	// Merged admin entries per connected player slot
 	AdminEntry m_playerAdmins[MAXPLAYERS + 1];

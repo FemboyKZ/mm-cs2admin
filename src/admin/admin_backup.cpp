@@ -12,6 +12,7 @@
 // BackupConfigs. The last complete DB admin load, used while the database is unreachable.
 // One tab-separated record per line.
 //   admin  <identity> <aid> <flags> <immunity> <name> [group...]
+//   apass  <identity> <password>
 //   group  <name> <id> <flags> <immunity>
 //   gover  <group> <override key> <allow|deny>
 //   over   <override key> <flags>
@@ -71,6 +72,10 @@ void CS2AAdminManager::SaveBackup() const
 				file << "\t" << Field(group);
 			}
 			file << "\n";
+			if (!admin.password.empty())
+			{
+				file << "apass\t" << Field(identity) << "\t" << Field(admin.password) << "\n";
+			}
 		}
 
 		if (!file)
@@ -162,6 +167,14 @@ bool CS2AAdminManager::LoadBackup()
 			{
 				m_loadingDbAdmins[entry.identity] = entry;
 				admins++;
+			}
+		}
+		else if (kind == "apass" && fields.size() >= 3)
+		{
+			auto it = m_loadingDbAdmins.find(fields[1]);
+			if (it != m_loadingDbAdmins.end())
+			{
+				it->second.password = fields[2];
 			}
 		}
 	}

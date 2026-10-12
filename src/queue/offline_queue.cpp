@@ -11,8 +11,10 @@
 CS2AOfflineQueue g_CS2AOfflineQueue;
 
 static const char *QUEUE_DELIMITER = "---END_QUERY---";
+// Ahead of an entry's query, when it has a note.
+static const std::string QUEUE_NOTE = "---NOTE---\t";
 
-void CS2AOfflineQueue::Submit(const std::string &query, std::function<void()> onWritten)
+void CS2AOfflineQueue::Submit(const std::string &query, std::function<void()> onWritten, std::string note)
 {
 	if (m_entries.size() >= MAX_QUEUE_SIZE)
 	{
@@ -24,6 +26,9 @@ void CS2AOfflineQueue::Submit(const std::string &query, std::function<void()> on
 	entry.id = m_nextId++;
 	entry.query = query;
 	entry.onWritten = std::move(onWritten);
+	std::replace(note.begin(), note.end(), '\n', ' ');
+	std::replace(note.begin(), note.end(), '\r', ' ');
+	entry.note = std::move(note);
 	m_entries.push_back(std::move(entry));
 
 	// On disk before it goes out, so a crash or a silent query failure cannot lose it.
@@ -138,11 +143,15 @@ void CS2AOfflineQueue::SaveToFile()
 
 	for (const Entry &entry : m_entries)
 	{
+		if (!entry.note.empty())
+		{
+			file << QUEUE_NOTE << entry.note << "\n";
+		}
 		file << entry.query << "\n" << QUEUE_DELIMITER << "\n";
 	}
 }
 
-void CS2AOfflineQueue::LoadFromFile()
+void CS2AOfflineQueue::LoadFromFile(const RestoreFn &restore)
 {
 	char path[512];
 	snprintf(path, sizeof(path), "%s/addons/cs2admin/queue.txt", g_SMAPI->GetBaseDir());
@@ -154,6 +163,7 @@ void CS2AOfflineQueue::LoadFromFile()
 	}
 
 	std::string current;
+	std::string note;
 	std::string line;
 	while (std::getline(file, line))
 	{
@@ -164,9 +174,19 @@ void CS2AOfflineQueue::LoadFromFile()
 				Entry entry;
 				entry.id = m_nextId++;
 				entry.query = current;
+				entry.note = note;
+				if (restore && !note.empty())
+				{
+					entry.onWritten = restore(note);
+				}
 				m_entries.push_back(std::move(entry));
 				current.clear();
 			}
+			note.clear();
+		}
+		else if (current.empty() && line.compare(0, QUEUE_NOTE.size(), QUEUE_NOTE) == 0)
+		{
+			note = line.substr(QUEUE_NOTE.size());
 		}
 		else
 		{

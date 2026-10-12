@@ -210,7 +210,6 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 			}
 			else if (keyLower == "password")
 			{
-				MMU_LOG_WARN("Admin \"%s\" has a password, which is not enforced here: their rights apply without it.\n", currentAdminName.c_str());
 				currentEntry.password = value;
 			}
 		}
@@ -389,7 +388,6 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			}
 			else
 			{
-				MMU_LOG_WARN("Admin \"%s\" has a password, which is not enforced here: their rights apply without it.\n", normalized.c_str());
 				entry.password = tokens[2];
 			}
 		}
@@ -399,6 +397,10 @@ void CS2AAdminManager::LoadSimpleAdmins()
 		if (existing != m_flatFileAdmins.end())
 		{
 			existing->second.flags |= entry.flags;
+			if (!entry.password.empty())
+			{
+				existing->second.password = entry.password;
+			}
 			if (entry.immunity > existing->second.immunity)
 			{
 				existing->second.immunity = entry.immunity;
@@ -623,6 +625,8 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 	std::string currentName;
 	std::string currentType;
 	std::string currentFlag;
+	// An empty flag string still counts.
+	bool hasFlag = false;
 	bool inOverride = false;
 
 	int count = 0;
@@ -652,7 +656,7 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 			depth--;
 			if (depth == 1 && inOverride)
 			{
-				if (!currentName.empty() && !currentFlag.empty())
+				if (!currentName.empty() && hasFlag)
 				{
 					std::string typeLower = str::ToLower(currentType);
 
@@ -677,6 +681,7 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				currentName.clear();
 				currentType = "command";
 				currentFlag.clear();
+				hasFlag = false;
 			}
 			continue;
 		}
@@ -721,12 +726,15 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				currentName = name;
 				currentType = "command";
 				currentFlag.clear();
+				hasFlag = false;
 				inOverride = true;
 			}
 		}
 		else if (depth == 2 && inOverride)
 		{
 			std::string key = ParseQuotedToken(line, pos);
+			size_t valueStart = line.find_first_not_of(" \t", pos);
+			bool hasValue = valueStart != std::string::npos && line[valueStart] == '"';
 			std::string value = ParseQuotedToken(line, pos);
 
 			if (key.empty())
@@ -740,9 +748,10 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 			{
 				currentType = value;
 			}
-			else if (keyLower == "flag" || keyLower == "flags")
+			else if ((keyLower == "flag" || keyLower == "flags") && hasValue)
 			{
 				currentFlag = value;
+				hasFlag = true;
 			}
 		}
 	}

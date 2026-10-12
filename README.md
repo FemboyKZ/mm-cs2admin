@@ -95,6 +95,7 @@ This means the following articles are valid here too:
 | `!pm`           | `!pm <target> message=<text>`              | `j` (Chat)      | Private message a player. Echoes to all online admins.                                       |
 | `!entfire`      | `!entfire <entity> input=<input> [value=]` | `n` (Cheats)    | Fire an input on a map entity via `ent_fire`.                                                |
 | `!report`       | `!report <target> reason=<text>`           | open            | Report a player to online admins. Subject to cooldown.                                       |
+| `!adminpass`    | `!adminpass <password>`                    | open            | Unlock your admin rights when your entry has a `password`. Never shown in chat.              |
 | `!adminhelp`    | `!adminhelp [page]`                        | open            | List the commands you can use (paginated).                                                   |
 | `!find`         | `!find <text>`                             | open            | Search the commands you can use by name.                                                     |
 | `!tag`          | `!tag [id\|none]`                          | open            | Pick which of your matched tags is displayed, or open a picker.                              |
@@ -123,7 +124,7 @@ Override names are case-insensitive and work with or without the `mm_`/`sm_` pre
 | `@playercommands` | `slay`                                                                         |
 | `@basechat`       | `pm`                                                                           |
 | `@funcommands`    | `give`, `strip`                                                                |
-| `@cs2admin`       | `entfire`, `report`, `tag`, `adminhelp`, `find`                                |
+| `@cs2admin`       | `entfire`, `report`, `tag`, `adminhelp`, `find`, `adminpass`                   |
 
 Commands that act on a player need strictly higher immunity than the target. Root, console and self-targeting bypass it.
 

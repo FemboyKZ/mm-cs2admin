@@ -643,8 +643,9 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 		return false;
 	}
 
-	silent = cmd.silent;
-	ParseAndRun(it->first, it->second, slot, cmd.argLine, cmd.silent);
+	// A password must never reach chat.
+	silent = cmd.silent || it->first == "adminpass";
+	ParseAndRun(it->first, it->second, slot, cmd.argLine, silent);
 	return true;
 }
 
@@ -1571,13 +1572,17 @@ namespace
 		if (time < 0)
 		{
 			int applied = 0;
-			if ((type & COMM_MUTE) && g_CS2ACommManager.SessionMutePlayer(target, slot))
+			if (type == COMM_MUTE)
 			{
-				applied |= COMM_MUTE;
+				applied = g_CS2ACommManager.SessionMutePlayer(target, slot) ? COMM_MUTE : 0;
 			}
-			if ((type & COMM_GAG) && g_CS2ACommManager.SessionGagPlayer(target, slot))
+			else if (type == COMM_GAG)
 			{
-				applied |= COMM_GAG;
+				applied = g_CS2ACommManager.SessionGagPlayer(target, slot) ? COMM_GAG : 0;
+			}
+			else
+			{
+				applied = g_CS2ACommManager.SessionSilencePlayer(target, slot);
 			}
 			if (const char *action = CommActionName(applied, "Session Silence", "Session Mute", "Session Gag"))
 			{
@@ -2417,6 +2422,29 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 
 						ADMIN_ReplyToCommandT(slot, "%d player(s) recently disconnected\n", (int)disconnected.size());
+					});
+
+	// !adminpass <password> - Unlock admin rights held behind a password
+	RegisterCommand("adminpass", "cs2admin", ADMFLAG_NONE, {{{"password"}}, "password"}, "Usage: !adminpass <password>\n",
+					[](int slot, const mmu::Args &args, bool silent)
+					{
+						PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+						if (!player || !args.Has("password"))
+						{
+							g_CS2ACommandSystem.ReplyUsage(slot, "adminpass");
+							return;
+						}
+
+						if (!g_CS2AAdminManager.SubmitPassword(slot, *args.Get("password")))
+						{
+							ADMIN_ReplyToCommandT(slot, "No admin rights were unlocked.\n");
+							return;
+						}
+
+						// Tag eligibility reads the admin entry.
+						g_CS2ATagManager.LoadPlayerPref(slot, player->steamid64);
+						g_CS2ATagManager.UpdateClanTag(slot);
+						ADMIN_ReplyToCommandT(slot, "Admin rights unlocked.\n");
 					});
 
 	// !adminhelp [page] - List all available commands

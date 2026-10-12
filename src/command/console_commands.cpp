@@ -118,11 +118,15 @@ CON_COMMAND_F(sc_fw_block, "Web panel: mute/gag/silence a player (RCON)", FCVAR_
 
 	if (seconds < 0)
 	{
-		if (mute)
+		if (type == 3)
+		{
+			g_CS2ACommManager.SessionSilencePlayer(targetSlot, -1);
+		}
+		else if (mute)
 		{
 			g_CS2ACommManager.SessionMutePlayer(targetSlot, -1);
 		}
-		if (gag)
+		else
 		{
 			g_CS2ACommManager.SessionGagPlayer(targetSlot, -1);
 		}

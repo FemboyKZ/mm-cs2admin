@@ -16,7 +16,8 @@ class CS2AOfflineQueue
 public:
 	// Persist a write, then send it if the DB is connected.
 	// `onWritten` runs once the database has it. It does not survive a restart.
-	void Submit(const std::string &query, std::function<void()> onWritten = nullptr);
+	// `note` does, and LoadFromFile's `restore` rebuilds the callback from it.
+	void Submit(const std::string &query, std::function<void()> onWritten = nullptr, std::string note = "");
 
 	// Re-send entries that are not already in flight.
 	// Called periodically from GameFrame and after a (re)connect.
@@ -26,7 +27,8 @@ public:
 	void SaveToFile();
 
 	// Load the journal from disk (called on plugin load)
-	void LoadFromFile();
+	using RestoreFn = std::function<std::function<void()>(const std::string &note)>;
+	void LoadFromFile(const RestoreFn &restore = nullptr);
 
 	// Returns true if there are entries waiting for a success callback
 	bool HasItems() const
@@ -46,6 +48,7 @@ private:
 	{
 		uint64_t id = 0;
 		std::string query;
+		std::string note;
 		int attempts = 0;
 		// Sent and not answered yet.
 		bool inFlight = false;

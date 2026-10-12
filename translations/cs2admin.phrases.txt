@@ -11,6 +11,14 @@
 	{
 		"en"	"Usage: !adminpass <password>\n"
 	}
+	"Steam has not confirmed your account yet. Try again in a moment.\n"
+	{
+		"en"	"{red}Steam has not confirmed your account yet. Try again in a moment.\n"
+	}
+	"Type your admin password in chat, or cancel to stop.\n"
+	{
+		"en"	"Type your admin password in chat, or {green}cancel{default} to stop.\n"
+	}
 	"No admin rights were unlocked.\n"
 	{
 		"en"	"{red}No admin rights were unlocked.\n"

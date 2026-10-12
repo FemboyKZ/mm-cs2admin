@@ -470,6 +470,33 @@ static std::string PlayerName(int slot)
 	return player ? player->name : "Unknown";
 }
 
+static void SubmitAdminPassword(int slot, const std::string &password)
+{
+	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	if (!player)
+	{
+		return;
+	}
+
+	// Rights are only assigned after that, and the try would count as a wrong one.
+	if (!player->authenticated)
+	{
+		ADMIN_ReplyToCommandT(slot, "Steam has not confirmed your account yet. Try again in a moment.\n");
+		return;
+	}
+
+	if (!g_CS2AAdminManager.SubmitPassword(slot, password))
+	{
+		ADMIN_ReplyToCommandT(slot, "No admin rights were unlocked.\n");
+		return;
+	}
+
+	// Tag eligibility reads the admin entry.
+	g_CS2ATagManager.LoadPlayerPref(slot, player->steamid64);
+	g_CS2ATagManager.UpdateClanTag(slot);
+	ADMIN_ReplyToCommandT(slot, "Admin rights unlocked.\n");
+}
+
 CS2ACommandSystem g_CS2ACommandSystem;
 
 void CS2ACommandSystem::RegisterCommand(const char *name, const char *group, uint32_t defaultFlag, mmu::ArgSpec keys, const char *usage,
@@ -643,8 +670,12 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 		return false;
 	}
 
-	// A password must never reach chat.
+	// A password must never reach chat, nor a relay asking IsChatHidden.
 	silent = cmd.silent || it->first == "adminpass";
+	if (it->first == "adminpass" && slot >= 0 && slot <= MAXPLAYERS)
+	{
+		m_sayHidden[slot] = true;
+	}
 	ParseAndRun(it->first, it->second, slot, cmd.argLine, silent);
 	return true;
 }
@@ -2028,10 +2059,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 
 						// Cap reason length to prevent buffer overflow in query
-						if (reason.size() > 512)
-						{
-							reason.resize(512);
-						}
+						ADMIN_TruncateUtf8(reason, 512);
 
 						g_CS2AForwards.FireOnReportPlayer(slot, target, reason.c_str());
 
@@ -2428,23 +2456,21 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("adminpass", "cs2admin", ADMFLAG_NONE, {{{"password"}}, "password"}, "Usage: !adminpass <password>\n",
 					[](int slot, const mmu::Args &args, bool silent)
 					{
-						PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
-						if (!player || !args.Has("password"))
+						if (!g_CS2APlayerManager.GetPlayer(slot))
 						{
 							g_CS2ACommandSystem.ReplyUsage(slot, "adminpass");
 							return;
 						}
 
-						if (!g_CS2AAdminManager.SubmitPassword(slot, *args.Get("password")))
+						if (const std::string *password = args.Get("password"))
 						{
-							ADMIN_ReplyToCommandT(slot, "No admin rights were unlocked.\n");
+							SubmitAdminPassword(slot, *password);
 							return;
 						}
 
-						// Tag eligibility reads the admin entry.
-						g_CS2ATagManager.LoadPlayerPref(slot, player->steamid64);
-						g_CS2ATagManager.UpdateClanTag(slot);
-						ADMIN_ReplyToCommandT(slot, "Admin rights unlocked.\n");
+						// The prompt is hidden from a relay whose say hook runs before ours, a password typed after the command is not.
+						ADMIN_ReplyToCommandT(slot, "Type your admin password in chat, or cancel to stop.\n");
+						g_CS2ACommandSystem.PromptText(slot, &SubmitAdminPassword);
 					});
 
 	// !adminhelp [page] - List all available commands

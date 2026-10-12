@@ -228,9 +228,10 @@ private:
 
 	static constexpr double RELOAD_TIMEOUT = 30.0;
 
-	// Per slot, the !adminpass input and wrong tries.
+	// What each slot gave to !adminpass.
 	std::string m_playerPassword[MAXPLAYERS + 1];
-	int m_passwordFailures[MAXPLAYERS + 1] = {};
+	// Wrong tries by SteamID64, so a reconnect does not reset them. Cleared on each admin reload.
+	std::unordered_map<uint64_t, int> m_passwordFailures;
 	static constexpr int MAX_PASSWORD_TRIES = 5;
 
 	// Merged admin entries per connected player slot

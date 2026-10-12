@@ -32,7 +32,7 @@
 | `!pm`           | `!pm <target> message=<text>`              | `j` (Chat)      | Private message a player. Echoes to all online admins.                                       |
 | `!entfire`      | `!entfire <entity> input=<input> [value=]` | `n` (Cheats)    | Fire an input on a map entity via `ent_fire`.                                                |
 | `!report`       | `!report <target> reason=<text>`           | open            | Report a player to online admins. Subject to cooldown.                                       |
-| `!adminpass`    | `!adminpass <password>`                    | open            | Unlock your admin rights when your entry has a `password`. Never shown in chat.              |
+| `!adminpass`    | `!adminpass [password]`                    | open            | Unlock admin rights behind a `password`. No argument: asks for it in chat. Never shown.      |
 | `!adminhelp`    | `!adminhelp [page]`                        | open            | List the commands you can use (paginated).                                                   |
 | `!find`         | `!find <text>`                             | open            | Search the commands you can use by name.                                                     |
 | `!tag`          | `!tag [id\|none]`                          | open            | Pick which of your matched tags is displayed, or open a picker.                              |

@@ -137,6 +137,8 @@ std::string CS2AAdminManager::NormalizeSteamID(const char *input)
 
 void CS2AAdminManager::ReloadAdmins()
 {
+	m_passwordFailures.clear();
+
 	// Startup fires this from both the DB connect callback and the first level init,
 	// and a map change can land on top of an mm_reload. Run one chain at a time.
 	double now = Plat_FloatTime();
@@ -342,7 +344,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 
 	if (found && !merged.password.empty() && merged.password != m_playerPassword[slot])
 	{
-		MMU_LOG_INFO("Admin \"%s\" (%s) has not given their password, no rights assigned.\n", player->name.c_str(), normalized.c_str());
+		MMU_LOG_DEBUG("Admin \"%s\" (%s) has not given their password, no rights assigned.\n", player->name.c_str(), normalized.c_str());
 		found = false;
 	}
 
@@ -365,12 +367,12 @@ void CS2AAdminManager::ClearPlayerAdmin(int slot)
 	m_playerHasAdmin[slot] = false;
 	m_playerAdmins[slot] = {};
 	m_playerPassword[slot].clear();
-	m_passwordFailures[slot] = 0;
 }
 
 bool CS2AAdminManager::SubmitPassword(int slot, const std::string &password)
 {
-	if (slot < 0 || slot > MAXPLAYERS || m_passwordFailures[slot] >= MAX_PASSWORD_TRIES)
+	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	if (!player || m_passwordFailures[player->steamid64] >= MAX_PASSWORD_TRIES)
 	{
 		return false;
 	}
@@ -379,7 +381,7 @@ bool CS2AAdminManager::SubmitPassword(int slot, const std::string &password)
 	AssignAdminToPlayer(slot);
 	if (!m_playerHasAdmin[slot])
 	{
-		m_passwordFailures[slot]++;
+		m_passwordFailures[player->steamid64]++;
 	}
 	return m_playerHasAdmin[slot];
 }
@@ -529,6 +531,6 @@ void CS2AAdminManager::Clear()
 		m_playerHasAdmin[i] = false;
 		m_playerAdmins[i] = {};
 		m_playerPassword[i].clear();
-		m_passwordFailures[i] = 0;
 	}
+	m_passwordFailures.clear();
 }

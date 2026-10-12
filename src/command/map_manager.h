@@ -31,7 +31,8 @@ public:
 	// A workshop map that isn't on disk is downloaded first,
 	// so success here can mean the change was accepted rather than already issued.
 	// error comes back in the language of `slot`, as it does from the lookups below.
-	bool ChangeMap(int slot, const char *input, std::string &error);
+	// On success `input` is set to the resolved map name.
+	bool ChangeMap(int slot, std::string &input, std::string &error);
 
 	// Drives a deferred workshop change. Call once per frame.
 	void Tick();
@@ -44,6 +45,9 @@ public:
 
 	// Drops a deferred change. The map already moved, so honouring it would be a surprise.
 	void OnMapStart();
+
+	// Also called from Unload.
+	void ClearPendingChange();
 
 	// An admin's map change outranks rtv. This drops its running vote or scheduled change,
 	// and RefreshRtv's vote start hook keeps a new one from starting while ours is busy.
@@ -82,7 +86,6 @@ private:
 	// so an absent one is downloaded before the change is issued.
 	// Refused while an earlier workshop change is still being worked on.
 	bool BeginWorkshopChange(int slot, const std::string &workshopId, const std::string &label, std::string &error);
-	void ClearPendingChange();
 
 	std::vector<MapEntry> m_maps;
 	std::vector<std::string> m_localMaps;

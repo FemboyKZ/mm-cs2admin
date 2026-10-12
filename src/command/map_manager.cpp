@@ -244,7 +244,7 @@ const MapEntry *CS2AMapManager::FindMap(int slot, const char *input, std::string
 	return nullptr;
 }
 
-bool CS2AMapManager::ChangeMap(int slot, const char *input, std::string &error)
+bool CS2AMapManager::ChangeMap(int slot, std::string &map, std::string &error)
 {
 	if (!g_pEngine)
 	{
@@ -252,7 +252,8 @@ bool CS2AMapManager::ChangeMap(int slot, const char *input, std::string &error)
 		return false;
 	}
 
-	std::string inputStr(input);
+	const std::string inputStr = map;
+	const char *input = inputStr.c_str();
 	bool isRawWorkshopId =
 		inputStr.length() >= 6 && std::all_of(inputStr.begin(), inputStr.end(), [](unsigned char c) { return std::isdigit(c) != 0; });
 
@@ -262,7 +263,12 @@ bool CS2AMapManager::ChangeMap(int slot, const char *input, std::string &error)
 		if (entry && entry->isWorkshop)
 		{
 			error.clear();
-			return BeginWorkshopChange(slot, entry->workshopId, MapLabel(*entry), error);
+			if (!BeginWorkshopChange(slot, entry->workshopId, MapLabel(*entry), error))
+			{
+				return false;
+			}
+			map = MapLabel(*entry);
+			return true;
 		}
 
 		error.clear();
@@ -286,17 +292,31 @@ bool CS2AMapManager::ChangeMap(int slot, const char *input, std::string &error)
 		error.clear();
 		ClearPendingChange();
 		g_pEngine->ChangeLevel(resolved.c_str(), nullptr);
+		map = resolved;
 		return true;
 	}
 
 	if (entry->isWorkshop)
 	{
-		return BeginWorkshopChange(slot, entry->workshopId, MapLabel(*entry), error);
+		if (!BeginWorkshopChange(slot, entry->workshopId, MapLabel(*entry), error))
+		{
+			return false;
+		}
+		map = MapLabel(*entry);
+		return true;
+	}
+
+	// A maplist typo would otherwise be announced as a change.
+	if (!g_pEngine->IsMapValid(entry->mapName.c_str()))
+	{
+		error = ADMIN_Format(slot, "Map '%s' is not installed on this server.", entry->mapName.c_str());
+		return false;
 	}
 
 	// A workshop change still waiting on its download would otherwise fire later on top of this one.
 	ClearPendingChange();
 	g_pEngine->ChangeLevel(entry->mapName.c_str(), nullptr);
+	map = MapLabel(*entry);
 	return true;
 }
 

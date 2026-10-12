@@ -8,10 +8,10 @@ Shared maplist with [cs2-rockthevote](https://github.com/FemboyKZ/cs2-rockthevot
 
 ## API
 
-Other Metamod: Source plugins can access public methods found in [ics2admin.h](/src/public/ics2admin.h) and [forwards.h](/src/public/forwards.h)
+Other Metamod: Source plugins can access public methods found in [ics2admin.h](https://github.com/FemboyKZ/mm-utils/blob/master/interfaces/cs2admin/ics2admin.h) and [forwards.h](https://github.com/FemboyKZ/mm-utils/blob/master/interfaces/cs2admin/forwards.h)
 
 ```cpp
-#include <public/ics2admin.h>
+#include "interfaces/cs2admin/ics2admin.h"
 
 // In AllPluginsLoaded or later:
 ICS2Admin *admin = (ICS2Admin *)g_SMAPI->MetaFactory(
@@ -22,7 +22,7 @@ if (admin && admin->HasFlag(slot, CS2ADMIN_FLAG_BAN))
 ```
 
 ```cpp
-#include <public/forwards.h>
+#include "interfaces/cs2admin/forwards.h"
 
 ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
     CS2ADMIN_FORWARDS_INTERFACE, nullptr, nullptr);
@@ -47,8 +47,9 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 1. Get the latest [release](https://github.com/FemboyKZ/mm-cs2admin/releases) for your operating system (linux/windows).
 2. Extract the contents of the release archive in your server's root folder `/game/csgo/`.
 3. Configure the main cfg in `/game/csgo/cfg/cs2admin/core.cfg` with database credentials and other preferences.
-4. Configure Admins in `admins.cfg` or `admins.ini`, Admin Groups in `adming_groups.cfg` and Admin overrides in `admin_overrides.cfg`
-   (these can be directly copied from existing SM cfg with the same names)
+4. Configure Admins in `admins.cfg` or `admins_simple.ini`, Admin Groups in `admin_groups.cfg` and Admin overrides in `admin_overrides.cfg`
+   (these can be directly copied from existing SM cfg with the same names).
+   They and `tags.cfg` ship as `*.example.*`, copy each without the `.example`.
 5. Create a new file called `maplist.txt` or rename the bundled `maplist.example.txt` file to it, then add your maps to the file.
 
 The cs2admin plugin mirrors SourceMod's Admin configuration structure completely.
@@ -117,7 +118,8 @@ Override names are case-insensitive and work with or without the `mm_`/`sm_` pre
 | ----------------- | ------------------------------------------------------------------------------ |
 | `@basebans`       | `ban`, `unban`, `addban`, `banip`, `listbans`                                  |
 | `@basecomm`       | `mute`, `unmute`, `gag`, `ungag`, `silence`, `unsilence`, `comms`, `listcomms` |
-| `@basecommands`   | `kick`, `who`, `listdc`, `rcon`, `map`, `maps`                                 |
+| `@basecommands`   | `kick`, `who`, `listdc`, `rcon`, `map`, `maps`, `reloadadmins`, `execcfg`      |
+| `@adminmenu`      | `admin`                                                                        |
 | `@playercommands` | `slay`                                                                         |
 | `@basechat`       | `pm`                                                                           |
 | `@funcommands`    | `give`, `strip`                                                                |
@@ -131,7 +133,7 @@ Comm blocks follow SourceComms' `CommsConfig`. `DefaultTime` fills a missing tim
 
 | Command            | Usage                                   | Description                                                           |
 | ------------------ | --------------------------------------- | --------------------------------------------------------------------- |
-| `mm_reload`        | `mm_reload`                             | Reload config and admin cache, re-verify all connected players.       |
+| `mm_reload`        | `mm_reload`                             | Reload config, maplist and admin cache, re-verify connected players.  |
 | `mm_rehash`        | `mm_rehash`                             | Rebuild admin cache from database and flat files.                     |
 | `cs2admin_version` | `cs2admin_version`                      | Display the loaded CS2Admin version.                                  |
 | `sc_fw_block`      | `sc_fw_block <type> <length> <steamid>` | (Web panel RCON) Mute (1), gag (2) or silence (3). Length in seconds. |

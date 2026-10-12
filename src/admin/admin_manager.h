@@ -174,13 +174,13 @@ private:
 	// "cmd:<name>" or "grp:<name>" for a DB override row, empty for an unknown type.
 	static std::string OverrideKeyForType(const char *type, const char *name);
 
-	// Swap the staging set into the live set once a reload has all its data.
+	// Merge the flat files into the staging set, then swap it into the live set.
 	void CommitLoadedData();
 
 	// Release the reload lock and run a request that arrived mid-reload.
 	void FinishReload();
 
-	// BackupConfigs. Load fills the staging set and is false without a backup file.
+	// BackupConfigs, on the staging set before the flat files merge in. Load is false without a backup file.
 	void SaveBackup() const;
 	bool LoadBackup();
 
@@ -201,6 +201,10 @@ private:
 
 	// Global command overrides: key = "cmd:<name>" or "grp:<name>", value = required flags
 	std::unordered_map<std::string, uint32_t> m_globalOverrides;
+
+	// m_groups and m_globalOverrides without the flat files.
+	std::unordered_map<std::string, AdminGroup> m_dbGroups;
+	std::unordered_map<std::string, uint32_t> m_dbGlobalOverrides;
 
 	// Staging set for a reload in progress. Flat-file and DB loads both fill these,
 	// and CommitLoadedData swaps them into the live maps above once the DB is done.

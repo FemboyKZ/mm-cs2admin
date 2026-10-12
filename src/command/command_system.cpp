@@ -176,6 +176,17 @@ static bool RconTextIsSecret(const std::string &cmd)
 	return false;
 }
 
+// Metamod unloads on the spot, under the !rcon callback still running.
+static bool RconUnloadsPlugins(const CCommand &cc)
+{
+	if (cc.ArgC() < 2 || str::ToLower(cc.Arg(0)) != "meta")
+	{
+		return false;
+	}
+	const std::string sub = str::ToLower(cc.Arg(1));
+	return sub == "unload" || sub == "force_unload" || sub == "clear" || sub == "refresh";
+}
+
 // Validate an IPv4 address string (e.g. "192.168.1.1").
 static bool IsValidIPv4(const char *ip)
 {
@@ -190,6 +201,11 @@ static bool IsValidIPv4(const char *ip)
 	{
 		if (*p >= '0' && *p <= '9')
 		{
+			// A leading zero never matches a player's address.
+			if (hasDigit && num == 0)
+			{
+				return false;
+			}
 			num = num * 10 + (*p - '0');
 			if (num > 255)
 			{
@@ -864,7 +880,8 @@ namespace
 	// Untimed: player -> reason -> !<cmd> <target> reason=<reason>, with the caller left out of the list.
 	void StartPunishFlow(int slot, std::string cmd, std::string verb, bool timed = true, bool push = false)
 	{
-		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, !timed);
+		// !ban refuses the caller too.
+		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, !timed || cmd == "ban");
 		if (players.empty())
 		{
 			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
@@ -1329,9 +1346,9 @@ namespace
 			bool show;
 		};
 
-		// Bans, kicks and comm blocks only reach real players, kicking yourself is left out like in the Kick list.
+		// Bans, kicks and comm blocks only reach real players, banning or kicking yourself is left out like in their lists.
 		const Action actions[] = {
-			{"Punish", "Ban", "ban", human},
+			{"Punish", "Ban", "ban", human && !self},
 			{"Punish", "Kick", "kick", human && !self},
 			{"Punish", "Slay", "slay", team >= 2 && controller && controller->m_bPawnIsAlive()},
 			{"Chat", "Mute", "mute", human && !muted},
@@ -1528,9 +1545,18 @@ namespace
 			return;
 		}
 
+		// Replacing a block makes the caller its issuer, so it needs the standing to lift it.
 		int target = ADMIN_FindTarget(slot, args.Get("player")->c_str());
-		if (target < 0 || !CheckImmunity(slot, target))
+		if (target < 0 || !CheckImmunity(slot, target) || !CheckCanLift(slot, target, type))
 		{
+			return;
+		}
+
+		// A bot has no SteamID for the comms row.
+		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+		if (targetPlayer && targetPlayer->fakePlayer)
+		{
+			ADMIN_ReplyToCommandT(slot, "This command cannot target bots.\n");
 			return;
 		}
 
@@ -1544,15 +1570,19 @@ namespace
 		DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 		if (time < 0)
 		{
-			if (type & COMM_MUTE)
+			int applied = 0;
+			if ((type & COMM_MUTE) && g_CS2ACommManager.SessionMutePlayer(target, slot))
 			{
-				g_CS2ACommManager.SessionMutePlayer(target, slot);
+				applied |= COMM_MUTE;
 			}
-			if (type & COMM_GAG)
+			if ((type & COMM_GAG) && g_CS2ACommManager.SessionGagPlayer(target, slot))
 			{
-				g_CS2ACommManager.SessionGagPlayer(target, slot);
+				applied |= COMM_GAG;
 			}
-			NotifyDiscordOnPlayer((std::string("Session ") + verb).c_str(), discordTarget, reason.c_str());
+			if (const char *action = CommActionName(applied, "Session Silence", "Session Mute", "Session Gag"))
+			{
+				NotifyDiscordOnPlayer(action, discordTarget, reason.c_str());
+			}
 			return;
 		}
 
@@ -1671,6 +1701,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 						std::string reason = args.GetOr("reason", "Banned");
+
+						if (!g_CS2ADatabase.IsInitialized())
+						{
+							ADMIN_ReplyToCommandT(slot, "Database not available.\n");
+							return;
+						}
 
 						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
 						if (g_CS2ABanManager.BanPlayer(target, time, reason.c_str(), slot))
@@ -1833,6 +1869,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							{
 								continue;
 							}
+							if (i == slot)
+							{
+								ADMIN_ReplyToCommandT(slot, "You cannot ban yourself.\n");
+								return;
+							}
 							if (!CheckImmunity(slot, i))
 							{
 								return;
@@ -1964,9 +2005,18 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
+						if (targetPlayer->fakePlayer)
+						{
+							ADMIN_ReplyToCommandT(slot, "This command cannot target bots.\n");
+							return;
+						}
+
 						std::string reason = *args.Get("reason");
 
-						if ((int)reason.size() < g_CS2AConfig.reportMinLength)
+						// Menu presets are exempt, most are shorter.
+						const std::vector<std::string> presets = SplitCsv(g_CS2AConfig.menuReasons);
+						const bool preset = std::find(presets.begin(), presets.end(), reason) != presets.end();
+						if (!preset && (int)reason.size() < g_CS2AConfig.reportMinLength)
 						{
 							ADMIN_ReplyToCommandT(slot, "Report reason must be at least %d characters.\n", g_CS2AConfig.reportMinLength);
 							return;
@@ -2467,7 +2517,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						bool cvarHandled = false;
 						CCaptureLoggingListener listener;
 
-						if (cc.Tokenize(cmd.c_str()) && cc.ArgC() > 0)
+						// Plugin unloads take the queued fallback below.
+						if (cc.Tokenize(cmd.c_str()) && cc.ArgC() > 0 && !RconUnloadsPlugins(cc))
 						{
 							const char *name = cc.Arg(0);
 							ConCommandRef cmdRef(name);
@@ -2602,7 +2653,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						if (!g_CS2AMapManager.ChangeMap(slot, map.c_str(), error))
+						if (!g_CS2AMapManager.ChangeMap(slot, map, error))
 						{
 							std::vector<const MapEntry *> matches;
 							std::string ambiguous;

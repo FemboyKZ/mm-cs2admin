@@ -113,7 +113,9 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	char configPath[512];
 	snprintf(configPath, sizeof(configPath), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
 
-	if (!ADMIN_LoadConfig(configPath, g_CS2AConfig))
+	// A temporary, so a file that fails validation leaves nothing half applied.
+	CS2AConfig fresh;
+	if (!ADMIN_LoadConfig(configPath, fresh))
 	{
 		MMU_LOG_ERROR("Could not load config from %s\n", configPath);
 		MMU_LOG_WARN("Make sure the file exists at: <game_root>/cfg/cs2admin/core.cfg\n");
@@ -122,6 +124,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	}
 	else
 	{
+		g_CS2AConfig = fresh;
 		m_bConfigLoaded = true;
 		MMU_LOG_INFO("Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.database.user.c_str(), g_CS2AConfig.database.host.c_str(),
 					 g_CS2AConfig.database.port, g_CS2AConfig.database.name.c_str(), g_CS2AConfig.database.prefix.c_str());
@@ -184,6 +187,7 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// so mm-cs2menus never invokes a lambda inside this binary.
 	g_AdminMenus.Shutdown();
 	g_CS2AMapManager.ShutdownRtv();
+	g_CS2AMapManager.ClearPendingChange();
 
 	// Unregister and delete all dynamically created mm_* ConCommands.
 	g_CS2ACommandSystem.Shutdown();
@@ -751,6 +755,7 @@ void CS2APlugin::OnClientAuthorized(int slot)
 	MMU_LOG_INFO("Client authenticated: \"%s\" (%s) slot=%d\n", player->name.c_str(), player->authid.c_str(), slot);
 
 	g_CS2AForwards.FireOnClientAuthorized(slot, player->authid.c_str(), player->steamid64);
+	g_CS2AForwards.FireOnClientPreAdminCheck(slot);
 
 	// Assign admin permissions (merges DB + flat file entries)
 	g_CS2AAdminManager.AssignAdminToPlayer(slot);
@@ -1083,6 +1088,8 @@ void CS2APlugin::OnLateLoad()
 		// ClientPutInServer fired before the plugin was there to see it. Hook_GameFrame authorizes the ones Steam has confirmed.
 		// The ban and comm checks need the DB, so they run from ADMIN_RecheckConnectedPlayers once it is ready.
 		player->inGame = true;
+		// Their language was never queried either.
+		mmu::cvarquery::OnClientConnected(i, false);
 
 		if (player->authid.empty() && player->steamid64 != 0)
 		{

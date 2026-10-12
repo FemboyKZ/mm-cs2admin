@@ -9,6 +9,61 @@
 #include <cstring>
 #include <cstdio>
 
+// Blanks out /* */ blocks, which the line-based loaders below would read as live config.
+static bool OpenConfig(const char *path, std::istringstream &out)
+{
+	std::ifstream file(path);
+	if (!file.is_open())
+	{
+		return false;
+	}
+
+	std::string text((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+	bool inQuote = false;
+	bool inLineComment = false;
+	bool inBlock = false;
+	for (size_t i = 0; i < text.size(); i++)
+	{
+		const char c = text[i];
+		const char next = i + 1 < text.size() ? text[i + 1] : '\0';
+		if (c == '\n')
+		{
+			inQuote = false;
+			inLineComment = false;
+		}
+		else if (inBlock)
+		{
+			text[i] = ' ';
+			if (c == '*' && next == '/')
+			{
+				text[++i] = ' ';
+				inBlock = false;
+			}
+		}
+		else if (inLineComment)
+		{
+			continue;
+		}
+		else if (c == '"')
+		{
+			inQuote = !inQuote;
+		}
+		else if (!inQuote && c == '/' && next == '/')
+		{
+			inLineComment = true;
+		}
+		else if (!inQuote && c == '/' && next == '*')
+		{
+			text[i] = text[i + 1] = ' ';
+			i++;
+			inBlock = true;
+		}
+	}
+
+	out.str(text);
+	return true;
+}
+
 static std::string ParseQuotedToken(const std::string &line, size_t &pos)
 {
 	while (pos < line.size() && (line[pos] == ' ' || line[pos] == '\t'))
@@ -52,8 +107,8 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 	char path[512];
 	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admins.cfg", g_SMAPI->GetBaseDir());
 
-	std::ifstream file(path);
-	if (!file.is_open())
+	std::istringstream file;
+	if (!OpenConfig(path, file))
 	{
 		MMU_LOG_INFO("No flat-file admins found at %s (this is normal if you only use DB admins).\n", path);
 		return;
@@ -136,7 +191,8 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 
 			std::string keyLower = str::ToLower(key);
 
-			if (keyLower == "identity" || keyLower == "auth" || keyLower == "steam")
+			// Not "auth", SourceMod's key for the method.
+			if (keyLower == "identity" || keyLower == "steam")
 			{
 				currentEntry.identity = value;
 			}
@@ -154,6 +210,7 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 			}
 			else if (keyLower == "password")
 			{
+				MMU_LOG_WARN("Admin \"%s\" has a password, which is not enforced here: their rights apply without it.\n", currentAdminName.c_str());
 				currentEntry.password = value;
 			}
 		}
@@ -174,8 +231,8 @@ void CS2AAdminManager::LoadSimpleAdmins()
 	char path[512];
 	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admins_simple.ini", g_SMAPI->GetBaseDir());
 
-	std::ifstream file(path);
-	if (!file.is_open())
+	std::istringstream file;
+	if (!OpenConfig(path, file))
 	{
 		return;
 	}
@@ -332,6 +389,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			}
 			else
 			{
+				MMU_LOG_WARN("Admin \"%s\" has a password, which is not enforced here: their rights apply without it.\n", normalized.c_str());
 				entry.password = tokens[2];
 			}
 		}
@@ -385,8 +443,8 @@ void CS2AAdminManager::LoadFlatFileGroups()
 	char path[512];
 	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admin_groups.cfg", g_SMAPI->GetBaseDir());
 
-	std::ifstream file(path);
-	if (!file.is_open())
+	std::istringstream file;
+	if (!OpenConfig(path, file))
 	{
 		return;
 	}
@@ -397,6 +455,7 @@ void CS2AAdminManager::LoadFlatFileGroups()
 	AdminGroup currentGroup;
 	bool inGroup = false;
 	bool inOverrides = false;
+	int count = 0;
 
 	while (std::getline(file, line))
 	{
@@ -429,6 +488,7 @@ void CS2AAdminManager::LoadFlatFileGroups()
 			{
 				if (!currentGroupName.empty())
 				{
+					count++;
 					auto it = m_loadingGroups.find(currentGroupName);
 					if (it == m_loadingGroups.end())
 					{
@@ -528,9 +588,9 @@ void CS2AAdminManager::LoadFlatFileGroups()
 		}
 	}
 
-	if (!m_loadingGroups.empty())
+	if (count > 0)
 	{
-		MMU_LOG_INFO("Loaded %zu group(s) from admin_groups.cfg.\n", m_loadingGroups.size());
+		MMU_LOG_INFO("Loaded %d group(s) from admin_groups.cfg.\n", count);
 	}
 }
 
@@ -552,8 +612,8 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 	char path[512];
 	snprintf(path, sizeof(path), "%s/cfg/cs2admin/admin_overrides.cfg", g_SMAPI->GetBaseDir());
 
-	std::ifstream file(path);
-	if (!file.is_open())
+	std::istringstream file;
+	if (!OpenConfig(path, file))
 	{
 		return;
 	}
@@ -631,9 +691,11 @@ void CS2AAdminManager::LoadFlatFileOverrides()
 				continue;
 			}
 
-			// Check if there's a value on the same line (simple form)
+			// Check if there's a value on the same line (simple form). Empty flags open the command.
+			size_t valueStart = line.find_first_not_of(" \t", pos);
+			bool hasValue = valueStart != std::string::npos && line[valueStart] == '"';
 			std::string value = ParseQuotedToken(line, pos);
-			if (!value.empty())
+			if (hasValue)
 			{
 				// Simple form: "command_name" "flag"
 				// Determine type by @ prefix

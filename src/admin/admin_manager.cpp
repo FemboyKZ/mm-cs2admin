@@ -163,10 +163,6 @@ void CS2AAdminManager::ReloadAdmins()
 	m_loadingGlobalOverrides.clear();
 	m_loadingDbFailed = false;
 
-	// Load flat file groups and overrides first (synchronous, needed for group resolution)
-	LoadFlatFileGroups();
-	LoadFlatFileOverrides();
-
 	// Load flat file admins (synchronous)
 	LoadFlatFileAdmins();
 	LoadSimpleAdmins();
@@ -200,6 +196,12 @@ void CS2AAdminManager::ReloadAdmins()
 
 void CS2AAdminManager::CommitLoadedData()
 {
+	// DB-only copies, for a reload whose DB half fails.
+	m_dbGroups = m_loadingGroups;
+	m_dbGlobalOverrides = m_loadingGlobalOverrides;
+	LoadFlatFileGroups();
+	LoadFlatFileOverrides();
+
 	m_dbAdmins = std::move(m_loadingDbAdmins);
 	m_groups = std::move(m_loadingGroups);
 	m_groupIdToName = std::move(m_loadingGroupIdToName);
@@ -290,10 +292,18 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 		{
 			merged.immunity = dbIt->second.immunity;
 		}
-		// DB flags already include the DB groups' flags.
 		for (const std::string &groupName : dbIt->second.groups)
 		{
 			AddGroup(merged.groups, groupName);
+			auto grpIt = m_groups.find(groupName);
+			if (grpIt != m_groups.end())
+			{
+				merged.flags |= grpIt->second.flags;
+				if (grpIt->second.immunity > merged.immunity)
+				{
+					merged.immunity = grpIt->second.immunity;
+				}
+			}
 		}
 		merged.adminId = dbIt->second.adminId;
 		found = true;
@@ -479,6 +489,8 @@ void CS2AAdminManager::Clear()
 	m_groups.clear();
 	m_groupIdToName.clear();
 	m_globalOverrides.clear();
+	m_dbGroups.clear();
+	m_dbGlobalOverrides.clear();
 	m_loadingDbAdmins.clear();
 	m_loadingGroups.clear();
 	m_loadingGroupIdToName.clear();

@@ -160,6 +160,13 @@ bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 		return false;
 	}
 
+	// With no ban row the kick alone lets the player straight back in.
+	if (!g_CS2ADatabase.IsInitialized())
+	{
+		MMU_LOG_WARN("Cannot insert ban: no database configured.\n");
+		return false;
+	}
+
 	if (g_CS2AForwards.FireOnBanPlayer(targetSlot, adminSlot, time, reason))
 	{
 		return false;
@@ -185,7 +192,14 @@ bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 			adminName = admin->name;
 		}
 	}
-	ADMIN_ChatToAllT("%s banned %s (%d min). Reason: %s\n", adminName.c_str(), targetName.c_str(), time, reason ? reason : "No reason");
+	if (time == 0)
+	{
+		ADMIN_ChatToAllT("%s permanently banned %s. Reason: %s\n", adminName.c_str(), targetName.c_str(), reason ? reason : "No reason");
+	}
+	else
+	{
+		ADMIN_ChatToAllT("%s banned %s (%d min). Reason: %s\n", adminName.c_str(), targetName.c_str(), time, reason ? reason : "No reason");
+	}
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Banned \"%s\" (%s) for %d min. Reason: %s", targetName.c_str(), targetAuth.c_str(), time,

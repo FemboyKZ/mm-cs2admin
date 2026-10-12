@@ -7,6 +7,7 @@
 #include "src/ban/ban_manager.h"
 #include "src/comm/comm_manager.h"
 #include "src/admin/admin_manager.h"
+#include "src/command/map_manager.h"
 #include "src/compat/foreign_plugins.h"
 #include "src/lang/translations.h"
 #include "src/tags/tag_manager.h"
@@ -43,6 +44,7 @@ CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	}
 
 	ADMIN_LoadTranslations();
+	g_CS2AMapManager.LoadMapList();
 
 	// Reload admins (flat file + database)
 	g_CS2AAdminManager.ReloadAdmins();

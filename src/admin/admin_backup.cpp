@@ -48,7 +48,7 @@ void CS2AAdminManager::SaveBackup() const
 			return;
 		}
 
-		for (const auto &[name, group] : m_groups)
+		for (const auto &[name, group] : m_loadingGroups)
 		{
 			file << "group\t" << Field(name) << "\t" << group.id << "\t" << FlagsToString(group.flags) << "\t" << group.immunity << "\n";
 			for (const auto &[key, rule] : group.overrides)
@@ -57,12 +57,12 @@ void CS2AAdminManager::SaveBackup() const
 			}
 		}
 
-		for (const auto &[key, flags] : m_globalOverrides)
+		for (const auto &[key, flags] : m_loadingGlobalOverrides)
 		{
 			file << "over\t" << Field(key) << "\t" << FlagsToString(flags) << "\n";
 		}
 
-		for (const auto &[identity, admin] : m_dbAdmins)
+		for (const auto &[identity, admin] : m_loadingDbAdmins)
 		{
 			file << "admin\t" << Field(identity) << "\t" << admin.adminId << "\t" << FlagsToString(admin.flags) << "\t" << admin.immunity << "\t"
 				 << Field(admin.name);

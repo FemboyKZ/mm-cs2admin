@@ -22,7 +22,8 @@ static bool SlotIsHuman(int slot)
 
 static bool SlotIsAdmin(int slot)
 {
-	return g_CS2AAdminManager.GetPlayerAdmin(slot) != nullptr;
+	// As for !pm copies, a reserved-slot holder is not staff.
+	return g_CS2AAdminManager.PlayerHasFlag(slot, ADMFLAG_GENERIC);
 }
 
 static mmu::ChatPrinter &Printer()

@@ -44,11 +44,11 @@ public:
 	// Remove silence (both). Returns the COMM_MUTE/COMM_GAG bits that were actually lifted.
 	int UnsilencePlayer(int targetSlot, int adminSlot);
 
-	// Session-only mute (no DB record, clears on disconnect)
-	void SessionMutePlayer(int targetSlot, int adminSlot);
+	// Session-only mute (no DB record, clears on disconnect). The forward gets time -1.
+	bool SessionMutePlayer(int targetSlot, int adminSlot);
 
-	// Session-only gag (no DB record, clears on disconnect)
-	void SessionGagPlayer(int targetSlot, int adminSlot);
+	// Session-only gag (no DB record, clears on disconnect). The forward gets time -1.
+	bool SessionGagPlayer(int targetSlot, int adminSlot);
 
 	// SourceComms' unblock rule. The issuer, the console, the cheats flag,
 	// or at least the issuer's immunity unless DisableUnblockImmunityCheck is set.
@@ -93,7 +93,7 @@ private:
 	bool LiftMute(int targetSlot, int adminSlot, bool persist);
 	bool LiftGag(int targetSlot, int adminSlot, bool persist);
 	void AnnounceBlock(int targetSlot, int adminSlot, int timeMinutes, const char *reason, const char *permanentPhrase, const char *timedPhrase,
-					   const char *allPhrase);
+					   const char *allPhrase, const char *allPermanentPhrase);
 	void AnnounceLift(int targetSlot, int adminSlot, const char *selfPhrase, const char *allPhrase);
 
 	void InsertComm(const char *authid, const char *name, int timeMinutes, const char *reason, int adminSlot, int type);

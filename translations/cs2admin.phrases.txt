@@ -101,6 +101,10 @@
 		"en"	"{red}Multiple players match that name. Be more specific."
 		"chi"	"{red}有多个玩家匹配该名字，请输入更精确的名称。"
 	}
+	"That number is a slot and also a player's name. Use #slot or &name."
+	{
+		"en"	"{red}That number is a slot and also a player's name. Use #slot or &name."
+	}
 	"Multiple players matched. Use a more specific target."
 	{
 		"en"	"{red}Multiple players matched. Use a more specific target."
@@ -226,10 +230,18 @@
 	{
 		"en"	"{red}Bots cannot be banned.\n"
 	}
+	"This command cannot target bots.\n"
+	{
+		"en"	"{red}This command cannot target bots.\n"
+	}
 	"%s banned %s (%d min). Reason: %s\n"
 	{
 		"en"	"{green}%s{default} banned {green}%s{default} ({green}%d{default} min). Reason: %s\n"
 		"chi"	"{green}%s{default} 被封禁了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
+	}
+	"%s permanently banned %s. Reason: %s\n"
+	{
+		"en"	"{green}%s{default} permanently banned {green}%s{default}. Reason: %s\n"
 	}
 
 	// Bans: notices when a player connects
@@ -438,6 +450,10 @@
 		"en"	"{green}%s{default} muted {green}%s{default} ({green}%d{default} min). Reason: %s\n"
 		"chi"	"{green}%s{default} 语音禁言了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
 	}
+	"%s permanently muted %s. Reason: %s\n"
+	{
+		"en"	"{green}%s{default} permanently muted {green}%s{default}. Reason: %s\n"
+	}
 	"%s session-muted %s.\n"
 	{
 		"en"	"{green}%s{default} session-muted {green}%s{default}.\n"
@@ -453,6 +469,10 @@
 		"en"	"{green}%s{default} gagged {green}%s{default} ({green}%d{default} min). Reason: %s\n"
 		"chi"	"{green}%s{default} 禁言了 {green}%s{default} ({green}%d{default} 分钟)。原因: %s\n"
 	}
+	"%s permanently gagged %s. Reason: %s\n"
+	{
+		"en"	"{green}%s{default} permanently gagged {green}%s{default}. Reason: %s\n"
+	}
 	"%s session-gagged %s.\n"
 	{
 		"en"	"{green}%s{default} session-gagged {green}%s{default}.\n"
@@ -466,6 +486,10 @@
 	"%s silenced %s (%d min). Reason: %s\n"
 	{
 		"en"	"{green}%s{default} silenced {green}%s{default} ({green}%d{default} min). Reason: %s\n"
+	}
+	"%s permanently silenced %s. Reason: %s\n"
+	{
+		"en"	"{green}%s{default} permanently silenced {green}%s{default}. Reason: %s\n"
 	}
 	"%s unsilenced %s.\n"
 	{

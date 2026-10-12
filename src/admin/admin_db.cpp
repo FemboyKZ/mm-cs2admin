@@ -346,20 +346,6 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 
 				entry.immunity = rs->GetInt(5);
 
-				// Inherit group flags and immunity
-				if (!entry.groups.empty())
-				{
-					auto it = m_loadingGroups.find(entry.groups[0]);
-					if (it != m_loadingGroups.end())
-					{
-						entry.flags |= it->second.flags;
-						if (it->second.immunity > entry.immunity)
-						{
-							entry.immunity = it->second.immunity;
-						}
-					}
-				}
-
 				if (!entry.identity.empty())
 				{
 					// If there's already a DB entry for this identity (e.g., multiple group assignments), merge flags additively
@@ -393,18 +379,21 @@ void CS2AAdminManager::LoadDatabaseAdmins(uint32_t generation, std::function<voi
 	auto finish = [this, onComplete]()
 	{
 		// A failed query leaves the staging set short, and committing it would strip DB admins of their rights.
+		// The last good DB data goes back in, so the flat files still apply.
 		if (m_loadingDbFailed)
 		{
 			MMU_LOG_WARN("Admin reload could not read the database, keeping the admins already loaded.\n");
+			m_loadingDbAdmins = m_dbAdmins;
+			m_loadingGroups = m_dbGroups;
+			m_loadingGroupIdToName = m_groupIdToName;
+			m_loadingGlobalOverrides = m_dbGlobalOverrides;
 		}
-		else
+		// Before the commit merges the flat files in, the backup is DB data only.
+		else if (g_CS2AConfig.backupConfigs && g_CS2ADatabase.IsConnected())
 		{
-			CommitLoadedData();
-			if (g_CS2AConfig.backupConfigs && g_CS2ADatabase.IsConnected())
-			{
-				SaveBackup();
-			}
+			SaveBackup();
 		}
+		CommitLoadedData();
 		MergeAndApplyAll();
 		g_CS2ATagManager.UpdateAllClanTags();
 		if (onComplete)

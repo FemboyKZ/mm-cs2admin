@@ -1,4 +1,5 @@
 #include "src/common.h"
+#include "interfaces/cs2admin/forwards.h"
 #include "utils/chat_command.h"
 #include "utils/log.h"
 #include "src/config/config.h"
@@ -46,7 +47,7 @@ CON_COMMAND_F(mm_rehash, "Rebuild admin cache from database and flat files", FCV
 
 CON_COMMAND_F(mm_admin_version, "Display CS2Admin version", FCVAR_NONE)
 {
-	META_CONPRINTF("CS2Admin version %s (%s)\n", PLUGIN_FULL_VERSION, __DATE__);
+	MMU_LOG_INFO("Plugin version %s, interfaces %s and %s.\n", PLUGIN_FULL_VERSION, CS2ADMIN_INTERFACE, CS2ADMIN_FORWARDS_INTERFACE);
 }
 
 // SourceBans++ web panel commands, sent over RCON.

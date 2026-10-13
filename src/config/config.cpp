@@ -27,6 +27,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	CS2AConfig *cfg = static_cast<CS2AConfig *>(userdata);
 	std::string sec = str::ToLower(section);
 	std::string k = str::ToLower(key);
+	bool known = true;
 
 	// Old section names.
 	if (sec == "config")
@@ -122,10 +123,22 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->serverID = std::atoi(value.c_str());
 		}
+		else
+		{
+			known = false;
+		}
 	}
 	else if (sec == "database")
 	{
-		mmu::config::ApplyDatabaseKey(cfg->database, k, value);
+		// Not cleaned up like ApplyDatabaseKey would, a bad one fails the load instead of pointing at other tables.
+		if (k == "prefix")
+		{
+			cfg->database.prefix = value;
+		}
+		else
+		{
+			known = mmu::config::ApplyDatabaseKey(cfg->database, k, value);
+		}
 	}
 	else if (sec == "comms")
 	{
@@ -145,12 +158,20 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->commsMaxLength = std::atoi(value.c_str());
 		}
+		else
+		{
+			known = false;
+		}
 	}
 	else if (sec == "checker")
 	{
 		if (k == "printcheckonconnect")
 		{
 			cfg->printCheckOnConnect = (value != "0");
+		}
+		else
+		{
+			known = false;
 		}
 	}
 	else if (sec == "report")
@@ -162,6 +183,10 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		else if (k == "minlength")
 		{
 			cfg->reportMinLength = std::atoi(value.c_str());
+		}
+		else
+		{
+			known = false;
 		}
 	}
 	else if (sec == "sleuth")
@@ -194,6 +219,10 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->sleuthExcludeTime = std::atoi(value.c_str());
 		}
+		else
+		{
+			known = false;
+		}
 	}
 	else if (sec == "discord")
 	{
@@ -204,6 +233,10 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		else if (k == "footertext")
 		{
 			cfg->discordFooterText = value;
+		}
+		else
+		{
+			known = false;
 		}
 	}
 	else if (sec == "chatflood")
@@ -219,6 +252,10 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		else if (k == "muteminutes" || k == "muteduration")
 		{
 			cfg->chatFloodMuteDuration = std::atoi(value.c_str());
+		}
+		else
+		{
+			known = false;
 		}
 	}
 	else if (sec == "tags")
@@ -263,6 +300,10 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->teamColorSpec = ColorTag(value);
 		}
+		else
+		{
+			known = false;
+		}
 	}
 	else if (sec == "menu")
 	{
@@ -278,6 +319,18 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->menuReasons = value;
 		}
+		else
+		{
+			known = false;
+		}
+	}
+	else
+	{
+		known = false;
+	}
+	if (!known)
+	{
+		mmu::config::WarnUnknownKey(section, key);
 	}
 }
 

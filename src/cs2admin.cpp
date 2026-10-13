@@ -523,6 +523,31 @@ void CS2APlugin::OnDatabaseReady()
 	ADMIN_RecheckConnectedPlayers();
 }
 
+void CS2APlugin::ReloadConfig()
+{
+	char path[512];
+	snprintf(path, sizeof(path), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
+
+	// Parsed into a temporary, so a file that fails validation leaves the live config untouched.
+	// Starting from defaults also means a key removed from the file goes back to its default rather than keeping the old value.
+	CS2AConfig fresh;
+	if (!ADMIN_LoadConfig(path, fresh))
+	{
+		MMU_LOG_WARN("Failed to reload config from %s, keeping the loaded one.\n", path);
+		return;
+	}
+
+	// The server ID lookup only runs on connect, so an auto-detected one would otherwise be lost.
+	if (fresh.serverID == -1 && g_CS2AConfig.serverID != -1)
+	{
+		fresh.serverID = g_CS2AConfig.serverID;
+	}
+	g_CS2AConfig = fresh;
+	MMU_LOG_INFO("Config reloaded from %s\n", path);
+	mmu::config::ApplyLogBlock(g_CS2AConfig.log);
+	OnConfigReloaded();
+}
+
 void CS2APlugin::OnConfigReloaded()
 {
 	if (!m_bConfigLoaded)
@@ -1145,13 +1170,14 @@ void CS2APlugin::OnLevelInit(char const *pMapName, char const *pMapEntities, cha
 
 	g_CS2AMapManager.OnMapStart();
 
-	// Reload admins on map change
+	// Reload config and admins on map change
 	if (m_bSkipLevelInitReload)
 	{
 		m_bSkipLevelInitReload = false;
 	}
 	else
 	{
+		ReloadConfig();
 		g_CS2AAdminManager.ReloadAdmins();
 	}
 }

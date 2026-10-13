@@ -20,28 +20,7 @@
 
 CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 {
-	char path[512];
-	snprintf(path, sizeof(path), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
-
-	// Parsed into a temporary, so a file that fails validation leaves the live config untouched.
-	// Starting from defaults also means a key removed from the file goes back to its default rather than keeping the old value.
-	CS2AConfig fresh;
-	if (ADMIN_LoadConfig(path, fresh))
-	{
-		// The server ID lookup only runs on connect, so an auto-detected one would otherwise be lost.
-		if (fresh.serverID == -1 && g_CS2AConfig.serverID != -1)
-		{
-			fresh.serverID = g_CS2AConfig.serverID;
-		}
-		g_CS2AConfig = fresh;
-		MMU_LOG_INFO("Config reloaded from %s\n", path);
-		mmu::config::ApplyLogBlock(g_CS2AConfig.log);
-		g_CS2APlugin.OnConfigReloaded();
-	}
-	else
-	{
-		MMU_LOG_WARN("Failed to reload config from %s, keeping the loaded one.\n", path);
-	}
+	g_CS2APlugin.ReloadConfig();
 
 	ADMIN_LoadTranslations();
 	g_CS2AMapManager.LoadMapList();

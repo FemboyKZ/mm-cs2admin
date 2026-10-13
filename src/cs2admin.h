@@ -85,6 +85,7 @@ public:
 	}
 
 	// Called by mm_reload. Restarts the DB when startup skipped it or reconnects gave up.
+	void ReloadConfig();
 	void OnConfigReloaded();
 
 private:

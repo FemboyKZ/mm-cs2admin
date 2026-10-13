@@ -6,15 +6,11 @@
 
 #include <string>
 
-struct CS2AConfig
+struct GeneralCfg : mmu::config::GeneralBlock
 {
 	// Shown to banned players on kick. Empty = not shown.
 	std::string website;
 	std::string chatPrefix = "\x03[CS2 Admin]\x01 ";
-	mmu::config::GeneralBlock general;
-
-	mmu::config::LogBlock log;
-	mmu::config::DatabaseBlock database = mmu::config::DatabaseBlock::Defaults("sourcemod", "addons/cs2admin/data/cs2admin.db", "sb");
 
 	int serverId = -1;
 	bool addban = true;
@@ -29,40 +25,53 @@ struct CS2AConfig
 	bool backupConfigs = true;
 	bool adminsEnabled = true;
 	bool requireSiteLogin = false;
+};
 
-	// Comms config
-	int commsDefaultMinutes = 30;
+struct CommsCfg
+{
+	int defaultMinutes = 30;
 	bool disableUnblockImmunityCheck = false;
 	int consoleImmunity = 20;
-	int commsMaxMinutes = 0;
+	int maxMinutes = 0;
+};
 
-	// Checker config
+struct CheckerCfg
+{
 	bool printCheckOnConnect = true;
+};
 
-	// Report config
-	float reportCooldown = 60.0f;
-	int reportMinLength = 10;
+struct ReportCfg
+{
+	float cooldown = 60.0f;
+	int minLength = 10;
+};
 
-	// Sleuth config (0 = disabled)
-	int sleuthAction = 0;          // 1=ban orig, 2=ban custom, 3=ban double, 4=notify, 5=kick
-	int sleuthBanMinutes = 0;         // Ban time for action 2 (min, 0=permanent)
-	int sleuthMaxBans = 0;      // IP ban count threshold before acting
-	int sleuthBanType = 0;          // 0=all, 1=permanent only
-	bool sleuthAdminBypass = false; // ADMFLAG_BAN users exempt
-	bool sleuthExcludeOld = false;
-	int sleuthExcludeTime = 31536000; // 1 year in seconds
+struct SleuthCfg
+{
+	int action = 0;           // 0=disabled, 1=ban orig, 2=ban custom, 3=ban double, 4=notify, 5=kick
+	int banMinutes = 0;       // Ban time for action 2 (0=permanent)
+	int maxBans = 0;          // IP ban count threshold before acting
+	int banType = 0;          // 0=all, 1=permanent only
+	bool adminBypass = false; // ADMFLAG_BAN users exempt
+	bool excludeOld = false;
+	int excludeTime = 31536000; // 1 year in seconds
+};
 
-	// Discord config
-	std::string discordWebhookUrl = "";
-	std::string discordFooterText = "CS2Admin";
+struct DiscordCfg
+{
+	std::string webhookUrl;
+	std::string footerText = "CS2Admin";
+};
 
-	// Chat flood config
-	float chatFloodCooldown = 0.75f; // Minimum seconds between messages
-	int chatFloodMaxMessages = 5;    // Messages in window before action
-	int chatFloodMuteMinutes = 0;   // Minutes to auto-mute (0 = block only)
+struct ChatFloodCfg
+{
+	float cooldown = 0.75f; // Minimum seconds between messages
+	int maxMessages = 5;    // Messages in window before action
+	int muteMinutes = 0;    // Auto-mute length (0 = block only)
+};
 
-	// Tags config.
-	//
+struct TagsCfg
+{
 	// chatOwnership makes us render every player chat line ourselves and suppress the game's own.
 	// It is off by default because only one plugin on a server can do this, a second one produces duplicate lines.
 	// These three say what the server asked for, not what happens: another plugin may own chat or the clan tag.
@@ -75,23 +84,40 @@ struct CS2AConfig
 
 	// Chat line layout. Tokens: {tag} {name} {msg} {namecolor} {msgcolor} {teamcolor} {teamname}, plus the usual {color} tags.
 	// Dead/team variants pick up the same tokens.
-	std::string chatFormat = "{tag}{namecolor}{name}{default}: {msgcolor}{msg}";
-	std::string chatFormatDead = "{grey}*{default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
-	std::string chatFormatTeam = "{grey}({teamname}){default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
-	std::string chatFormatTeamDead = "{grey}*({teamname}){default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+	std::string format = "{tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+	std::string formatDead = "{grey}*{default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+	std::string formatTeam = "{grey}({teamname}){default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
+	std::string formatTeamDead = "{grey}*({teamname}){default} {tag}{namecolor}{name}{default}: {msgcolor}{msg}";
 
 	// Which palette color stands in for each team.
 	std::string teamColorCT = "{blue}";
 	std::string teamColorT = "{gold}";
 	std::string teamColorSpec = "{grey}";
+};
 
-	// Menu config (only used when the mm-cs2menus plugin is loaded; no-arg
-	// targeting commands open a picker instead of printing usage).
-	MenuStyleBlock menu;
+// Only used when the mm-cs2menus plugin is loaded, no-arg targeting commands then open a picker instead of printing usage.
+struct MenuCfg : MenuStyleBlock
+{
 	// Comma-separated duration presets (minutes, 0 = permanent) for the ban/mute/gag/silence picker.
-	std::string menuDurations = "30,60,180,1440,10080,0";
+	std::string durations = "30,60,180,1440,10080,0";
 	// Comma-separated reason presets for the punish forms. "Other", typed in chat, is always added.
-	std::string menuReasons = "Cheating,Toxicity,Spam,Advertising,Ban Evasion";
+	std::string reasons = "Cheating,Toxicity,Spam,Advertising,Ban Evasion";
+};
+
+struct CS2AConfig
+{
+	GeneralCfg general;
+	CommsCfg comms;
+	CheckerCfg checker;
+	ReportCfg report;
+	SleuthCfg sleuth;
+	DiscordCfg discord;
+	ChatFloodCfg chatFlood;
+	TagsCfg tags;
+	MenuCfg menu;
+
+	mmu::config::DatabaseBlock database = mmu::config::DatabaseBlock::Defaults("sourcemod", "addons/cs2admin/data/cs2admin.db", "sb");
+	mmu::config::LogBlock log;
 };
 
 // Load and parse core.cfg from the given path.

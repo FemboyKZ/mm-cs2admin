@@ -21,7 +21,7 @@
 
 CON_COMMAND_F(mm_admin_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 {
-	g_CS2APlugin.ReloadConfig();
+	g_ThisPlugin.ReloadConfig();
 
 	CS2A_LoadTranslations();
 	g_CS2AMapManager.LoadMapList();

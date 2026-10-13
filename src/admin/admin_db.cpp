@@ -261,7 +261,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 				 "FROM %s_admins AS a",
 				 prefix.c_str());
 	}
-	else if (g_CS2AConfig.serverId == -1)
+	else if (g_CS2AConfig.general.serverId == -1)
 	{
 		ConVarRefAbstract hostip_ref("hostip");
 		ConVarRefAbstract hostport_ref("hostport");
@@ -294,7 +294,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 				 "GROUP BY a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password",
 				 prefix.c_str(), prefix.c_str(), prefix.c_str(), g_CS2ADatabase.Escape(ipStr).c_str(), hostport, prefix.c_str(), prefix.c_str(),
 				 g_CS2ADatabase.Escape(ipStr).c_str(), hostport,
-				 g_CS2AConfig.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
+				 g_CS2AConfig.general.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
 	}
 	else
 	{
@@ -306,8 +306,8 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 				 "OR srv_group_id IN (SELECT group_id FROM %s_servers_groups WHERE server_id = %d)) "
 				 "%s"
 				 "GROUP BY a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password",
-				 prefix.c_str(), prefix.c_str(), g_CS2AConfig.serverId, prefix.c_str(), g_CS2AConfig.serverId,
-				 g_CS2AConfig.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
+				 prefix.c_str(), prefix.c_str(), g_CS2AConfig.general.serverId, prefix.c_str(), g_CS2AConfig.general.serverId,
+				 g_CS2AConfig.general.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
 	}
 
 	RunLoadQuery(
@@ -396,7 +396,7 @@ void CS2AAdminManager::LoadDatabaseAdmins(uint32_t generation, std::function<voi
 			m_loadingGlobalOverrides = m_dbGlobalOverrides;
 		}
 		// Before the commit merges the flat files in, the backup is DB data only.
-		else if (g_CS2AConfig.backupConfigs && g_CS2ADatabase.IsConnected())
+		else if (g_CS2AConfig.general.backupConfigs && g_CS2ADatabase.IsConnected())
 		{
 			SaveBackup();
 		}

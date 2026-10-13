@@ -103,11 +103,11 @@ namespace
 		switch (team)
 		{
 			case CS_TEAM_CT:
-				return mmu::ResolveColorTags(g_CS2AConfig.teamColorCT);
+				return mmu::ResolveColorTags(g_CS2AConfig.tags.teamColorCT);
 			case CS_TEAM_T:
-				return mmu::ResolveColorTags(g_CS2AConfig.teamColorT);
+				return mmu::ResolveColorTags(g_CS2AConfig.tags.teamColorT);
 			default:
-				return mmu::ResolveColorTags(g_CS2AConfig.teamColorSpec);
+				return mmu::ResolveColorTags(g_CS2AConfig.tags.teamColorSpec);
 		}
 	}
 
@@ -141,7 +141,7 @@ namespace
 
 bool CS2AChatProcessor::ShouldRender(int slot) const
 {
-	if (!g_CS2AConfig.chatOwnership || g_CS2AForeignPlugins.ChatOwner())
+	if (!g_CS2AConfig.tags.chatOwnership || g_CS2AForeignPlugins.ChatOwner())
 	{
 		return false;
 	}
@@ -264,14 +264,14 @@ std::string CS2AChatProcessor::ComposeLine(int slot, const char *message, bool t
 	const std::string *format = nullptr;
 	if (teamOnly)
 	{
-		format = alive ? &g_CS2AConfig.chatFormatTeam : &g_CS2AConfig.chatFormatTeamDead;
+		format = alive ? &g_CS2AConfig.tags.formatTeam : &g_CS2AConfig.tags.formatTeamDead;
 	}
 	else
 	{
-		format = alive ? &g_CS2AConfig.chatFormat : &g_CS2AConfig.chatFormatDead;
+		format = alive ? &g_CS2AConfig.tags.format : &g_CS2AConfig.tags.formatDead;
 	}
 
-	const TagDef *tag = g_CS2AConfig.chatTags ? g_CS2ATagManager.Resolve(slot) : nullptr;
+	const TagDef *tag = g_CS2AConfig.tags.chatTags ? g_CS2ATagManager.Resolve(slot) : nullptr;
 	const std::string teamColor = TeamColor(team);
 
 	std::string body = message ? message : "";

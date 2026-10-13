@@ -44,11 +44,11 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		if (k == "website")
 		{
 			// Older example configs shipped this placeholder, which banned players must not be sent to.
-			cfg->website = (value == "http://www.yourwebsite.net/sourcebans") ? "" : value;
+			cfg->general.website = (value == "http://www.yourwebsite.net/sourcebans") ? "" : value;
 		}
 		else if (k == "chatprefix")
 		{
-			cfg->chatPrefix = mmu::ResolveColorTags(value);
+			cfg->general.chatPrefix = mmu::ResolveColorTags(value);
 		}
 		else if (mmu::config::ApplyGeneralKey(cfg->general, k, value) || mmu::config::ApplyLogKey(cfg->log, k, value))
 		{
@@ -61,11 +61,11 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "addban")
 		{
-			cfg->addban = (value != "0");
+			cfg->general.addban = (value != "0");
 		}
 		else if (k == "unban")
 		{
-			cfg->unban = (value != "0");
+			cfg->general.unban = (value != "0");
 		}
 		else if (k == "retrytime")
 		{
@@ -78,7 +78,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			{
 				v = 60.0f;
 			}
-			cfg->retryTime = v;
+			cfg->general.retryTime = v;
 		}
 		else if (k == "maxreconnectattempts")
 		{
@@ -87,7 +87,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			{
 				v = 0;
 			}
-			cfg->maxReconnectAttempts = v;
+			cfg->general.maxReconnectAttempts = v;
 		}
 		else if (k == "processqueueminutes" || k == "processqueuetime")
 		{
@@ -97,31 +97,31 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			{
 				v = 1;
 			}
-			cfg->processQueueMinutes = v;
+			cfg->general.processQueueMinutes = v;
 		}
 		else if (k == "workshopdownloadtimeout")
 		{
-			cfg->workshopDownloadTimeout = std::atoi(value.c_str());
+			cfg->general.workshopDownloadTimeout = std::atoi(value.c_str());
 		}
 		else if (k == "autoaddserver")
 		{
-			cfg->autoAddServer = std::atoi(value.c_str());
+			cfg->general.autoAddServer = std::atoi(value.c_str());
 		}
 		else if (k == "backupconfigs")
 		{
-			cfg->backupConfigs = (value != "0");
+			cfg->general.backupConfigs = (value != "0");
 		}
 		else if (k == "adminsenabled" || k == "enableadmins")
 		{
-			cfg->adminsEnabled = (value != "0");
+			cfg->general.adminsEnabled = (value != "0");
 		}
 		else if (k == "requiresitelogin")
 		{
-			cfg->requireSiteLogin = (value != "0");
+			cfg->general.requireSiteLogin = (value != "0");
 		}
 		else if (k == "serverid")
 		{
-			cfg->serverId = std::atoi(value.c_str());
+			cfg->general.serverId = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -144,19 +144,19 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "defaultminutes" || k == "defaulttime")
 		{
-			cfg->commsDefaultMinutes = std::atoi(value.c_str());
+			cfg->comms.defaultMinutes = std::atoi(value.c_str());
 		}
 		else if (k == "disableunblockimmunitycheck")
 		{
-			cfg->disableUnblockImmunityCheck = (value != "0");
+			cfg->comms.disableUnblockImmunityCheck = (value != "0");
 		}
 		else if (k == "consoleimmunity")
 		{
-			cfg->consoleImmunity = std::atoi(value.c_str());
+			cfg->comms.consoleImmunity = std::atoi(value.c_str());
 		}
 		else if (k == "maxminutes" || k == "maxlength")
 		{
-			cfg->commsMaxMinutes = std::atoi(value.c_str());
+			cfg->comms.maxMinutes = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -167,7 +167,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "printcheckonconnect")
 		{
-			cfg->printCheckOnConnect = (value != "0");
+			cfg->checker.printCheckOnConnect = (value != "0");
 		}
 		else
 		{
@@ -178,11 +178,11 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "cooldown")
 		{
-			cfg->reportCooldown = static_cast<float>(std::atof(value.c_str()));
+			cfg->report.cooldown = static_cast<float>(std::atof(value.c_str()));
 		}
 		else if (k == "minlength")
 		{
-			cfg->reportMinLength = std::atoi(value.c_str());
+			cfg->report.minLength = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -193,31 +193,31 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "action" || k == "actions")
 		{
-			cfg->sleuthAction = std::atoi(value.c_str());
+			cfg->sleuth.action = std::atoi(value.c_str());
 		}
 		else if (k == "banminutes" || k == "duration")
 		{
-			cfg->sleuthBanMinutes = std::atoi(value.c_str());
+			cfg->sleuth.banMinutes = std::atoi(value.c_str());
 		}
 		else if (k == "maxbans" || k == "bansallowed")
 		{
-			cfg->sleuthMaxBans = std::atoi(value.c_str());
+			cfg->sleuth.maxBans = std::atoi(value.c_str());
 		}
 		else if (k == "bantype")
 		{
-			cfg->sleuthBanType = std::atoi(value.c_str());
+			cfg->sleuth.banType = std::atoi(value.c_str());
 		}
 		else if (k == "adminbypass")
 		{
-			cfg->sleuthAdminBypass = (value != "0");
+			cfg->sleuth.adminBypass = (value != "0");
 		}
 		else if (k == "excludeold")
 		{
-			cfg->sleuthExcludeOld = (value != "0");
+			cfg->sleuth.excludeOld = (value != "0");
 		}
 		else if (k == "excludetime")
 		{
-			cfg->sleuthExcludeTime = std::atoi(value.c_str());
+			cfg->sleuth.excludeTime = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -228,11 +228,11 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "webhookurl")
 		{
-			cfg->discordWebhookUrl = value;
+			cfg->discord.webhookUrl = value;
 		}
 		else if (k == "footertext")
 		{
-			cfg->discordFooterText = value;
+			cfg->discord.footerText = value;
 		}
 		else
 		{
@@ -243,15 +243,15 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "cooldown")
 		{
-			cfg->chatFloodCooldown = static_cast<float>(std::atof(value.c_str()));
+			cfg->chatFlood.cooldown = static_cast<float>(std::atof(value.c_str()));
 		}
 		else if (k == "maxmessages")
 		{
-			cfg->chatFloodMaxMessages = std::atoi(value.c_str());
+			cfg->chatFlood.maxMessages = std::atoi(value.c_str());
 		}
 		else if (k == "muteminutes" || k == "muteduration")
 		{
-			cfg->chatFloodMuteMinutes = std::atoi(value.c_str());
+			cfg->chatFlood.muteMinutes = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -262,43 +262,43 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "chatownership")
 		{
-			cfg->chatOwnership = (value != "0");
+			cfg->tags.chatOwnership = (value != "0");
 		}
 		else if (k == "chattags")
 		{
-			cfg->chatTags = (value != "0");
+			cfg->tags.chatTags = (value != "0");
 		}
 		else if (k == "leaderboardtags")
 		{
-			cfg->leaderboardTags = (value != "0");
+			cfg->tags.leaderboardTags = (value != "0");
 		}
 		else if (k == "format")
 		{
-			cfg->chatFormat = value;
+			cfg->tags.format = value;
 		}
 		else if (k == "formatdead")
 		{
-			cfg->chatFormatDead = value;
+			cfg->tags.formatDead = value;
 		}
 		else if (k == "formatteam")
 		{
-			cfg->chatFormatTeam = value;
+			cfg->tags.formatTeam = value;
 		}
 		else if (k == "formatteamdead")
 		{
-			cfg->chatFormatTeamDead = value;
+			cfg->tags.formatTeamDead = value;
 		}
 		else if (k == "teamcolorct")
 		{
-			cfg->teamColorCT = ColorTag(value);
+			cfg->tags.teamColorCT = ColorTag(value);
 		}
 		else if (k == "teamcolort")
 		{
-			cfg->teamColorT = ColorTag(value);
+			cfg->tags.teamColorT = ColorTag(value);
 		}
 		else if (k == "teamcolorspec")
 		{
-			cfg->teamColorSpec = ColorTag(value);
+			cfg->tags.teamColorSpec = ColorTag(value);
 		}
 		else
 		{
@@ -313,11 +313,11 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "durations")
 		{
-			cfg->menuDurations = value;
+			cfg->menu.durations = value;
 		}
 		else if (k == "reasons")
 		{
-			cfg->menuReasons = value;
+			cfg->menu.reasons = value;
 		}
 		else
 		{
@@ -373,9 +373,9 @@ bool CS2A_LoadConfig(const char *path, CS2AConfig &config)
 	}
 
 	// Clamp chatFloodMaxMessages to sane range
-	if (config.chatFloodMaxMessages < 1)
+	if (config.chatFlood.maxMessages < 1)
 	{
-		config.chatFloodMaxMessages = 1;
+		config.chatFlood.maxMessages = 1;
 	}
 
 	// Ensure command prefixes are different
@@ -388,10 +388,10 @@ bool CS2A_LoadConfig(const char *path, CS2AConfig &config)
 	}
 
 	// A tag can only be injected into a line we render ourselves.
-	if (config.chatTags && !config.chatOwnership)
+	if (config.tags.chatTags && !config.tags.chatOwnership)
 	{
 		MMU_LOG_WARN("Tags: ChatTags needs ChatOwnership to render the tag. Enabling ChatOwnership.\n");
-		config.chatOwnership = true;
+		config.tags.chatOwnership = true;
 	}
 
 	return true;

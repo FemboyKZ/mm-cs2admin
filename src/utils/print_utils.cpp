@@ -34,7 +34,7 @@ static mmu::ChatPrinter &Printer()
 		mmu::ChatPrinter::Setup s;
 		s.translations = &g_CS2ATranslations;
 		s.slotLanguage = &CS2A_SlotLanguage;
-		s.chatPrefix = &g_CS2AConfig.chatPrefix;
+		s.chatPrefix = &g_CS2AConfig.general.chatPrefix;
 		s.resetColorAfterPrefix = true;
 		s.conTag = "ADMIN";
 		s.slotIsHuman = &SlotIsHuman;

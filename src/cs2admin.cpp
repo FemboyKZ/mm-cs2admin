@@ -42,7 +42,7 @@ void ShutdownConsoleCommands();
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib
 CGameEntitySystem *g_pEntitySystem = nullptr;
 
-CS2APlugin g_CS2APlugin;
+CS2APlugin g_ThisPlugin;
 CS2AForwards g_CS2AForwards;
 
 IServerGameDLL *g_pServerGameDLL = nullptr;
@@ -66,7 +66,7 @@ void CS2A_LoadTranslations()
 	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.general.defaultLanguage);
 }
 
-PLUGIN_EXPOSE(CS2APlugin, g_CS2APlugin);
+PLUGIN_EXPOSE(CS2APlugin, g_ThisPlugin);
 
 CS2APlugin::CS2APlugin()
 	: m_GameFrame(&IServerGameDLL::GameFrame, this, nullptr, &CS2APlugin::Hook_GameFrame),
@@ -502,13 +502,13 @@ void CS2APlugin::OnDatabaseReady()
 	m_bReconnectGaveUp = false;
 
 	// Auto server ID (MySQL/SBPP only). Without it every new row carries sid 0.
-	if (g_CS2AConfig.serverId == -1 && g_CS2ADatabase.IsMySQL())
+	if (g_CS2AConfig.general.serverId == -1 && g_CS2ADatabase.IsMySQL())
 	{
-		LookupServerID(g_CS2AConfig.autoAddServer != 0);
+		LookupServerID(g_CS2AConfig.general.autoAddServer != 0);
 	}
-	else if (g_CS2AConfig.serverId == -1)
+	else if (g_CS2AConfig.general.serverId == -1)
 	{
-		g_CS2AConfig.serverId = 0;
+		g_CS2AConfig.general.serverId = 0;
 	}
 
 	g_CS2ATagManager.EnsureSchema();
@@ -540,9 +540,9 @@ void CS2APlugin::ReloadConfig()
 	}
 
 	// The server ID lookup only runs on connect, so an auto-detected one would otherwise be lost.
-	if (fresh.serverId == -1 && g_CS2AConfig.serverId != -1)
+	if (fresh.general.serverId == -1 && g_CS2AConfig.general.serverId != -1)
 	{
-		fresh.serverId = g_CS2AConfig.serverId;
+		fresh.general.serverId = g_CS2AConfig.general.serverId;
 	}
 	g_CS2AConfig = fresh;
 	MMU_LOG_INFO("Config reloaded from %s\n", path);
@@ -630,8 +630,8 @@ void CS2APlugin::LookupServerID(bool allowAutoAdd)
 								 ISQLRow *row = rs->FetchRow();
 								 if (row)
 								 {
-									 g_CS2AConfig.serverId = rs->GetInt(0);
-									 MMU_LOG_INFO("Auto-detected server ID: %d\n", g_CS2AConfig.serverId);
+									 g_CS2AConfig.general.serverId = rs->GetInt(0);
+									 MMU_LOG_INFO("Auto-detected server ID: %d\n", g_CS2AConfig.general.serverId);
 								 }
 							 }
 							 // hostip 0 is no usable address to register.
@@ -642,7 +642,7 @@ void CS2APlugin::LookupServerID(bool allowAutoAdd)
 							 else
 							 {
 								 MMU_LOG_WARN("Server not found in database (%s:%d). Using serverID=0.\n", ipStr.c_str(), hostport);
-								 g_CS2AConfig.serverId = 0;
+								 g_CS2AConfig.general.serverId = 0;
 							 }
 						 });
 }
@@ -751,7 +751,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 	g_CS2ACommManager.VerifyComms(slotIdx, steamid64);
 
 	// Check ban/comm history to notify admins on connect
-	if (g_CS2AConfig.printCheckOnConnect && g_CS2ADatabase.IsConnected())
+	if (g_CS2AConfig.checker.printCheckOnConnect && g_CS2ADatabase.IsConnected())
 	{
 		g_CS2ABanManager.CheckHistory(slotIdx, steamid64, playerIP.c_str(),
 									  [slotIdx, steamid64](int banCount, int commCount, int muteCount, int gagCount)
@@ -798,7 +798,7 @@ void CS2APlugin::OnClientAuthorized(int slot)
 	g_CS2ATagManager.UpdateClanTag(slot);
 
 	// check for ban evasion
-	if (g_CS2AConfig.sleuthAction > 0 && g_CS2ADatabase.IsConnected())
+	if (g_CS2AConfig.sleuth.action > 0 && g_CS2ADatabase.IsConnected())
 	{
 		g_CS2ABanManager.CheckSleuth(slot, player->steamid64, player->ip.c_str());
 	}
@@ -869,7 +869,7 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 	}
 
 	// Chat flood detection (before command processing)
-	if (g_CS2AConfig.chatFloodCooldown > 0.0f)
+	if (g_CS2AConfig.chatFlood.cooldown > 0.0f)
 	{
 		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slotIdx);
 		if (player && player->connected && !player->fakePlayer)
@@ -878,15 +878,15 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 			double now = Plat_FloatTime();
 			double timeSince = now - player->lastChatTime;
 
-			if (timeSince < g_CS2AConfig.chatFloodCooldown)
+			if (timeSince < g_CS2AConfig.chatFlood.cooldown)
 			{
 				player->chatMessageCount++;
 
-				if (player->chatMessageCount >= g_CS2AConfig.chatFloodMaxMessages)
+				if (player->chatMessageCount >= g_CS2AConfig.chatFlood.maxMessages)
 				{
 					// GagPlayer announces the gag itself, and returns false when a forward blocked it.
-					bool autoGagged = g_CS2AConfig.chatFloodMuteMinutes > 0 && !player->isGagged
-									  && g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteMinutes, "Chat flood", -1);
+					bool autoGagged = g_CS2AConfig.chatFlood.muteMinutes > 0 && !player->isGagged
+									  && g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFlood.muteMinutes, "Chat flood", -1);
 					if (!autoGagged)
 					{
 						CS2A_PrintToChatT(slotIdx, "Slow down! You are sending messages too fast.\n");
@@ -1036,7 +1036,7 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	// Process offline queue (every processQueueMinutes minutes)
 	if (now >= m_flNextQueueProcess)
 	{
-		m_flNextQueueProcess = now + (g_CS2AConfig.processQueueMinutes * 60.0);
+		m_flNextQueueProcess = now + (g_CS2AConfig.general.processQueueMinutes * 60.0);
 		if (g_CS2ADatabase.IsConnected() && g_CS2AOfflineQueue.HasItems())
 		{
 			g_CS2AOfflineQueue.ProcessQueue();
@@ -1048,10 +1048,10 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	if (m_bConfigLoaded && g_CS2ADatabase.IsInitialized() && !g_CS2ADatabase.IsConnected() && !g_CS2ADatabase.IsConnecting() && !m_bReconnectGaveUp
 		&& now >= m_flNextReconnect)
 	{
-		m_flNextReconnect = now + g_CS2AConfig.retryTime;
+		m_flNextReconnect = now + g_CS2AConfig.general.retryTime;
 		m_iReconnectAttempts++;
 
-		const int maxAttempts = g_CS2AConfig.maxReconnectAttempts;
+		const int maxAttempts = g_CS2AConfig.general.maxReconnectAttempts;
 		if (maxAttempts > 0)
 		{
 			MMU_LOG_INFO("Attempting database reconnection (attempt %d/%d)...\n", m_iReconnectAttempts, maxAttempts);

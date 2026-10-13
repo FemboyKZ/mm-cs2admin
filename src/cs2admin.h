@@ -127,7 +127,7 @@ private:
 		m_PostEventFilter;
 };
 
-extern CS2APlugin g_CS2APlugin;
+extern CS2APlugin g_ThisPlugin;
 
 // Re-run the ban and comm checks for everyone already on the server.
 // Needed after a config reload and whenever the database becomes reachable again,

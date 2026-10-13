@@ -25,7 +25,7 @@ static void RecordIssuer(int adminSlot, int &immunity, uint64_t &steamid64)
 {
 	if (adminSlot < 0)
 	{
-		immunity = g_CS2AConfig.consoleImmunity;
+		immunity = g_CS2AConfig.comms.consoleImmunity;
 		steamid64 = 0;
 		return;
 	}
@@ -68,7 +68,7 @@ bool CS2ACommManager::CanLiftBlock(int callerSlot, int targetSlot, int type) con
 		return true;
 	}
 
-	if (g_CS2AConfig.disableUnblockImmunityCheck)
+	if (g_CS2AConfig.comms.disableUnblockImmunityCheck)
 	{
 		return false;
 	}
@@ -80,7 +80,7 @@ bool CS2ACommManager::CanLiftBlock(int callerSlot, int targetSlot, int type) con
 
 bool CS2ACommManager::IsAllowedLength(int callerSlot, int minutes) const
 {
-	int maxLength = g_CS2AConfig.commsMaxMinutes;
+	int maxLength = g_CS2AConfig.comms.maxMinutes;
 	if (maxLength <= 0 || callerSlot < 0 || g_CS2AAdminManager.PlayerHasFlag(callerSlot, COMM_BYPASS_FLAG))
 	{
 		return true;
@@ -218,9 +218,9 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 								 bool noAid = rs->GetInt(7) == 0;
 								 // aid 0 is also any admin missing from the admins table, like a flat-file one. Only the console has no IP.
 								 bool byConsole = noAid && (!issuerIP || !*issuerIP);
-								 if (byConsole && g_CS2AConfig.consoleImmunity > issuerImmunity)
+								 if (byConsole && g_CS2AConfig.comms.consoleImmunity > issuerImmunity)
 								 {
-									 issuerImmunity = g_CS2AConfig.consoleImmunity;
+									 issuerImmunity = g_CS2AConfig.comms.consoleImmunity;
 								 }
 								 else if (noAid && !byConsole)
 								 {
@@ -293,7 +293,7 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 
 	int lengthSec = (timeMinutes > 0 && timeMinutes <= INT_MAX / 60) ? timeMinutes * 60 : 0;
-	int sid = g_CS2AConfig.serverId != -1 ? g_CS2AConfig.serverId : 0;
+	int sid = g_CS2AConfig.general.serverId != -1 ? g_CS2AConfig.general.serverId : 0;
 	long long now = (long long)std::time(nullptr);
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminSuffix);
 

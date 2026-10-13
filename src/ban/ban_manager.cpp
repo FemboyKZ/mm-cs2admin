@@ -24,15 +24,15 @@ CS2ABanManager g_CS2ABanManager;
 void CS2ABanManager::PrintBanNotice(int slot, const char *reason)
 {
 	CS2A_PrintToClientT(slot, "[ADMIN] You are banned from this server. Reason: %s\n", reason ? reason : "Banned");
-	if (!g_CS2AConfig.website.empty())
+	if (!g_CS2AConfig.general.website.empty())
 	{
-		CS2A_PrintToClientT(slot, "[ADMIN] Visit %s for more information.\n", g_CS2AConfig.website.c_str());
+		CS2A_PrintToClientT(slot, "[ADMIN] Visit %s for more information.\n", g_CS2AConfig.general.website.c_str());
 	}
 }
 
 int CS2ABanManager::GetServerID() const
 {
-	return g_CS2AConfig.serverId;
+	return g_CS2AConfig.general.serverId;
 }
 
 void CS2ABanManager::SubmitBan(const std::string &query, const std::string &authSuffix, const std::string &ip, int lengthSec, const char *reason)
@@ -288,7 +288,7 @@ bool CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminSuffix);
 
 	char query[2048];
-	int sid = g_CS2AConfig.serverId != -1 ? g_CS2AConfig.serverId : 0;
+	int sid = g_CS2AConfig.general.serverId != -1 ? g_CS2AConfig.general.serverId : 0;
 	snprintf(query, sizeof(query),
 			 "INSERT INTO %s_bans (ip, authid, name, created, ends, length, reason, aid, adminIp, sid, country, type) "
 			 "VALUES ('%s', '', '', %lld, %lld, %d, '%s', "
@@ -350,7 +350,7 @@ void CS2ABanManager::InsertBan(const char *ip, const char *authid, const char *n
 	long long now = (long long)std::time(nullptr);
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminAuthSuffix);
 
-	int sid = g_CS2AConfig.serverId != -1 ? g_CS2AConfig.serverId : 0;
+	int sid = g_CS2AConfig.general.serverId != -1 ? g_CS2AConfig.general.serverId : 0;
 
 	char query[2048];
 	snprintf(query, sizeof(query),
@@ -515,12 +515,12 @@ void CS2ABanManager::CheckHistory(int slot, uint64_t steamid64, const char *ip,
 
 void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 {
-	if (!g_CS2ADatabase.IsConnected() || g_CS2AConfig.sleuthAction <= 0 || !ip || !*ip)
+	if (!g_CS2ADatabase.IsConnected() || g_CS2AConfig.sleuth.action <= 0 || !ip || !*ip)
 	{
 		return;
 	}
 
-	if (g_CS2AConfig.sleuthAdminBypass && g_CS2AAdminManager.PlayerHasFlag(slot, ADMFLAG_BAN))
+	if (g_CS2AConfig.sleuth.adminBypass && g_CS2AAdminManager.PlayerHasFlag(slot, ADMFLAG_BAN))
 	{
 		return;
 	}
@@ -532,15 +532,15 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 	long long now = (long long)std::time(nullptr);
 
 	std::string timeFilter;
-	if (g_CS2AConfig.sleuthExcludeOld)
+	if (g_CS2AConfig.sleuth.excludeOld)
 	{
 		char timeBuf[128];
-		snprintf(timeBuf, sizeof(timeBuf), " AND created > %lld", now - (long long)g_CS2AConfig.sleuthExcludeTime);
+		snprintf(timeBuf, sizeof(timeBuf), " AND created > %lld", now - (long long)g_CS2AConfig.sleuth.excludeTime);
 		timeFilter = timeBuf;
 	}
 
 	std::string typeFilter;
-	if (g_CS2AConfig.sleuthBanType == 1)
+	if (g_CS2AConfig.sleuth.banType == 1)
 	{
 		typeFilter = " AND length = 0";
 	}
@@ -583,7 +583,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 				originalLength = 0;
 			}
 
-			if (count <= g_CS2AConfig.sleuthMaxBans)
+			if (count <= g_CS2AConfig.sleuth.maxBans)
 			{
 				return;
 			}
@@ -594,7 +594,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 				return;
 			}
 
-			int action = g_CS2AConfig.sleuthAction;
+			int action = g_CS2AConfig.sleuth.action;
 
 			if (action == 4)
 			{
@@ -616,7 +616,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 			}
 			else if (action == 2)
 			{
-				banTime = g_CS2AConfig.sleuthBanMinutes;
+				banTime = g_CS2AConfig.sleuth.banMinutes;
 			}
 			else if (action == 3)
 			{

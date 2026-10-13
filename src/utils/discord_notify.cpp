@@ -76,7 +76,7 @@ void CS2ADiscord::Shutdown()
 
 bool CS2ADiscord::IsEnabled() const
 {
-	return !g_CS2AConfig.discordWebhookUrl.empty();
+	return !g_CS2AConfig.discord.webhookUrl.empty();
 }
 
 void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, int color, const char *footer)
@@ -86,7 +86,7 @@ void CS2ADiscord::SendEmbedMessage(const char *title, const char *description, i
 		return;
 	}
 
-	mmu::discord::SendEmbed(g_CS2AConfig.discordWebhookUrl, title, description, color, footer);
+	mmu::discord::SendEmbed(g_CS2AConfig.discord.webhookUrl, title, description, color, footer);
 }
 
 void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, const char *targetName, const char *reason, int durationMinutes,
@@ -150,7 +150,7 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 		}
 	}
 
-	SendEmbedMessage("Admin Action", desc.c_str(), color, g_CS2AConfig.discordFooterText.c_str());
+	SendEmbedMessage("Admin Action", desc.c_str(), color, g_CS2AConfig.discord.footerText.c_str());
 }
 
 void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName, const char *reason, uint64_t reporterSteamid64,
@@ -166,5 +166,5 @@ void CS2ADiscord::NotifyReport(const char *reporterName, const char *targetName,
 	desc += PersonLine("Target", targetName, targetSteamid64);
 	desc += "**Reason:** " + Code(reason ? reason : "") + "\n";
 
-	SendEmbedMessage("Player Report", desc.c_str(), 0xF39C12, g_CS2AConfig.discordFooterText.c_str());
+	SendEmbedMessage("Player Report", desc.c_str(), 0xF39C12, g_CS2AConfig.discord.footerText.c_str());
 }

@@ -340,14 +340,14 @@ bool CS2AMapManager::BeginWorkshopChange(int slot, const std::string &workshopId
 		return true;
 	}
 
-	if (g_CS2AConfig.workshopDownloadTimeout <= 0)
+	if (g_CS2AConfig.general.workshopDownloadTimeout <= 0)
 	{
 		error = CS2A_Format(slot, "Map '%s' is not installed on this server.", label.c_str());
 		return false;
 	}
 
 	// The download itself starts from Tick, once Steam has confirmed the id is a CS2 map.
-	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.workshopDownloadTimeout)))
+	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.general.workshopDownloadTimeout)))
 	{
 		error = CS2A_Format(slot, "Map '%s' is not installed and no download could be started.", label.c_str());
 		return false;

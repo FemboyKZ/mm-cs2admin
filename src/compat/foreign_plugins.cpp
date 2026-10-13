@@ -127,7 +127,7 @@ void CS2AForeignPlugins::Refresh(PluginId unloading)
 
 	if (m_chatOwner != previousChat)
 	{
-		if (m_chatOwner && g_CS2AConfig.chatOwnership)
+		if (m_chatOwner && g_CS2AConfig.tags.chatOwnership)
 		{
 			MMU_LOG_WARN("%s renders player chat. Set overridePlayerChat to false in its config to disable it.\n", m_chatOwner);
 		}
@@ -139,7 +139,7 @@ void CS2AForeignPlugins::Refresh(PluginId unloading)
 
 	if (m_clanTagOwner != previousClanTag)
 	{
-		if (m_clanTagOwner && g_CS2AConfig.leaderboardTags)
+		if (m_clanTagOwner && g_CS2AConfig.tags.leaderboardTags)
 		{
 			MMU_LOG_WARN("%s writes the scoreboard clan tag for its ranks, so leaderboard tags stay off. Set the "
 						 "kz_profile_clantag_enabled convar to 0 to disable it.\n",

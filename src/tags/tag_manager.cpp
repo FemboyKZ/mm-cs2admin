@@ -26,12 +26,12 @@ CS2ATagManager g_CS2ATagManager;
 
 bool CS2A_ChatTagsActive()
 {
-	return g_CS2AConfig.chatTags && !g_CS2AForeignPlugins.ChatOwner();
+	return g_CS2AConfig.tags.chatTags && !g_CS2AForeignPlugins.ChatOwner();
 }
 
 bool CS2A_BoardTagsActive()
 {
-	return g_CS2AConfig.leaderboardTags && !g_CS2AForeignPlugins.ClanTagOwner();
+	return g_CS2AConfig.tags.leaderboardTags && !g_CS2AForeignPlugins.ClanTagOwner();
 }
 
 namespace
@@ -204,7 +204,7 @@ void CS2ATagManager::LoadTags()
 	if (!file.is_open())
 	{
 		// Only worth complaining about when the server actually asked for tags.
-		if (g_CS2AConfig.chatTags || g_CS2AConfig.leaderboardTags)
+		if (g_CS2AConfig.tags.chatTags || g_CS2AConfig.tags.leaderboardTags)
 		{
 			MMU_LOG_WARN("Tags are enabled but %s could not be opened. No tags loaded.\n", path);
 		}

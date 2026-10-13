@@ -368,13 +368,13 @@ static bool ParseBlockArgs(int slot, const mmu::Args &args, const char *defaultR
 	}
 	else
 	{
-		int defaultTime = g_CS2AConfig.commsDefaultMinutes;
+		int defaultTime = g_CS2AConfig.comms.defaultMinutes;
 		minutes = defaultTime < 0 ? -1 : (defaultTime == 0 ? 30 : defaultTime);
 	}
 
 	if (minutes >= 0 && !g_CS2ACommManager.IsAllowedLength(slot, minutes))
 	{
-		CS2A_ReplyToCommandT(slot, "You cannot issue blocks longer than %s.\n", CS2A_FormatDuration(slot, g_CS2AConfig.commsMaxMinutes).c_str());
+		CS2A_ReplyToCommandT(slot, "You cannot issue blocks longer than %s.\n", CS2A_FormatDuration(slot, g_CS2AConfig.comms.maxMinutes).c_str());
 		return false;
 	}
 
@@ -814,7 +814,7 @@ namespace
 	std::vector<AdminMenuItem> BuildDurationItems(int slot)
 	{
 		std::vector<AdminMenuItem> items;
-		for (const std::string &tok : SplitCsv(g_CS2AConfig.menuDurations))
+		for (const std::string &tok : SplitCsv(g_CS2AConfig.menu.durations))
 		{
 			int mins = CS2A_ParseDuration(tok.c_str());
 			if (mins < 0)
@@ -833,7 +833,7 @@ namespace
 	std::vector<std::string> ReasonOptions(int slot)
 	{
 		std::vector<std::string> reasons;
-		for (const std::string &reason : SplitCsv(g_CS2AConfig.menuReasons))
+		for (const std::string &reason : SplitCsv(g_CS2AConfig.menu.reasons))
 		{
 			std::string lower = str::ToLower(reason);
 			if (lower != "other")
@@ -1535,7 +1535,7 @@ namespace
 		{
 			const AdminMenuEntry &entry = kAdminMenu[i];
 			// Offline bans can be switched off server-wide.
-			if (!g_CS2ACommandSystem.CanRun(slot, entry.command) || (!strcmp(entry.command, "addban") && !g_CS2AConfig.addban))
+			if (!g_CS2ACommandSystem.CanRun(slot, entry.command) || (!strcmp(entry.command, "addban") && !g_CS2AConfig.general.addban))
 			{
 				continue;
 			}
@@ -1755,7 +1755,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("unban", "basebans", ADMFLAG_UNBAN, {{{"steamid"}}, "steamid"}, "Usage: !unban <steamid> (STEAM_0:X:Y, SteamID64 or [U:1:X])\n",
 					[](int slot, const mmu::Args &args, bool silent)
 					{
-						if (!g_CS2AConfig.unban)
+						if (!g_CS2AConfig.general.unban)
 						{
 							CS2A_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
 							return;
@@ -1782,7 +1782,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					"Usage: !addban <steamid> time=<time> [reason=<text>] (time: minutes, or 1h/2d/1w/1m)\n",
 					[](int slot, const mmu::Args &args, bool silent)
 					{
-						if (!g_CS2AConfig.addban)
+						if (!g_CS2AConfig.general.addban)
 						{
 							CS2A_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
 							return;
@@ -2016,9 +2016,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						// Cooldown check
 						double now = Plat_FloatTime();
-						if (reporter->lastReportTime > 0.0 && (now - reporter->lastReportTime) < g_CS2AConfig.reportCooldown)
+						if (reporter->lastReportTime > 0.0 && (now - reporter->lastReportTime) < g_CS2AConfig.report.cooldown)
 						{
-							int remaining = (int)(g_CS2AConfig.reportCooldown - (now - reporter->lastReportTime));
+							int remaining = (int)(g_CS2AConfig.report.cooldown - (now - reporter->lastReportTime));
 							CS2A_ReplyToCommandT(slot, "You must wait %d seconds before reporting again.\n", remaining);
 							return;
 						}
@@ -2050,11 +2050,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						std::string reason = *args.Get("reason");
 
 						// Menu presets are exempt, most are shorter.
-						const std::vector<std::string> presets = SplitCsv(g_CS2AConfig.menuReasons);
+						const std::vector<std::string> presets = SplitCsv(g_CS2AConfig.menu.reasons);
 						const bool preset = std::find(presets.begin(), presets.end(), reason) != presets.end();
-						if (!preset && (int)reason.size() < g_CS2AConfig.reportMinLength)
+						if (!preset && (int)reason.size() < g_CS2AConfig.report.minLength)
 						{
-							CS2A_ReplyToCommandT(slot, "Report reason must be at least %d characters.\n", g_CS2AConfig.reportMinLength);
+							CS2A_ReplyToCommandT(slot, "Report reason must be at least %d characters.\n", g_CS2AConfig.report.minLength);
 							return;
 						}
 
@@ -2336,7 +2336,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							const char *boardOwner = g_CS2AForeignPlugins.ClanTagOwner();
 							const char *blocker = chatOwner ? chatOwner : boardOwner;
 
-							if (blocker && (g_CS2AConfig.chatTags || g_CS2AConfig.leaderboardTags))
+							if (blocker && (g_CS2AConfig.tags.chatTags || g_CS2AConfig.tags.leaderboardTags))
 							{
 								CS2A_ReplyToCommandT(slot, "Tags are unavailable while %s is loaded.\n", blocker);
 							}

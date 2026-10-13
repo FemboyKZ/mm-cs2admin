@@ -665,7 +665,7 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 	}
 
 	auto it = m_commands.find(cmd.name);
-	if (it == m_commands.end())
+	if (it == m_commands.end() || (m_mapsYielded && it->first == "maps"))
 	{
 		return false;
 	}
@@ -3015,7 +3015,32 @@ void CS2ACommandSystem::RegisterConsoleCommands()
 
 	for (auto &entry : m_consoleCommands)
 	{
+		if (m_mapsYielded && entry.name == "mm_maps")
+		{
+			continue;
+		}
 		entry.cmd = new ConCommand(entry.name.c_str(), ConsoleCommandCallback, entry.desc.c_str(), FCVAR_CLIENT_CAN_EXECUTE);
+	}
+}
+
+void CS2ACommandSystem::YieldMapsCommand(bool yield)
+{
+	m_mapsYielded = yield;
+	for (auto &entry : m_consoleCommands)
+	{
+		if (entry.name != "mm_maps")
+		{
+			continue;
+		}
+		if (yield)
+		{
+			delete entry.cmd;
+			entry.cmd = nullptr;
+		}
+		else if (!entry.cmd)
+		{
+			entry.cmd = new ConCommand(entry.name.c_str(), ConsoleCommandCallback, entry.desc.c_str(), FCVAR_CLIENT_CAN_EXECUTE);
+		}
 	}
 }
 

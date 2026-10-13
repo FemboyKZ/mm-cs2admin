@@ -151,6 +151,8 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	g_CS2ACommandSystem.RegisterBuiltinCommands();
 
+	// Before the console commands, so a load after mm-cs2rockthevote leaves mm_maps to it.
+	g_CS2AMapManager.RefreshRtv();
 	g_CS2ACommandSystem.RegisterConsoleCommands();
 
 	g_CS2AMapManager.LoadMapList();

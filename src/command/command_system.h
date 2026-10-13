@@ -34,6 +34,9 @@ public:
 	// Call once after RegisterBuiltinCommands().
 	void RegisterConsoleCommands();
 
+	// mm-cs2rockthevote has a maps command of its own, so ours steps aside in chat and the console while it is loaded.
+	void YieldMapsCommand(bool yield);
+
 	// Unregister and delete all dynamically created ConCommand objects.
 	// Must be called from CS2APlugin::Unload().
 	void Shutdown();
@@ -107,10 +110,11 @@ private:
 	{
 		std::string name; // "mm_ban", "mm_who", etc.
 		std::string desc; // description string
-		ConCommand *cmd;
+		ConCommand *cmd = nullptr;
 	};
 
 	std::vector<ConsoleCmd> m_consoleCommands;
+	bool m_mapsYielded = false;
 };
 
 extern CS2ACommandSystem g_CS2ACommandSystem;

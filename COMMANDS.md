@@ -39,6 +39,8 @@
 
 Every chat command is also a console command as `mm_<name>`.
 
+`!maps` steps aside while mm-cs2rockthevote is loaded, which answers it with its own map list. `!map` still opens the picker.
+
 Arguments are `key=value` pairs in any order.
 The one argument shown without `key=` goes first and needs no key,
 so `!ban jvn time=1d reason=wall hack` is `!ban player=jvn time=1d reason=wall hack`.

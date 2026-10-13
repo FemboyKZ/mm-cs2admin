@@ -5,6 +5,7 @@
 #include "src/common.h"
 #include "game/workshop.h"
 #include "interfaces/cs2rockthevote/ics2rtv.h"
+#include "src/command/command_system.h"
 #include "src/config/config.h"
 #include "src/lang/translations.h"
 #include "src/utils/print_utils.h"
@@ -392,6 +393,7 @@ void CS2AMapManager::RefreshRtv(PluginId unloading)
 	// An rtv that went away took its forward list with it, so there is nothing to unregister on the old one.
 	m_rtvForwards = forwards;
 	m_rtvVoteStartHandle = kInvalidRTVForwardHandle;
+	g_CS2ACommandSystem.YieldMapsCommand(forwards != nullptr);
 	if (forwards)
 	{
 		auto onVoteStart = [](bool)

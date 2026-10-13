@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_ADMIN_MANAGER_H_
-#define _INCLUDE_ADMIN_ADMIN_MANAGER_H_
+#ifndef _INCLUDE_CS2A_ADMIN_MANAGER_H_
+#define _INCLUDE_CS2A_ADMIN_MANAGER_H_
 
 #include <string>
 #include <vector>
@@ -241,4 +241,4 @@ private:
 
 extern CS2AAdminManager g_CS2AAdminManager;
 
-#endif // _INCLUDE_ADMIN_ADMIN_MANAGER_H_
+#endif // _INCLUDE_CS2A_ADMIN_MANAGER_H_

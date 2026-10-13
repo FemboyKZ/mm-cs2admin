@@ -80,7 +80,7 @@ bool CS2ACommManager::CanLiftBlock(int callerSlot, int targetSlot, int type) con
 
 bool CS2ACommManager::IsAllowedLength(int callerSlot, int minutes) const
 {
-	int maxLength = g_CS2AConfig.commsMaxLength;
+	int maxLength = g_CS2AConfig.commsMaxMinutes;
 	if (maxLength <= 0 || callerSlot < 0 || g_CS2AAdminManager.PlayerHasFlag(callerSlot, COMM_BYPASS_FLAG))
 	{
 		return true;
@@ -110,11 +110,11 @@ static void ApplyStoredBlock(int slot, PlayerInfo *player, int type, int remaini
 
 	if (remaining <= 0)
 	{
-		ADMIN_PrintToChatT(slot, mute ? "You are permanently muted. Reason: %s\n" : "You are permanently gagged. Reason: %s\n", why.c_str());
+		CS2A_PrintToChatT(slot, mute ? "You are permanently muted. Reason: %s\n" : "You are permanently gagged. Reason: %s\n", why.c_str());
 	}
 	else
 	{
-		ADMIN_PrintToChatT(slot, mute ? "You are muted (%d seconds remaining). Reason: %s\n" : "You are gagged (%d seconds remaining). Reason: %s\n",
+		CS2A_PrintToChatT(slot, mute ? "You are muted (%d seconds remaining). Reason: %s\n" : "You are gagged (%d seconds remaining). Reason: %s\n",
 						   remaining, why.c_str());
 	}
 	MMU_LOG_INFO("Player \"%s\" has active %s. Reason: %s\n", player->name.c_str(), mute ? "mute" : "gag", why.c_str());
@@ -249,7 +249,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 								 player->isMuted = false;
 								 player->muteExpireTime = 0.0;
 								 player->muteReason.clear();
-								 ADMIN_PrintToChatT(slot, "You have been unmuted.\n");
+								 CS2A_PrintToChatT(slot, "You have been unmuted.\n");
 								 MMU_LOG_INFO("Mute for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
 							 }
 							 if (!foundGag && player->isGagged && !player->isSessionGagged && !g_CS2ACommManager.HasPendingComm(steamid64, COMM_GAG))
@@ -257,7 +257,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 								 player->isGagged = false;
 								 player->gagExpireTime = 0.0;
 								 player->gagReason.clear();
-								 ADMIN_PrintToChatT(slot, "You have been ungagged.\n");
+								 CS2A_PrintToChatT(slot, "You have been ungagged.\n");
 								 MMU_LOG_INFO("Gag for \"%s\" no longer in the database, lifted.\n", player->name.c_str());
 							 }
 						 });
@@ -293,7 +293,7 @@ void CS2ACommManager::InsertComm(const char *authid, const char *name, int timeM
 	std::string adminSuffix = g_CS2ADatabase.Escape(ExtractAuthSuffix(rawAdminAuth).c_str());
 
 	int lengthSec = (timeMinutes > 0 && timeMinutes <= INT_MAX / 60) ? timeMinutes * 60 : 0;
-	int sid = g_CS2AConfig.serverID != -1 ? g_CS2AConfig.serverID : 0;
+	int sid = g_CS2AConfig.serverId != -1 ? g_CS2AConfig.serverId : 0;
 	long long now = (long long)std::time(nullptr);
 	std::string adminMatch = CS2ADatabase::AuthMatch("authid", adminSuffix);
 
@@ -443,13 +443,13 @@ void CS2ACommManager::AnnounceBlock(int targetSlot, int adminSlot, int timeMinut
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 	if (timeMinutes == 0)
 	{
-		ADMIN_PrintToChatT(targetSlot, permanentPhrase, why);
-		ADMIN_ChatToAllT(allPermanentPhrase, adminName.c_str(), target->name.c_str(), why);
+		CS2A_PrintToChatT(targetSlot, permanentPhrase, why);
+		CS2A_ChatToAllT(allPermanentPhrase, adminName.c_str(), target->name.c_str(), why);
 	}
 	else
 	{
-		ADMIN_PrintToChatT(targetSlot, timedPhrase, timeMinutes, why);
-		ADMIN_ChatToAllT(allPhrase, adminName.c_str(), target->name.c_str(), timeMinutes, why);
+		CS2A_PrintToChatT(targetSlot, timedPhrase, timeMinutes, why);
+		CS2A_ChatToAllT(allPhrase, adminName.c_str(), target->name.c_str(), timeMinutes, why);
 	}
 }
 
@@ -460,9 +460,9 @@ void CS2ACommManager::AnnounceLift(int targetSlot, int adminSlot, const char *se
 	{
 		return;
 	}
-	ADMIN_PrintToChatT(targetSlot, selfPhrase);
+	CS2A_PrintToChatT(targetSlot, selfPhrase);
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	ADMIN_ChatToAllT(allPhrase, adminName.c_str(), target->name.c_str());
+	CS2A_ChatToAllT(allPhrase, adminName.c_str(), target->name.c_str());
 }
 
 bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
@@ -500,7 +500,7 @@ bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *rea
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Muted \"%s\" (%s) for %d min. Reason: %s", target->name.c_str(), target->authid.c_str(), timeMinutes,
 			 reason ? reason : "No reason");
-	ADMIN_LogAction(adminSlot, logMsg);
+	CS2A_LogAction(adminSlot, logMsg);
 
 	MMU_LOG_INFO("Muted \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 	return true;
@@ -541,7 +541,7 @@ bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reas
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Gagged \"%s\" (%s) for %d min. Reason: %s", target->name.c_str(), target->authid.c_str(), timeMinutes,
 			 reason ? reason : "No reason");
-	ADMIN_LogAction(adminSlot, logMsg);
+	CS2A_LogAction(adminSlot, logMsg);
 
 	MMU_LOG_INFO("Gagged \"%s\" for %d min. Reason: %s\n", target->name.c_str(), timeMinutes, reason ? reason : "No reason");
 	return true;
@@ -652,7 +652,7 @@ bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot, bool persist)
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Unmuted \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
-	ADMIN_LogAction(adminSlot, logMsg);
+	CS2A_LogAction(adminSlot, logMsg);
 	return true;
 }
 
@@ -688,7 +688,7 @@ bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot, bool persist)
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Ungagged \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
-	ADMIN_LogAction(adminSlot, logMsg);
+	CS2A_LogAction(adminSlot, logMsg);
 	return true;
 }
 
@@ -714,12 +714,12 @@ bool CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 
-	ADMIN_PrintToChatT(targetSlot, "You have been muted for this session.\n");
-	ADMIN_ChatToAllT("%s session-muted %s.\n", adminName.c_str(), target->name.c_str());
+	CS2A_PrintToChatT(targetSlot, "You have been muted for this session.\n");
+	CS2A_ChatToAllT("%s session-muted %s.\n", adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Session-muted \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
-	ADMIN_LogAction(adminSlot, logMsg);
+	CS2A_LogAction(adminSlot, logMsg);
 	return true;
 }
 
@@ -745,12 +745,12 @@ bool CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 
 	std::string adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
 
-	ADMIN_PrintToChatT(targetSlot, "You have been gagged for this session.\n");
-	ADMIN_ChatToAllT("%s session-gagged %s.\n", adminName.c_str(), target->name.c_str());
+	CS2A_PrintToChatT(targetSlot, "You have been gagged for this session.\n");
+	CS2A_ChatToAllT("%s session-gagged %s.\n", adminName.c_str(), target->name.c_str());
 
 	char logMsg[512];
 	snprintf(logMsg, sizeof(logMsg), "Session-gagged \"%s\" (%s)", target->name.c_str(), target->authid.c_str());
-	ADMIN_LogAction(adminSlot, logMsg);
+	CS2A_LogAction(adminSlot, logMsg);
 	return true;
 }
 
@@ -782,7 +782,7 @@ void CS2ACommManager::CheckExpiredComms()
 			player->isMuted = false;
 			player->muteExpireTime = 0.0;
 			player->muteReason.clear();
-			ADMIN_PrintToChatT(i, "Your mute has expired.\n");
+			CS2A_PrintToChatT(i, "Your mute has expired.\n");
 			MMU_LOG_INFO("Mute expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
 		}
 
@@ -791,7 +791,7 @@ void CS2ACommManager::CheckExpiredComms()
 			player->isGagged = false;
 			player->gagExpireTime = 0.0;
 			player->gagReason.clear();
-			ADMIN_PrintToChatT(i, "Your gag has expired.\n");
+			CS2A_PrintToChatT(i, "Your gag has expired.\n");
 			MMU_LOG_INFO("Gag expired for \"%s\" (%s).\n", player->name.c_str(), player->authid.c_str());
 		}
 	}
@@ -825,17 +825,17 @@ void CS2ACommManager::PrintCommsStatus(int targetSlot, int callerSlot)
 	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
 	if (!target)
 	{
-		ADMIN_ReplyToCommandT(callerSlot, "Invalid target.\n");
+		CS2A_ReplyToCommandT(callerSlot, "Invalid target.\n");
 		return;
 	}
 
-	ADMIN_ReplyToCommandT(callerSlot, "Comm status for \"%s\" (%s):\n", target->name.c_str(), target->authid.c_str());
+	CS2A_ReplyToCommandT(callerSlot, "Comm status for \"%s\" (%s):\n", target->name.c_str(), target->authid.c_str());
 
 	if (target->isMuted)
 	{
 		if (target->isSessionMuted)
 		{
-			ADMIN_ReplyToCommandT(callerSlot, "  Muted: Session only\n");
+			CS2A_ReplyToCommandT(callerSlot, "  Muted: Session only\n");
 		}
 		else if (target->muteExpireTime > 0.0)
 		{
@@ -844,23 +844,23 @@ void CS2ACommManager::PrintCommsStatus(int targetSlot, int callerSlot)
 			{
 				remaining = 0;
 			}
-			ADMIN_ReplyToCommandT(callerSlot, "  Muted: %d seconds remaining. Reason: %s\n", remaining, target->muteReason.c_str());
+			CS2A_ReplyToCommandT(callerSlot, "  Muted: %d seconds remaining. Reason: %s\n", remaining, target->muteReason.c_str());
 		}
 		else
 		{
-			ADMIN_ReplyToCommandT(callerSlot, "  Muted: Permanent. Reason: %s\n", target->muteReason.c_str());
+			CS2A_ReplyToCommandT(callerSlot, "  Muted: Permanent. Reason: %s\n", target->muteReason.c_str());
 		}
 	}
 	else
 	{
-		ADMIN_ReplyToCommandT(callerSlot, "  Muted: No\n");
+		CS2A_ReplyToCommandT(callerSlot, "  Muted: No\n");
 	}
 
 	if (target->isGagged)
 	{
 		if (target->isSessionGagged)
 		{
-			ADMIN_ReplyToCommandT(callerSlot, "  Gagged: Session only\n");
+			CS2A_ReplyToCommandT(callerSlot, "  Gagged: Session only\n");
 		}
 		else if (target->gagExpireTime > 0.0)
 		{
@@ -869,15 +869,15 @@ void CS2ACommManager::PrintCommsStatus(int targetSlot, int callerSlot)
 			{
 				remaining = 0;
 			}
-			ADMIN_ReplyToCommandT(callerSlot, "  Gagged: %d seconds remaining. Reason: %s\n", remaining, target->gagReason.c_str());
+			CS2A_ReplyToCommandT(callerSlot, "  Gagged: %d seconds remaining. Reason: %s\n", remaining, target->gagReason.c_str());
 		}
 		else
 		{
-			ADMIN_ReplyToCommandT(callerSlot, "  Gagged: Permanent. Reason: %s\n", target->gagReason.c_str());
+			CS2A_ReplyToCommandT(callerSlot, "  Gagged: Permanent. Reason: %s\n", target->gagReason.c_str());
 		}
 	}
 	else
 	{
-		ADMIN_ReplyToCommandT(callerSlot, "  Gagged: No\n");
+		CS2A_ReplyToCommandT(callerSlot, "  Gagged: No\n");
 	}
 }

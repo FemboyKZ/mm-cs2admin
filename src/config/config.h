@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_CONFIG_H_
-#define _INCLUDE_ADMIN_CONFIG_H_
+#ifndef _INCLUDE_CS2A_CONFIG_H_
+#define _INCLUDE_CS2A_CONFIG_H_
 
 #include "interfaces/cs2menus/menu_style.h"
 #include "utils/config_blocks.h"
@@ -16,25 +16,25 @@ struct CS2AConfig
 	mmu::config::LogBlock log;
 	mmu::config::DatabaseBlock database = mmu::config::DatabaseBlock::Defaults("sourcemod", "addons/cs2admin/data/cs2admin.db", "sb");
 
-	int serverID = -1;
+	int serverId = -1;
 	bool addban = true;
 	bool unban = true;
 	float retryTime = 45.0f;
 	// Max consecutive reconnect attempts before giving up (0 = unlimited).
 	int maxReconnectAttempts = 5;
-	int processQueueTime = 5;
+	int processQueueMinutes = 5;
 	// Seconds to wait for an absent workshop map to download before giving up on the change.
 	int workshopDownloadTimeout = 120;
 	int autoAddServer = 0;
 	bool backupConfigs = true;
-	bool enableAdmins = true;
+	bool adminsEnabled = true;
 	bool requireSiteLogin = false;
 
 	// Comms config
-	int commsDefaultTime = 30;
+	int commsDefaultMinutes = 30;
 	bool disableUnblockImmunityCheck = false;
 	int consoleImmunity = 20;
-	int commsMaxLength = 0;
+	int commsMaxMinutes = 0;
 
 	// Checker config
 	bool printCheckOnConnect = true;
@@ -44,9 +44,9 @@ struct CS2AConfig
 	int reportMinLength = 10;
 
 	// Sleuth config (0 = disabled)
-	int sleuthActions = 0;          // 1=ban orig, 2=ban custom, 3=ban double, 4=notify, 5=kick
-	int sleuthDuration = 0;         // Ban time for action 2 (min, 0=permanent)
-	int sleuthBansAllowed = 0;      // IP ban count threshold before acting
+	int sleuthAction = 0;          // 1=ban orig, 2=ban custom, 3=ban double, 4=notify, 5=kick
+	int sleuthBanMinutes = 0;         // Ban time for action 2 (min, 0=permanent)
+	int sleuthMaxBans = 0;      // IP ban count threshold before acting
 	int sleuthBanType = 0;          // 0=all, 1=permanent only
 	bool sleuthAdminBypass = false; // ADMFLAG_BAN users exempt
 	bool sleuthExcludeOld = false;
@@ -59,19 +59,19 @@ struct CS2AConfig
 	// Chat flood config
 	float chatFloodCooldown = 0.75f; // Minimum seconds between messages
 	int chatFloodMaxMessages = 5;    // Messages in window before action
-	int chatFloodMuteDuration = 0;   // Minutes to auto-mute (0 = block only)
+	int chatFloodMuteMinutes = 0;   // Minutes to auto-mute (0 = block only)
 
 	// Tags config.
 	//
 	// chatOwnership makes us render every player chat line ourselves and suppress the game's own.
 	// It is off by default because only one plugin on a server can do this, a second one produces duplicate lines.
 	// These three say what the server asked for, not what happens: another plugin may own chat or the clan tag.
-	// ADMIN_ChatTagsActive / ADMIN_BoardTagsActive answer that, and the two differ, since a plugin can own one surface without the other.
+	// CS2A_ChatTagsActive / CS2A_BoardTagsActive answer that, and the two differ, since a plugin can own one surface without the other.
 	bool chatOwnership = false;
 	// Show tags in chat. Implies chatOwnership, since a tag can't be injected into a line the game renders.
-	bool chatTagsEnabled = false;
+	bool chatTags = false;
 	// Show tags on the scoreboard via the clan tag. Independent of chat ownership.
-	bool boardTagsEnabled = false;
+	bool leaderboardTags = false;
 
 	// Chat line layout. Tokens: {tag} {name} {msg} {namecolor} {msgcolor} {teamcolor} {teamname}, plus the usual {color} tags.
 	// Dead/team variants pick up the same tokens.
@@ -96,9 +96,9 @@ struct CS2AConfig
 
 // Load and parse core.cfg from the given path.
 // Returns true on success, false if file couldn't be opened/parsed.
-bool ADMIN_LoadConfig(const char *path, CS2AConfig &config);
+bool CS2A_LoadConfig(const char *path, CS2AConfig &config);
 
 // Global config instance
 extern CS2AConfig g_CS2AConfig;
 
-#endif // _INCLUDE_ADMIN_CONFIG_H_
+#endif // _INCLUDE_CS2A_CONFIG_H_

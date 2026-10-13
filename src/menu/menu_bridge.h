@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_MENU_BRIDGE_H_
-#define _INCLUDE_ADMIN_MENU_BRIDGE_H_
+#ifndef _INCLUDE_CS2A_MENU_BRIDGE_H_
+#define _INCLUDE_CS2A_MENU_BRIDGE_H_
 
 // Optional integration with the mm-cs2menus plugin (ICS2Menus).
 // There is no built-in menu backend, this bridge only wraps the external plugin.
@@ -98,4 +98,4 @@ private:
 
 extern AdminMenuBridge g_AdminMenus;
 
-#endif // _INCLUDE_ADMIN_MENU_BRIDGE_H_
+#endif // _INCLUDE_CS2A_MENU_BRIDGE_H_

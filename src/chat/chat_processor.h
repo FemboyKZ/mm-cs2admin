@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_CHAT_PROCESSOR_H_
-#define _INCLUDE_ADMIN_CHAT_PROCESSOR_H_
+#ifndef _INCLUDE_CS2A_CHAT_PROCESSOR_H_
+#define _INCLUDE_CS2A_CHAT_PROCESSOR_H_
 
 #include "src/common.h"
 
@@ -60,4 +60,4 @@ private:
 
 extern CS2AChatProcessor g_CS2AChatProcessor;
 
-#endif // _INCLUDE_ADMIN_CHAT_PROCESSOR_H_
+#endif // _INCLUDE_CS2A_CHAT_PROCESSOR_H_

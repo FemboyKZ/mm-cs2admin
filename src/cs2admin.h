@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_PLUGIN_H_
-#define _INCLUDE_ADMIN_PLUGIN_H_
+#ifndef _INCLUDE_CS2A_PLUGIN_H_
+#define _INCLUDE_CS2A_PLUGIN_H_
 
 #include "common.h"
 #include "version_gen.h"
@@ -132,8 +132,8 @@ extern CS2APlugin g_CS2APlugin;
 // Re-run the ban and comm checks for everyone already on the server.
 // Needed after a config reload and whenever the database becomes reachable again,
 // since players who connected while it was down were never checked.
-void ADMIN_RecheckConnectedPlayers();
+void CS2A_RecheckConnectedPlayers();
 
 PLUGIN_GLOBALVARS();
 
-#endif //_INCLUDE_ADMIN_PLUGIN_H_
+#endif //_INCLUDE_CS2A_PLUGIN_H_

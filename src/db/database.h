@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_DATABASE_H_
-#define _INCLUDE_ADMIN_DATABASE_H_
+#ifndef _INCLUDE_CS2A_DATABASE_H_
+#define _INCLUDE_CS2A_DATABASE_H_
 
 #include "utils/sql.h"
 
@@ -84,4 +84,4 @@ private:
 
 extern CS2ADatabase g_CS2ADatabase;
 
-#endif // _INCLUDE_ADMIN_DATABASE_H_
+#endif // _INCLUDE_CS2A_DATABASE_H_

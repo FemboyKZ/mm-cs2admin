@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_DISCORD_H_
-#define _INCLUDE_ADMIN_DISCORD_H_
+#ifndef _INCLUDE_CS2A_DISCORD_H_
+#define _INCLUDE_CS2A_DISCORD_H_
 
 #include <cstdint>
 #include <string>
@@ -29,4 +29,4 @@ public:
 
 extern CS2ADiscord g_CS2ADiscord;
 
-#endif // _INCLUDE_ADMIN_DISCORD_H_
+#endif // _INCLUDE_CS2A_DISCORD_H_

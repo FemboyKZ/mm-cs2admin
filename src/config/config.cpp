@@ -97,7 +97,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			{
 				v = 1;
 			}
-			cfg->processQueueTime = v;
+			cfg->processQueueMinutes = v;
 		}
 		else if (k == "workshopdownloadtimeout")
 		{
@@ -113,7 +113,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "adminsenabled" || k == "enableadmins")
 		{
-			cfg->enableAdmins = (value != "0");
+			cfg->adminsEnabled = (value != "0");
 		}
 		else if (k == "requiresitelogin")
 		{
@@ -121,7 +121,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "serverid")
 		{
-			cfg->serverID = std::atoi(value.c_str());
+			cfg->serverId = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -144,7 +144,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "defaultminutes" || k == "defaulttime")
 		{
-			cfg->commsDefaultTime = std::atoi(value.c_str());
+			cfg->commsDefaultMinutes = std::atoi(value.c_str());
 		}
 		else if (k == "disableunblockimmunitycheck")
 		{
@@ -156,7 +156,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "maxminutes" || k == "maxlength")
 		{
-			cfg->commsMaxLength = std::atoi(value.c_str());
+			cfg->commsMaxMinutes = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -193,15 +193,15 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		if (k == "action" || k == "actions")
 		{
-			cfg->sleuthActions = std::atoi(value.c_str());
+			cfg->sleuthAction = std::atoi(value.c_str());
 		}
 		else if (k == "banminutes" || k == "duration")
 		{
-			cfg->sleuthDuration = std::atoi(value.c_str());
+			cfg->sleuthBanMinutes = std::atoi(value.c_str());
 		}
 		else if (k == "maxbans" || k == "bansallowed")
 		{
-			cfg->sleuthBansAllowed = std::atoi(value.c_str());
+			cfg->sleuthMaxBans = std::atoi(value.c_str());
 		}
 		else if (k == "bantype")
 		{
@@ -251,7 +251,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "muteminutes" || k == "muteduration")
 		{
-			cfg->chatFloodMuteDuration = std::atoi(value.c_str());
+			cfg->chatFloodMuteMinutes = std::atoi(value.c_str());
 		}
 		else
 		{
@@ -266,11 +266,11 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "chattags")
 		{
-			cfg->chatTagsEnabled = (value != "0");
+			cfg->chatTags = (value != "0");
 		}
 		else if (k == "leaderboardtags")
 		{
-			cfg->boardTagsEnabled = (value != "0");
+			cfg->leaderboardTags = (value != "0");
 		}
 		else if (k == "format")
 		{
@@ -334,7 +334,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	}
 }
 
-bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
+bool CS2A_LoadConfig(const char *path, CS2AConfig &config)
 {
 	std::ifstream file(path);
 	if (!file.is_open())
@@ -388,7 +388,7 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	}
 
 	// A tag can only be injected into a line we render ourselves.
-	if (config.chatTagsEnabled && !config.chatOwnership)
+	if (config.chatTags && !config.chatOwnership)
 	{
 		MMU_LOG_WARN("Tags: ChatTags needs ChatOwnership to render the tag. Enabling ChatOwnership.\n");
 		config.chatOwnership = true;

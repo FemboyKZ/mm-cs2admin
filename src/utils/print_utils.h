@@ -1,33 +1,33 @@
-#ifndef _INCLUDE_ADMIN_PRINT_UTILS_H_
-#define _INCLUDE_ADMIN_PRINT_UTILS_H_
+#ifndef _INCLUDE_CS2A_PRINT_UTILS_H_
+#define _INCLUDE_CS2A_PRINT_UTILS_H_
 
 // Helper: send a console message to a specific player.
-void ADMIN_PrintToClient(int slot, const char *fmt, ...);
+void CS2A_PrintToClient(int slot, const char *fmt, ...);
 
 // Helper: send a message to all connected players' consoles.
-void ADMIN_PrintToAll(const char *fmt, ...);
+void CS2A_PrintToAll(const char *fmt, ...);
 
 // Helper: log an admin action to the database log table.
-void ADMIN_LogAction(int adminSlot, const char *message);
+void CS2A_LogAction(int adminSlot, const char *message);
 
 // Send a formatted chat message to a player.
-void ADMIN_PrintToChat(int slot, const char *fmt, ...);
+void CS2A_PrintToChat(int slot, const char *fmt, ...);
 
 // Broadcast a formatted chat message to all connected players.
-void ADMIN_ChatToAll(const char *fmt, ...);
+void CS2A_ChatToAll(const char *fmt, ...);
 
 // Broadcast a formatted chat message to all connected admins.
-void ADMIN_ChatToAdmins(const char *fmt, ...);
+void CS2A_ChatToAdmins(const char *fmt, ...);
 
 // Reply to a command: sends to player's console AND chat (with config prefix).
 // For console callers (slot < 0), prints to server console only.
-void ADMIN_ReplyToCommand(int slot, const char *fmt, ...);
+void CS2A_ReplyToCommand(int slot, const char *fmt, ...);
 
 // Translated variants.
-void ADMIN_PrintToClientT(int slot, const char *phrase, ...);
-void ADMIN_PrintToChatT(int slot, const char *phrase, ...);
-void ADMIN_ChatToAllT(const char *phrase, ...);
-void ADMIN_ChatToAdminsT(const char *phrase, ...);
-void ADMIN_ReplyToCommandT(int slot, const char *phrase, ...);
+void CS2A_PrintToClientT(int slot, const char *phrase, ...);
+void CS2A_PrintToChatT(int slot, const char *phrase, ...);
+void CS2A_ChatToAllT(const char *phrase, ...);
+void CS2A_ChatToAdminsT(const char *phrase, ...);
+void CS2A_ReplyToCommandT(int slot, const char *phrase, ...);
 
-#endif //_INCLUDE_ADMIN_PRINT_UTILS_H_
+#endif //_INCLUDE_CS2A_PRINT_UTILS_H_

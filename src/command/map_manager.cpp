@@ -113,7 +113,7 @@ std::string CS2AMapManager::MatchLocalMap(int slot, const std::string &input, st
 
 	if (matches.size() > 1)
 	{
-		error = ADMIN_Format(slot, "Multiple maps match '%s':", input.c_str());
+		error = CS2A_Format(slot, "Multiple maps match '%s':", input.c_str());
 		for (size_t i = 0; i < matches.size() && i < 5; i++)
 		{
 			error += " ";
@@ -186,7 +186,7 @@ const MapEntry *CS2AMapManager::FindMap(int slot, const char *input, std::string
 {
 	if (!input || !*input)
 	{
-		error = ADMIN_Translate(slot, "No map specified.");
+		error = CS2A_Translate(slot, "No map specified.");
 		return nullptr;
 	}
 
@@ -224,7 +224,7 @@ const MapEntry *CS2AMapManager::FindMap(int slot, const char *input, std::string
 
 	if (matches.size() > 1)
 	{
-		error = ADMIN_Format(slot, "Multiple maps match '%s':", input);
+		error = CS2A_Format(slot, "Multiple maps match '%s':", input);
 		for (size_t i = 0; i < matches.size() && i < 5; i++)
 		{
 			error += " ";
@@ -241,7 +241,7 @@ const MapEntry *CS2AMapManager::FindMap(int slot, const char *input, std::string
 		return nullptr;
 	}
 
-	error = ADMIN_Format(slot, "No map found matching '%s'.", input);
+	error = CS2A_Format(slot, "No map found matching '%s'.", input);
 	return nullptr;
 }
 
@@ -249,7 +249,7 @@ bool CS2AMapManager::ChangeMap(int slot, std::string &map, std::string &error)
 {
 	if (!g_pEngine)
 	{
-		error = ADMIN_Translate(slot, "Engine not available.");
+		error = CS2A_Translate(slot, "Engine not available.");
 		return false;
 	}
 
@@ -310,7 +310,7 @@ bool CS2AMapManager::ChangeMap(int slot, std::string &map, std::string &error)
 	// A maplist typo would otherwise be announced as a change.
 	if (!g_pEngine->IsMapValid(entry->mapName.c_str()))
 	{
-		error = ADMIN_Format(slot, "Map '%s' is not installed on this server.", entry->mapName.c_str());
+		error = CS2A_Format(slot, "Map '%s' is not installed on this server.", entry->mapName.c_str());
 		return false;
 	}
 
@@ -327,7 +327,7 @@ bool CS2AMapManager::BeginWorkshopChange(int slot, const std::string &workshopId
 
 	if (m_pending.Busy())
 	{
-		error = ADMIN_Format(slot, "Already working on '%s', try again once it is loaded.", m_pendingLabel.c_str());
+		error = CS2A_Format(slot, "Already working on '%s', try again once it is loaded.", m_pendingLabel.c_str());
 		return false;
 	}
 
@@ -342,14 +342,14 @@ bool CS2AMapManager::BeginWorkshopChange(int slot, const std::string &workshopId
 
 	if (g_CS2AConfig.workshopDownloadTimeout <= 0)
 	{
-		error = ADMIN_Format(slot, "Map '%s' is not installed on this server.", label.c_str());
+		error = CS2A_Format(slot, "Map '%s' is not installed on this server.", label.c_str());
 		return false;
 	}
 
 	// The download itself starts from Tick, once Steam has confirmed the id is a CS2 map.
 	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.workshopDownloadTimeout)))
 	{
-		error = ADMIN_Format(slot, "Map '%s' is not installed and no download could be started.", label.c_str());
+		error = CS2A_Format(slot, "Map '%s' is not installed and no download could be started.", label.c_str());
 		return false;
 	}
 	m_pendingWorkshopId = workshopId;
@@ -402,7 +402,7 @@ void CS2AMapManager::RefreshRtv(PluginId unloading)
 			{
 				return false;
 			}
-			ADMIN_ChatToAllT("Vote skipped, the map is already changing to %s.", g_CS2AMapManager.m_pendingLabel.c_str());
+			CS2A_ChatToAllT("Vote skipped, the map is already changing to %s.", g_CS2AMapManager.m_pendingLabel.c_str());
 			return true;
 		};
 		m_rtvVoteStartHandle = forwards->RegisterOnMapVoteStart(g_PLID, onVoteStart);
@@ -434,7 +434,7 @@ void CS2AMapManager::Tick()
 			// Held back until here so a mistyped id does not cost the players their vote.
 			CancelRtvVote();
 			MMU_LOG_INFO("Downloading workshop map '%s' (%s) before changing.\n", m_pendingLabel.c_str(), m_pendingWorkshopId.c_str());
-			ADMIN_ChatToAllT("Downloading %s, the map will change once it finishes.", m_pendingLabel.c_str());
+			CS2A_ChatToAllT("Downloading %s, the map will change once it finishes.", m_pendingLabel.c_str());
 			break;
 		case mmu::workshop::PendingDownload::Status::Settled:
 			// The id and label stay for the engine watch that takes over from here.
@@ -443,36 +443,36 @@ void CS2AMapManager::Tick()
 			break;
 		case mmu::workshop::PendingDownload::Status::Rejected:
 			MMU_LOG_WARN("Workshop item %s was not found or is not a CS2 map.\n", m_pendingWorkshopId.c_str());
-			ADMIN_ChatToAllT("Workshop item %s was not found or is not a CS2 map.", m_pendingLabel.c_str());
+			CS2A_ChatToAllT("Workshop item %s was not found or is not a CS2 map.", m_pendingLabel.c_str());
 			ClearPendingChange();
 			break;
 		case mmu::workshop::PendingDownload::Status::StartFailed:
 			MMU_LOG_WARN("Workshop map '%s' (%s) is not installed and no download could be started.\n", m_pendingLabel.c_str(),
 						 m_pendingWorkshopId.c_str());
-			ADMIN_ChatToAllT("%s is not installed and no download could be started.", m_pendingLabel.c_str());
+			CS2A_ChatToAllT("%s is not installed and no download could be started.", m_pendingLabel.c_str());
 			ClearPendingChange();
 			break;
 		case mmu::workshop::PendingDownload::Status::DownloadFailed:
 			MMU_LOG_WARN("Workshop map '%s' (%s) failed to download, staying on the current map.\n", m_pendingLabel.c_str(),
 						 m_pendingWorkshopId.c_str());
-			ADMIN_ChatToAllT("%s could not be downloaded. Staying on the current map.", m_pendingLabel.c_str());
+			CS2A_ChatToAllT("%s could not be downloaded. Staying on the current map.", m_pendingLabel.c_str());
 			ClearPendingChange();
 			break;
 		case mmu::workshop::PendingDownload::Status::ChangeFailed:
 			MMU_LOG_WARN("The engine dropped the change to workshop map '%s' (%s).\n", m_pendingLabel.c_str(), m_pendingWorkshopId.c_str());
-			ADMIN_ChatToAllT("Map change to %s failed.", m_pendingLabel.c_str());
+			CS2A_ChatToAllT("Map change to %s failed.", m_pendingLabel.c_str());
 			ClearPendingChange();
 			break;
 		case mmu::workshop::PendingDownload::Status::TimedOut:
 			MMU_LOG_WARN("Workshop map '%s' (%s) did not download in time, staying on the current map.\n", m_pendingLabel.c_str(),
 						 m_pendingWorkshopId.c_str());
-			ADMIN_ChatToAllT("%s could not be downloaded in time. Staying on the current map.", m_pendingLabel.c_str());
+			CS2A_ChatToAllT("%s could not be downloaded in time. Staying on the current map.", m_pendingLabel.c_str());
 			ClearPendingChange();
 			break;
 		case mmu::workshop::PendingDownload::Status::Announce:
 			if (m_pending.Percent(percent))
 			{
-				ADMIN_ChatToAllT("Downloading %s... %d%%", m_pendingLabel.c_str(), percent);
+				CS2A_ChatToAllT("Downloading %s... %d%%", m_pendingLabel.c_str(), percent);
 			}
 			break;
 		case mmu::workshop::PendingDownload::Status::Waiting:

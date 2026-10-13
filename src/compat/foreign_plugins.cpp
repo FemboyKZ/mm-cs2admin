@@ -139,7 +139,7 @@ void CS2AForeignPlugins::Refresh(PluginId unloading)
 
 	if (m_clanTagOwner != previousClanTag)
 	{
-		if (m_clanTagOwner && g_CS2AConfig.boardTagsEnabled)
+		if (m_clanTagOwner && g_CS2AConfig.leaderboardTags)
 		{
 			MMU_LOG_WARN("%s writes the scoreboard clan tag for its ranks, so leaderboard tags stay off. Set the "
 						 "kz_profile_clantag_enabled convar to 0 to disable it.\n",

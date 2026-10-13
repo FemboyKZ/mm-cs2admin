@@ -261,7 +261,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 				 "FROM %s_admins AS a",
 				 prefix.c_str());
 	}
-	else if (g_CS2AConfig.serverID == -1)
+	else if (g_CS2AConfig.serverId == -1)
 	{
 		ConVarRefAbstract hostip_ref("hostip");
 		ConVarRefAbstract hostport_ref("hostport");
@@ -306,7 +306,7 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 				 "OR srv_group_id IN (SELECT group_id FROM %s_servers_groups WHERE server_id = %d)) "
 				 "%s"
 				 "GROUP BY a.aid, a.authid, a.srv_flags, a.srv_group, a.user, a.immunity, a.srv_password",
-				 prefix.c_str(), prefix.c_str(), g_CS2AConfig.serverID, prefix.c_str(), g_CS2AConfig.serverID,
+				 prefix.c_str(), prefix.c_str(), g_CS2AConfig.serverId, prefix.c_str(), g_CS2AConfig.serverId,
 				 g_CS2AConfig.requireSiteLogin ? "AND a.lastvisit IS NOT NULL AND a.lastvisit != '' " : "");
 	}
 

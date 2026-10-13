@@ -104,7 +104,7 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 
 	if (durationMinutes >= 0)
 	{
-		std::string dur = (durationMinutes == 0) ? "Permanent" : ADMIN_FormatDuration(-1, durationMinutes);
+		std::string dur = (durationMinutes == 0) ? "Permanent" : CS2A_FormatDuration(-1, durationMinutes);
 		desc += "**Duration:** ``" + dur + "``\n";
 	}
 
@@ -122,7 +122,7 @@ void CS2ADiscord::NotifyAdminAction(const char *adminName, const char *action, c
 		if (capped.size() > kMax)
 		{
 			// A cut in the middle of a UTF-8 sequence would make the whole JSON body invalid.
-			ADMIN_TruncateUtf8(capped, kMax);
+			CS2A_TruncateUtf8(capped, kMax);
 			capped += "\n... (truncated)";
 		}
 		size_t pos = 0;

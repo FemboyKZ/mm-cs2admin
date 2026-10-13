@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_TRANSLATIONS_H_
-#define _INCLUDE_ADMIN_TRANSLATIONS_H_
+#ifndef _INCLUDE_CS2A_TRANSLATIONS_H_
+#define _INCLUDE_CS2A_TRANSLATIONS_H_
 
 #include "utils/translations.h"
 
@@ -10,17 +10,17 @@ extern mmu::Translations g_CS2ATranslations;
 
 // Defined in cs2admin.cpp.
 // Returns the mapped phrase-file language key for the client in `slot`, or the default language when unavailable.
-std::string ADMIN_SlotLanguage(int slot);
+std::string CS2A_SlotLanguage(int slot);
 
 // Defined in cs2admin.cpp.
 // Reloads phrase tables. Call after (re)loading the plugin config.
-void ADMIN_LoadTranslations();
+void CS2A_LoadTranslations();
 
 // Translate `phrase` into the language of the client in `slot`.
 // Convenience wrapper over g_CS2ATranslations for building menu titles and labels.
-std::string ADMIN_Translate(int slot, const char *phrase);
+std::string CS2A_Translate(int slot, const char *phrase);
 
-// ADMIN_Translate with the phrase's format specifiers filled in.
-std::string ADMIN_Format(int slot, const char *phrase, ...);
+// CS2A_Translate with the phrase's format specifiers filled in.
+std::string CS2A_Format(int slot, const char *phrase, ...);
 
-#endif // _INCLUDE_ADMIN_TRANSLATIONS_H_
+#endif // _INCLUDE_CS2A_TRANSLATIONS_H_

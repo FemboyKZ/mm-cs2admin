@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_OFFLINE_QUEUE_H_
-#define _INCLUDE_ADMIN_OFFLINE_QUEUE_H_
+#ifndef _INCLUDE_CS2A_OFFLINE_QUEUE_H_
+#define _INCLUDE_CS2A_OFFLINE_QUEUE_H_
 
 #include <cstdint>
 #include <functional>
@@ -66,4 +66,4 @@ private:
 
 extern CS2AOfflineQueue g_CS2AOfflineQueue;
 
-#endif // _INCLUDE_ADMIN_OFFLINE_QUEUE_H_
+#endif // _INCLUDE_CS2A_OFFLINE_QUEUE_H_

@@ -54,13 +54,13 @@ IGameEventSystem *g_pGameEventSystem = nullptr;
 
 // g_pFullFileSystem is defined by interfaces.lib
 
-std::string ADMIN_SlotLanguage(int slot)
+std::string CS2A_SlotLanguage(int slot)
 {
 	const char *raw = mmu::cvarquery::GetClientLanguage(slot);
 	return g_CS2ATranslations.MapClientLanguage(raw);
 }
 
-void ADMIN_LoadTranslations()
+void CS2A_LoadTranslations()
 {
 	g_CS2ATranslations.Load(g_SMAPI->GetBaseDir(), "cs2admin");
 	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.general.defaultLanguage);
@@ -115,7 +115,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	// A temporary, so a file that fails validation leaves nothing half applied.
 	CS2AConfig fresh;
-	if (!ADMIN_LoadConfig(configPath, fresh))
+	if (!CS2A_LoadConfig(configPath, fresh))
 	{
 		MMU_LOG_ERROR("Could not load config from %s\n", configPath);
 		MMU_LOG_WARN("Make sure the file exists at: <game_root>/cfg/cs2admin/core.cfg\n");
@@ -131,7 +131,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 		mmu::config::ApplyLogBlock(g_CS2AConfig.log);
 	}
 
-	ADMIN_LoadTranslations();
+	CS2A_LoadTranslations();
 
 	m_GameFrame.Add(g_pServerGameDLL);
 	m_ClientActive.Add(g_pGameClients);
@@ -328,8 +328,8 @@ public:
 			return;
 		}
 
-		ADMIN_LogAction(adminSlot, (std::string("Kicked ") + p->name + ": " + (reason ? reason : "Kicked")).c_str());
-		ADMIN_PrintToClientT(targetSlot, "[ADMIN] You have been kicked. Reason: %s\n", reason ? reason : "Kicked");
+		CS2A_LogAction(adminSlot, (std::string("Kicked ") + p->name + ": " + (reason ? reason : "Kicked")).c_str());
+		CS2A_PrintToClientT(targetSlot, "[ADMIN] You have been kicked. Reason: %s\n", reason ? reason : "Kicked");
 		g_pEngine->DisconnectClient(CPlayerSlot(targetSlot), NETWORK_DISCONNECT_KICKED);
 	}
 
@@ -392,7 +392,7 @@ void *CS2APlugin::OnMetamodQuery(const char *iface, int *ret)
 	return nullptr;
 }
 
-void ADMIN_RecheckConnectedPlayers()
+void CS2A_RecheckConnectedPlayers()
 {
 	for (int i = 0; i <= MAXPLAYERS; i++)
 	{
@@ -502,13 +502,13 @@ void CS2APlugin::OnDatabaseReady()
 	m_bReconnectGaveUp = false;
 
 	// Auto server ID (MySQL/SBPP only). Without it every new row carries sid 0.
-	if (g_CS2AConfig.serverID == -1 && g_CS2ADatabase.IsMySQL())
+	if (g_CS2AConfig.serverId == -1 && g_CS2ADatabase.IsMySQL())
 	{
 		LookupServerID(g_CS2AConfig.autoAddServer != 0);
 	}
-	else if (g_CS2AConfig.serverID == -1)
+	else if (g_CS2AConfig.serverId == -1)
 	{
-		g_CS2AConfig.serverID = 0;
+		g_CS2AConfig.serverId = 0;
 	}
 
 	g_CS2ATagManager.EnsureSchema();
@@ -522,7 +522,7 @@ void CS2APlugin::OnDatabaseReady()
 	g_CS2AAdminManager.ReloadAdmins();
 
 	// Anyone who connected while the DB was unreachable was never ban or comm checked.
-	ADMIN_RecheckConnectedPlayers();
+	CS2A_RecheckConnectedPlayers();
 }
 
 void CS2APlugin::ReloadConfig()
@@ -533,16 +533,16 @@ void CS2APlugin::ReloadConfig()
 	// Parsed into a temporary, so a file that fails validation leaves the live config untouched.
 	// Starting from defaults also means a key removed from the file goes back to its default rather than keeping the old value.
 	CS2AConfig fresh;
-	if (!ADMIN_LoadConfig(path, fresh))
+	if (!CS2A_LoadConfig(path, fresh))
 	{
 		MMU_LOG_WARN("Failed to reload config from %s, keeping the loaded one.\n", path);
 		return;
 	}
 
 	// The server ID lookup only runs on connect, so an auto-detected one would otherwise be lost.
-	if (fresh.serverID == -1 && g_CS2AConfig.serverID != -1)
+	if (fresh.serverId == -1 && g_CS2AConfig.serverId != -1)
 	{
-		fresh.serverID = g_CS2AConfig.serverID;
+		fresh.serverId = g_CS2AConfig.serverId;
 	}
 	g_CS2AConfig = fresh;
 	MMU_LOG_INFO("Config reloaded from %s\n", path);
@@ -630,8 +630,8 @@ void CS2APlugin::LookupServerID(bool allowAutoAdd)
 								 ISQLRow *row = rs->FetchRow();
 								 if (row)
 								 {
-									 g_CS2AConfig.serverID = rs->GetInt(0);
-									 MMU_LOG_INFO("Auto-detected server ID: %d\n", g_CS2AConfig.serverID);
+									 g_CS2AConfig.serverId = rs->GetInt(0);
+									 MMU_LOG_INFO("Auto-detected server ID: %d\n", g_CS2AConfig.serverId);
 								 }
 							 }
 							 // hostip 0 is no usable address to register.
@@ -642,7 +642,7 @@ void CS2APlugin::LookupServerID(bool allowAutoAdd)
 							 else
 							 {
 								 MMU_LOG_WARN("Server not found in database (%s:%d). Using serverID=0.\n", ipStr.c_str(), hostport);
-								 g_CS2AConfig.serverID = 0;
+								 g_CS2AConfig.serverId = 0;
 							 }
 						 });
 }
@@ -761,7 +761,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 											  PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slotIdx);
 											  if (p && p->connected && p->steamid64 == steamid64)
 											  {
-												  ADMIN_ChatToAdminsT("Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n",
+												  CS2A_ChatToAdminsT("Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n",
 																	  p->name.c_str(), p->authid.c_str(), banCount, muteCount, gagCount);
 											  }
 										  }
@@ -798,7 +798,7 @@ void CS2APlugin::OnClientAuthorized(int slot)
 	g_CS2ATagManager.UpdateClanTag(slot);
 
 	// check for ban evasion
-	if (g_CS2AConfig.sleuthActions > 0 && g_CS2ADatabase.IsConnected())
+	if (g_CS2AConfig.sleuthAction > 0 && g_CS2ADatabase.IsConnected())
 	{
 		g_CS2ABanManager.CheckSleuth(slot, player->steamid64, player->ip.c_str());
 	}
@@ -885,11 +885,11 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 				if (player->chatMessageCount >= g_CS2AConfig.chatFloodMaxMessages)
 				{
 					// GagPlayer announces the gag itself, and returns false when a forward blocked it.
-					bool autoGagged = g_CS2AConfig.chatFloodMuteDuration > 0 && !player->isGagged
-									  && g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteDuration, "Chat flood", -1);
+					bool autoGagged = g_CS2AConfig.chatFloodMuteMinutes > 0 && !player->isGagged
+									  && g_CS2ACommManager.GagPlayer(slotIdx, g_CS2AConfig.chatFloodMuteMinutes, "Chat flood", -1);
 					if (!autoGagged)
 					{
-						ADMIN_PrintToChatT(slotIdx, "Slow down! You are sending messages too fast.\n");
+						CS2A_PrintToChatT(slotIdx, "Slow down! You are sending messages too fast.\n");
 					}
 
 					player->chatMessageCount = 0;
@@ -1033,10 +1033,10 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 		g_CS2ACommManager.CheckExpiredComms();
 	}
 
-	// Process offline queue (every processQueueTime minutes)
+	// Process offline queue (every processQueueMinutes minutes)
 	if (now >= m_flNextQueueProcess)
 	{
-		m_flNextQueueProcess = now + (g_CS2AConfig.processQueueTime * 60.0);
+		m_flNextQueueProcess = now + (g_CS2AConfig.processQueueMinutes * 60.0);
 		if (g_CS2ADatabase.IsConnected() && g_CS2AOfflineQueue.HasItems())
 		{
 			g_CS2AOfflineQueue.ProcessQueue();
@@ -1127,7 +1127,7 @@ void CS2APlugin::OnLateLoad()
 		}
 
 		// ClientPutInServer fired before the plugin was there to see it. Hook_GameFrame authorizes the ones Steam has confirmed.
-		// The ban and comm checks need the DB, so they run from ADMIN_RecheckConnectedPlayers once it is ready.
+		// The ban and comm checks need the DB, so they run from CS2A_RecheckConnectedPlayers once it is ready.
 		player->inGame = true;
 		// Their language was never queried either.
 		mmu::cvarquery::OnClientConnected(i, false);

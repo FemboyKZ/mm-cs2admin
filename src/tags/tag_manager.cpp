@@ -24,14 +24,14 @@
 
 CS2ATagManager g_CS2ATagManager;
 
-bool ADMIN_ChatTagsActive()
+bool CS2A_ChatTagsActive()
 {
-	return g_CS2AConfig.chatTagsEnabled && !g_CS2AForeignPlugins.ChatOwner();
+	return g_CS2AConfig.chatTags && !g_CS2AForeignPlugins.ChatOwner();
 }
 
-bool ADMIN_BoardTagsActive()
+bool CS2A_BoardTagsActive()
 {
-	return g_CS2AConfig.boardTagsEnabled && !g_CS2AForeignPlugins.ClanTagOwner();
+	return g_CS2AConfig.leaderboardTags && !g_CS2AForeignPlugins.ClanTagOwner();
 }
 
 namespace
@@ -204,7 +204,7 @@ void CS2ATagManager::LoadTags()
 	if (!file.is_open())
 	{
 		// Only worth complaining about when the server actually asked for tags.
-		if (g_CS2AConfig.chatTagsEnabled || g_CS2AConfig.boardTagsEnabled)
+		if (g_CS2AConfig.chatTags || g_CS2AConfig.leaderboardTags)
 		{
 			MMU_LOG_WARN("Tags are enabled but %s could not be opened. No tags loaded.\n", path);
 		}
@@ -409,8 +409,8 @@ void CS2ATagManager::ApplyClanTag(int slot)
 {
 	ICS2KZ *cs2kz = g_CS2AForeignPlugins.CS2KZ();
 
-	// ADMIN_BoardTagsActive is false when another plugin owns the clan tag.
-	if (!ADMIN_BoardTagsActive())
+	// CS2A_BoardTagsActive is false when another plugin owns the clan tag.
+	if (!CS2A_BoardTagsActive())
 	{
 		// A leftover tag would hide cs2kz's own rank tag, or just sit on the scoreboard until the player reconnects.
 		if (!m_clanTag[slot][0])

@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_COMMAND_SYSTEM_H_
-#define _INCLUDE_ADMIN_COMMAND_SYSTEM_H_
+#ifndef _INCLUDE_CS2A_COMMAND_SYSTEM_H_
+#define _INCLUDE_CS2A_COMMAND_SYSTEM_H_
 
 #include "src/common.h"
 #include "utils/command_args.h"
@@ -119,4 +119,4 @@ private:
 
 extern CS2ACommandSystem g_CS2ACommandSystem;
 
-#endif // _INCLUDE_ADMIN_COMMAND_SYSTEM_H_
+#endif // _INCLUDE_CS2A_COMMAND_SYSTEM_H_

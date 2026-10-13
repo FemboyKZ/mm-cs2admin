@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_TAG_MANAGER_H_
-#define _INCLUDE_ADMIN_TAG_MANAGER_H_
+#ifndef _INCLUDE_CS2A_TAG_MANAGER_H_
+#define _INCLUDE_CS2A_TAG_MANAGER_H_
 
 #include "src/common.h"
 
@@ -110,7 +110,7 @@ extern CS2ATagManager g_CS2ATagManager;
 
 // Whether tags actually reach players right now, rather than merely being asked for in the config.
 // Each is off when another plugin owns that surface, and the two answer separately because a plugin can own one without the other.
-bool ADMIN_ChatTagsActive();
-bool ADMIN_BoardTagsActive();
+bool CS2A_ChatTagsActive();
+bool CS2A_BoardTagsActive();
 
-#endif // _INCLUDE_ADMIN_TAG_MANAGER_H_
+#endif // _INCLUDE_CS2A_TAG_MANAGER_H_

@@ -183,23 +183,23 @@ static TargetResult FindTargets(int callerSlot, const char *pattern, mmu::Target
 	return result;
 }
 
-TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern)
+TargetResult CS2A_FindTargets(int callerSlot, const char *pattern)
 {
 	return FindTargets(callerSlot, pattern, mmu::TargetMode::Many);
 }
 
-int ADMIN_FindTarget(int callerSlot, const char *pattern)
+int CS2A_FindTarget(int callerSlot, const char *pattern)
 {
 	TargetResult result = FindTargets(callerSlot, pattern, mmu::TargetMode::One);
 	if (!result.error.empty())
 	{
-		ADMIN_ReplyToCommand(callerSlot, "%s\n", ADMIN_Translate(callerSlot, result.error.c_str()).c_str());
+		CS2A_ReplyToCommand(callerSlot, "%s\n", CS2A_Translate(callerSlot, result.error.c_str()).c_str());
 		return -1;
 	}
 	return result.slots[0];
 }
 
-int ADMIN_ParseDuration(const char *input)
+int CS2A_ParseDuration(const char *input)
 {
 	if (!input || !*input)
 	{
@@ -272,37 +272,37 @@ int ADMIN_ParseDuration(const char *input)
 	}
 }
 
-std::string ADMIN_FormatDuration(int slot, int minutes)
+std::string CS2A_FormatDuration(int slot, int minutes)
 {
 	if (minutes == 0)
 	{
-		return ADMIN_Translate(slot, "permanent");
+		return CS2A_Translate(slot, "permanent");
 	}
 
 	if (minutes < 60)
 	{
-		return ADMIN_Format(slot, minutes != 1 ? "%d minutes" : "%d minute", minutes);
+		return CS2A_Format(slot, minutes != 1 ? "%d minutes" : "%d minute", minutes);
 	}
 
 	int hours = minutes / 60;
 	if (hours < 24)
 	{
-		return ADMIN_Format(slot, hours != 1 ? "%d hours" : "%d hour", hours);
+		return CS2A_Format(slot, hours != 1 ? "%d hours" : "%d hour", hours);
 	}
 
 	int days = hours / 24;
 	if (days < 7)
 	{
-		return ADMIN_Format(slot, days != 1 ? "%d days" : "%d day", days);
+		return CS2A_Format(slot, days != 1 ? "%d days" : "%d day", days);
 	}
 
 	int weeks = days / 7;
 	// By days, not weeks: 28 and 29 days are 4 weeks but still 0 whole months.
 	if (days < 30)
 	{
-		return ADMIN_Format(slot, weeks != 1 ? "%d weeks" : "%d week", weeks);
+		return CS2A_Format(slot, weeks != 1 ? "%d weeks" : "%d week", weeks);
 	}
 
 	int months = days / 30;
-	return ADMIN_Format(slot, months != 1 ? "%d months" : "%d month", months);
+	return CS2A_Format(slot, months != 1 ? "%d months" : "%d month", months);
 }

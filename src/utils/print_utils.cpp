@@ -33,7 +33,7 @@ static mmu::ChatPrinter &Printer()
 		mmu::ChatPrinter p;
 		mmu::ChatPrinter::Setup s;
 		s.translations = &g_CS2ATranslations;
-		s.slotLanguage = &ADMIN_SlotLanguage;
+		s.slotLanguage = &CS2A_SlotLanguage;
 		s.chatPrefix = &g_CS2AConfig.chatPrefix;
 		s.resetColorAfterPrefix = true;
 		s.conTag = "ADMIN";
@@ -44,20 +44,20 @@ static mmu::ChatPrinter &Printer()
 	return printer;
 }
 
-MMU_PRINT_SLOT_FN(ADMIN_PrintToClient, Printer().ClientConsoleV(slot, fmt, args))
-MMU_PRINT_GLOBAL_FN(ADMIN_PrintToAll, Printer().ConsoleToAllV(fmt, args))
-MMU_PRINT_SLOT_FN(ADMIN_PrintToChat, Printer().ChatToSlotV(slot, fmt, args))
+MMU_PRINT_SLOT_FN(CS2A_PrintToClient, Printer().ClientConsoleV(slot, fmt, args))
+MMU_PRINT_GLOBAL_FN(CS2A_PrintToAll, Printer().ConsoleToAllV(fmt, args))
+MMU_PRINT_SLOT_FN(CS2A_PrintToChat, Printer().ChatToSlotV(slot, fmt, args))
 // Callers embed the prefix themselves.
-MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAll, Printer().ChatToAllV(fmt, args, false))
-MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAdmins, Printer().ChatToPredV(&SlotIsAdmin, fmt, args))
-MMU_PRINT_SLOT_FN(ADMIN_ReplyToCommand, Printer().ReplyV(slot, fmt, args))
-MMU_PRINT_SLOT_FN(ADMIN_PrintToClientT, Printer().ClientConsoleTV(slot, fmt, args))
-MMU_PRINT_SLOT_FN(ADMIN_PrintToChatT, Printer().ChatToSlotTV(slot, fmt, args))
-MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAllT, Printer().ChatToAllTV(fmt, args))
-MMU_PRINT_GLOBAL_FN(ADMIN_ChatToAdminsT, Printer().ChatToPredTV(&SlotIsAdmin, fmt, args))
-MMU_PRINT_SLOT_FN(ADMIN_ReplyToCommandT, Printer().ReplyTV(slot, fmt, args))
+MMU_PRINT_GLOBAL_FN(CS2A_ChatToAll, Printer().ChatToAllV(fmt, args, false))
+MMU_PRINT_GLOBAL_FN(CS2A_ChatToAdmins, Printer().ChatToPredV(&SlotIsAdmin, fmt, args))
+MMU_PRINT_SLOT_FN(CS2A_ReplyToCommand, Printer().ReplyV(slot, fmt, args))
+MMU_PRINT_SLOT_FN(CS2A_PrintToClientT, Printer().ClientConsoleTV(slot, fmt, args))
+MMU_PRINT_SLOT_FN(CS2A_PrintToChatT, Printer().ChatToSlotTV(slot, fmt, args))
+MMU_PRINT_GLOBAL_FN(CS2A_ChatToAllT, Printer().ChatToAllTV(fmt, args))
+MMU_PRINT_GLOBAL_FN(CS2A_ChatToAdminsT, Printer().ChatToPredTV(&SlotIsAdmin, fmt, args))
+MMU_PRINT_SLOT_FN(CS2A_ReplyToCommandT, Printer().ReplyTV(slot, fmt, args))
 
-void ADMIN_LogAction(int adminSlot, const char *message)
+void CS2A_LogAction(int adminSlot, const char *message)
 {
 	if (!g_CS2ADatabase.IsConnected())
 	{

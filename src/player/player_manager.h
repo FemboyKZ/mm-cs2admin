@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_PLAYER_MANAGER_H_
-#define _INCLUDE_ADMIN_PLAYER_MANAGER_H_
+#ifndef _INCLUDE_CS2A_PLAYER_MANAGER_H_
+#define _INCLUDE_CS2A_PLAYER_MANAGER_H_
 
 #include "../common.h"
 #include "game/player_table.h"
@@ -126,19 +126,19 @@ struct TargetResult
 };
 
 // Player(s) by pattern, see mmu::FindTargets.
-TargetResult ADMIN_FindTargets(int callerSlot, const char *pattern);
+TargetResult CS2A_FindTargets(int callerSlot, const char *pattern);
 
 // Single target function. Returns slot or -1.
-int ADMIN_FindTarget(int callerSlot, const char *pattern);
+int CS2A_FindTarget(int callerSlot, const char *pattern);
 
 // Duration Parsing
 
 // Parse a duration string with optional suffix: "30" (minutes), "2h", "1d", "1w", "1m" (months).
 // Returns duration in minutes. Returns -1 on invalid input. 0 = permanent.
-int ADMIN_ParseDuration(const char *input);
+int CS2A_ParseDuration(const char *input);
 
 // Format a duration in minutes to a human-readable string.
 // e.g., 90 -> "1 hour", 1500 -> "1 day", 0 -> "permanent"
-std::string ADMIN_FormatDuration(int slot, int minutes);
+std::string CS2A_FormatDuration(int slot, int minutes);
 
-#endif // _INCLUDE_ADMIN_PLAYER_MANAGER_H_
+#endif // _INCLUDE_CS2A_PLAYER_MANAGER_H_

@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_COMM_MANAGER_H_
-#define _INCLUDE_ADMIN_COMM_MANAGER_H_
+#ifndef _INCLUDE_CS2A_COMM_MANAGER_H_
+#define _INCLUDE_CS2A_COMM_MANAGER_H_
 
 #include "src/common.h"
 #include "src/player/player_manager.h"
@@ -131,4 +131,4 @@ private:
 
 extern CS2ACommManager g_CS2ACommManager;
 
-#endif // _INCLUDE_ADMIN_COMM_MANAGER_H_
+#endif // _INCLUDE_CS2A_COMM_MANAGER_H_

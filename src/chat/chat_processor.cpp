@@ -250,7 +250,7 @@ void CS2AChatProcessor::RenderPending(int slot, const CPlayerBitVec &recipients)
 	{
 		if (g_pEngine && g_pEngine->GetPlayerNetInfo(CPlayerSlot(i)))
 		{
-			ADMIN_PrintToClient(i, "%s\n", stripped);
+			CS2A_PrintToClient(i, "%s\n", stripped);
 		}
 	}
 }
@@ -271,7 +271,7 @@ std::string CS2AChatProcessor::ComposeLine(int slot, const char *message, bool t
 		format = alive ? &g_CS2AConfig.chatFormat : &g_CS2AConfig.chatFormatDead;
 	}
 
-	const TagDef *tag = g_CS2AConfig.chatTagsEnabled ? g_CS2ATagManager.Resolve(slot) : nullptr;
+	const TagDef *tag = g_CS2AConfig.chatTags ? g_CS2ATagManager.Resolve(slot) : nullptr;
 	const std::string teamColor = TeamColor(team);
 
 	std::string body = message ? message : "";

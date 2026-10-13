@@ -23,7 +23,7 @@ CON_COMMAND_F(mm_admin_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 {
 	g_CS2APlugin.ReloadConfig();
 
-	ADMIN_LoadTranslations();
+	CS2A_LoadTranslations();
 	g_CS2AMapManager.LoadMapList();
 
 	// Reload admins (flat file + database)
@@ -35,7 +35,7 @@ CON_COMMAND_F(mm_admin_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 	g_CS2AForeignPlugins.Refresh();
 	g_CS2ATagManager.UpdateAllClanTags();
 
-	ADMIN_RecheckConnectedPlayers();
+	CS2A_RecheckConnectedPlayers();
 }
 
 CON_COMMAND_F(mm_rehash, "Rebuild admin cache from database and flat files", FCVAR_NONE)

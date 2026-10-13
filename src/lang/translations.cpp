@@ -5,14 +5,14 @@
 
 mmu::Translations g_CS2ATranslations;
 
-std::string ADMIN_Translate(int slot, const char *phrase)
+std::string CS2A_Translate(int slot, const char *phrase)
 {
-	return g_CS2ATranslations.Translate(ADMIN_SlotLanguage(slot), phrase ? phrase : "");
+	return g_CS2ATranslations.Translate(CS2A_SlotLanguage(slot), phrase ? phrase : "");
 }
 
-std::string ADMIN_Format(int slot, const char *phrase, ...)
+std::string CS2A_Format(int slot, const char *phrase, ...)
 {
-	std::string tmpl = ADMIN_Translate(slot, phrase);
+	std::string tmpl = CS2A_Translate(slot, phrase);
 	char buffer[512];
 	va_list args;
 	va_start(args, phrase);

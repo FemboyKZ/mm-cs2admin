@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_BAN_MANAGER_H_
-#define _INCLUDE_ADMIN_BAN_MANAGER_H_
+#ifndef _INCLUDE_CS2A_BAN_MANAGER_H_
+#define _INCLUDE_CS2A_BAN_MANAGER_H_
 
 #include "src/common.h"
 #include <string>
@@ -91,4 +91,4 @@ private:
 
 extern CS2ABanManager g_CS2ABanManager;
 
-#endif // _INCLUDE_ADMIN_BAN_MANAGER_H_
+#endif // _INCLUDE_CS2A_BAN_MANAGER_H_

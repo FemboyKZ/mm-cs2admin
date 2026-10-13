@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_COMMON_H_
-#define _INCLUDE_ADMIN_COMMON_H_
+#ifndef _INCLUDE_CS2A_COMMON_H_
+#define _INCLUDE_CS2A_COMMON_H_
 
 #include <ISmmPlugin.h>
 #include <igameevents.h>
@@ -41,7 +41,7 @@ inline CGlobalVars *GetGameGlobals()
 
 // Shorten to at most maxBytes without cutting a UTF-8 sequence in half,
 // which would leave invalid text in a JSON body or a strict-mode SQL column.
-inline void ADMIN_TruncateUtf8(std::string &s, size_t maxBytes)
+inline void CS2A_TruncateUtf8(std::string &s, size_t maxBytes)
 {
 	if (s.size() <= maxBytes)
 	{
@@ -56,4 +56,4 @@ inline void ADMIN_TruncateUtf8(std::string &s, size_t maxBytes)
 	s.resize(cut);
 }
 
-#endif // _INCLUDE_ADMIN_COMMON_H_
+#endif // _INCLUDE_CS2A_COMMON_H_

@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_FOREIGN_PLUGINS_H_
-#define _INCLUDE_ADMIN_FOREIGN_PLUGINS_H_
+#ifndef _INCLUDE_CS2A_FOREIGN_PLUGINS_H_
+#define _INCLUDE_CS2A_FOREIGN_PLUGINS_H_
 
 #include <ISmmPlugin.h>
 
@@ -50,4 +50,4 @@ private:
 
 extern CS2AForeignPlugins g_CS2AForeignPlugins;
 
-#endif // _INCLUDE_ADMIN_FOREIGN_PLUGINS_H_
+#endif // _INCLUDE_CS2A_FOREIGN_PLUGINS_H_

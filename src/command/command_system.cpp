@@ -100,7 +100,7 @@ static void ReplyConsoleOutput(int slot, const std::string &text, bool truncated
 {
 	if (text.empty())
 	{
-		ADMIN_ReplyToCommandT(slot, "(no output)\n");
+		CS2A_ReplyToCommandT(slot, "(no output)\n");
 		return;
 	}
 
@@ -123,7 +123,7 @@ static void ReplyConsoleOutput(int slot, const std::string &text, bool truncated
 				tooMany = true;
 				break;
 			}
-			ADMIN_PrintToClientT(slot, "%s\n", line.c_str());
+			CS2A_PrintToClientT(slot, "%s\n", line.c_str());
 			printed++;
 		}
 		if (nl == std::string::npos)
@@ -135,11 +135,11 @@ static void ReplyConsoleOutput(int slot, const std::string &text, bool truncated
 
 	if (tooMany)
 	{
-		ADMIN_PrintToClientT(slot, "[output truncated: too many lines]\n");
+		CS2A_PrintToClientT(slot, "[output truncated: too many lines]\n");
 	}
 	else if (truncated)
 	{
-		ADMIN_PrintToClientT(slot, "[output truncated]\n");
+		CS2A_PrintToClientT(slot, "[output truncated]\n");
 	}
 }
 
@@ -248,7 +248,7 @@ static bool CheckImmunityAgainst(int callerSlot, int targetImmunity)
 
 	if (targetImmunity > 0 && callerImm <= targetImmunity)
 	{
-		ADMIN_ReplyToCommandT(callerSlot, "Cannot target this player (higher immunity).\n");
+		CS2A_ReplyToCommandT(callerSlot, "Cannot target this player (higher immunity).\n");
 		return false;
 	}
 	return true;
@@ -268,10 +268,10 @@ static bool CheckImmunity(int callerSlot, int targetSlot)
 // Minutes from a time argument, 0 for permanent. False after replying.
 static bool ParseDurationArg(int slot, const std::string &arg, int &minutes)
 {
-	minutes = ADMIN_ParseDuration(arg.c_str());
+	minutes = CS2A_ParseDuration(arg.c_str());
 	if (minutes < 0)
 	{
-		ADMIN_ReplyToCommandT(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
+		CS2A_ReplyToCommandT(slot, "Invalid time. Use minutes (e.g. 30) or suffixes: h(ours), d(ays), w(eeks), m(onths). 0 = permanent.\n");
 		return false;
 	}
 	return true;
@@ -368,13 +368,13 @@ static bool ParseBlockArgs(int slot, const mmu::Args &args, const char *defaultR
 	}
 	else
 	{
-		int defaultTime = g_CS2AConfig.commsDefaultTime;
+		int defaultTime = g_CS2AConfig.commsDefaultMinutes;
 		minutes = defaultTime < 0 ? -1 : (defaultTime == 0 ? 30 : defaultTime);
 	}
 
 	if (minutes >= 0 && !g_CS2ACommManager.IsAllowedLength(slot, minutes))
 	{
-		ADMIN_ReplyToCommandT(slot, "You cannot issue blocks longer than %s.\n", ADMIN_FormatDuration(slot, g_CS2AConfig.commsMaxLength).c_str());
+		CS2A_ReplyToCommandT(slot, "You cannot issue blocks longer than %s.\n", CS2A_FormatDuration(slot, g_CS2AConfig.commsMaxMinutes).c_str());
 		return false;
 	}
 
@@ -389,7 +389,7 @@ static bool ResolveHistoryTarget(int slot, const std::string &arg, std::string &
 	{
 		return true;
 	}
-	int target = ADMIN_FindTarget(slot, arg.c_str());
+	int target = CS2A_FindTarget(slot, arg.c_str());
 	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(target);
 	if (!player)
 	{
@@ -407,8 +407,8 @@ static void ReplyAdminLine(int slot, const PlayerInfo &player, const AdminEntry 
 	{
 		group += (group.empty() ? "" : ", ") + groupName;
 	}
-	ADMIN_ReplyToCommandT(slot, "  %s [%s] flags: %s imm: %d\n", player.name.c_str(),
-						  group.empty() ? ADMIN_Translate(slot, "(no group)").c_str() : group.c_str(),
+	CS2A_ReplyToCommandT(slot, "  %s [%s] flags: %s imm: %d\n", player.name.c_str(),
+						  group.empty() ? CS2A_Translate(slot, "(no group)").c_str() : group.c_str(),
 						  CS2AAdminManager::FlagsToString(admin.flags).c_str(), admin.immunity);
 }
 
@@ -430,7 +430,7 @@ static bool CheckCanLift(int slot, int target, int types)
 	if (((types & COMM_MUTE) && !g_CS2ACommManager.CanLiftBlock(slot, target, COMM_MUTE))
 		|| ((types & COMM_GAG) && !g_CS2ACommManager.CanLiftBlock(slot, target, COMM_GAG)))
 	{
-		ADMIN_ReplyToCommandT(slot, "You cannot lift a block placed by an admin with higher immunity.\n");
+		CS2A_ReplyToCommandT(slot, "You cannot lift a block placed by an admin with higher immunity.\n");
 		return false;
 	}
 	return true;
@@ -441,10 +441,10 @@ static bool CheckCanLift(int slot, int target, int types)
 template<typename Fn>
 static int ForEachTarget(int slot, const std::string &pattern, TargetResult &targets, Fn apply)
 {
-	targets = ADMIN_FindTargets(slot, pattern.c_str());
+	targets = CS2A_FindTargets(slot, pattern.c_str());
 	if (!targets.error.empty())
 	{
-		ADMIN_ReplyToCommandT(slot, "%s\n", ADMIN_Translate(slot, targets.error.c_str()).c_str());
+		CS2A_ReplyToCommandT(slot, "%s\n", CS2A_Translate(slot, targets.error.c_str()).c_str());
 		return -1;
 	}
 	int applied = 0;
@@ -481,20 +481,20 @@ static void SubmitAdminPassword(int slot, const std::string &password)
 	// Rights are only assigned after that, and the try would count as a wrong one.
 	if (!player->authenticated)
 	{
-		ADMIN_ReplyToCommandT(slot, "Steam has not confirmed your account yet. Try again in a moment.\n");
+		CS2A_ReplyToCommandT(slot, "Steam has not confirmed your account yet. Try again in a moment.\n");
 		return;
 	}
 
 	if (!g_CS2AAdminManager.SubmitPassword(slot, password))
 	{
-		ADMIN_ReplyToCommandT(slot, "No admin rights were unlocked.\n");
+		CS2A_ReplyToCommandT(slot, "No admin rights were unlocked.\n");
 		return;
 	}
 
 	// Tag eligibility reads the admin entry.
 	g_CS2ATagManager.LoadPlayerPref(slot, player->steamid64);
 	g_CS2ATagManager.UpdateClanTag(slot);
-	ADMIN_ReplyToCommandT(slot, "Admin rights unlocked.\n");
+	CS2A_ReplyToCommandT(slot, "Admin rights unlocked.\n");
 }
 
 CS2ACommandSystem g_CS2ACommandSystem;
@@ -521,7 +521,7 @@ void CS2ACommandSystem::Run(const std::string &name, const Command &command, int
 {
 	if (!CanUse(slot, name, command))
 	{
-		ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+		CS2A_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 		return;
 	}
 	command.callback(slot, args, silent);
@@ -540,20 +540,20 @@ void CS2ACommandSystem::ParseAndRun(const std::string &name, const Command &comm
 	}
 	if (!CanUse(slot, name, command))
 	{
-		ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+		CS2A_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 		return;
 	}
 	if (error == mmu::ArgError::UnknownKey)
 	{
-		ADMIN_ReplyToCommandT(slot, "Unknown key %s=.\n", what.c_str());
+		CS2A_ReplyToCommandT(slot, "Unknown key %s=.\n", what.c_str());
 	}
 	else if (error == mmu::ArgError::StrayText)
 	{
-		ADMIN_ReplyToCommandT(slot, "Put %s after a key, like key=value.\n", what.c_str());
+		CS2A_ReplyToCommandT(slot, "Put %s after a key, like key=value.\n", what.c_str());
 	}
 	else
 	{
-		ADMIN_ReplyToCommandT(slot, "A quote is left open.\n");
+		CS2A_ReplyToCommandT(slot, "A quote is left open.\n");
 	}
 	ReplyUsage(slot, name.c_str());
 }
@@ -563,7 +563,7 @@ void CS2ACommandSystem::ReplyUsage(int slot, const char *name) const
 	auto it = m_commands.find(name);
 	if (it != m_commands.end() && it->second.usage[0])
 	{
-		ADMIN_ReplyToCommandT(slot, it->second.usage);
+		CS2A_ReplyToCommandT(slot, it->second.usage);
 	}
 }
 
@@ -630,7 +630,7 @@ bool CS2ACommandSystem::ConsumePromptedText(int slot, const char *message)
 		auto onCancel = std::move(m_prompts[slot].onCancel);
 		m_prompts[slot] = {};
 		m_sayHidden[slot] = true;
-		ADMIN_ReplyToCommandT(slot, "Cancelled.\n");
+		CS2A_ReplyToCommandT(slot, "Cancelled.\n");
 		if (onCancel)
 		{
 			onCancel(slot);
@@ -684,7 +684,7 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 //
 // Each flow ends by re-dispatching the matching chat command with its args built in code,
 // so all permission / immunity / logging / Discord logic is reused.
-// Targets are encoded as "$<steamid64>" (or "#<slot>" for bots) which ADMIN_FindTarget resolves back to a live slot.
+// Targets are encoded as "$<steamid64>" (or "#<slot>" for bots) which CS2A_FindTarget resolves back to a live slot.
 
 namespace
 {
@@ -719,14 +719,14 @@ namespace
 	{
 		if (session)
 		{
-			return ADMIN_Translate(slot, "session");
+			return CS2A_Translate(slot, "session");
 		}
 		if (expires <= 0.0)
 		{
-			return ADMIN_Translate(slot, "permanent");
+			return CS2A_Translate(slot, "permanent");
 		}
 		int minutes = static_cast<int>(std::ceil((expires - Plat_FloatTime()) / 60.0));
-		return ADMIN_Format(slot, "%s left", ADMIN_FormatDuration(slot, (std::max)(1, minutes)).c_str());
+		return CS2A_Format(slot, "%s left", CS2A_FormatDuration(slot, (std::max)(1, minutes)).c_str());
 	}
 
 	struct TeamSection
@@ -772,7 +772,7 @@ namespace
 
 				AdminMenuItem item;
 				item.text = p->name;
-				item.section = ADMIN_Translate(callerSlot, section.name);
+				item.section = CS2A_Translate(callerSlot, section.name);
 				if (p->fakePlayer || p->steamid64 == 0)
 				{
 					item.info = "#" + std::to_string(i);
@@ -787,12 +787,12 @@ namespace
 					if ((commFilter & COMM_MUTE) && (p->isMuted || p->isSessionMuted))
 					{
 						blocks.push_back(
-							ADMIN_Format(callerSlot, "mute %s", BlockRemaining(callerSlot, p->isSessionMuted, p->muteExpireTime).c_str()));
+							CS2A_Format(callerSlot, "mute %s", BlockRemaining(callerSlot, p->isSessionMuted, p->muteExpireTime).c_str()));
 					}
 					if ((commFilter & COMM_GAG) && (p->isGagged || p->isSessionGagged))
 					{
 						blocks.push_back(
-							ADMIN_Format(callerSlot, "gag %s", BlockRemaining(callerSlot, p->isSessionGagged, p->gagExpireTime).c_str()));
+							CS2A_Format(callerSlot, "gag %s", BlockRemaining(callerSlot, p->isSessionGagged, p->gagExpireTime).c_str()));
 					}
 					item.disabled = blocks.empty();
 					for (const std::string &block : blocks)
@@ -802,7 +802,7 @@ namespace
 				}
 				else if (team >= 2 && controller && !controller->m_bPawnIsAlive())
 				{
-					item.subtext = ADMIN_Translate(callerSlot, "Dead");
+					item.subtext = CS2A_Translate(callerSlot, "Dead");
 				}
 				items.push_back(std::move(item));
 			}
@@ -810,19 +810,19 @@ namespace
 		return items;
 	}
 
-	// Duration menu items, labelled via ADMIN_FormatDuration, info = the minutes value.
+	// Duration menu items, labelled via CS2A_FormatDuration, info = the minutes value.
 	std::vector<AdminMenuItem> BuildDurationItems(int slot)
 	{
 		std::vector<AdminMenuItem> items;
 		for (const std::string &tok : SplitCsv(g_CS2AConfig.menuDurations))
 		{
-			int mins = ADMIN_ParseDuration(tok.c_str());
+			int mins = CS2A_ParseDuration(tok.c_str());
 			if (mins < 0)
 			{
 				continue;
 			}
 			AdminMenuItem item;
-			item.text = ADMIN_FormatDuration(slot, mins);
+			item.text = CS2A_FormatDuration(slot, mins);
 			item.info = std::to_string(mins);
 			items.push_back(std::move(item));
 		}
@@ -841,7 +841,7 @@ namespace
 				reasons.push_back(reason);
 			}
 		}
-		reasons.push_back(ADMIN_Translate(slot, "Other"));
+		reasons.push_back(CS2A_Translate(slot, "Other"));
 		return reasons;
 	}
 
@@ -856,18 +856,18 @@ namespace
 		std::vector<AdminMenuItem> durations = timed ? BuildDurationItems(slot) : std::vector<AdminMenuItem>();
 		if (timed && durations.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No menu durations configured. Check Menu > Durations in core.cfg\n");
+			CS2A_ReplyToCommandT(slot, "No menu durations configured. Check Menu > Durations in core.cfg\n");
 			return;
 		}
 		std::vector<std::string> reasons = ReasonOptions(slot);
-		const std::string confirm = ADMIN_Translate(slot, verb.c_str());
+		const std::string confirm = CS2A_Translate(slot, verb.c_str());
 		const std::string title = confirm + ": " + name;
 
 		std::vector<AdminFormField> fields;
 		if (timed)
 		{
 			AdminFormField duration;
-			duration.text = ADMIN_Translate(slot, "Duration");
+			duration.text = CS2A_Translate(slot, "Duration");
 			for (const AdminMenuItem &d : durations)
 			{
 				duration.options.push_back(d.text);
@@ -875,7 +875,7 @@ namespace
 			fields.push_back(std::move(duration));
 		}
 		AdminFormField reason;
-		reason.text = ADMIN_Translate(slot, "Reason");
+		reason.text = CS2A_Translate(slot, "Reason");
 		reason.options = reasons;
 		fields.push_back(std::move(reason));
 
@@ -894,7 +894,7 @@ namespace
 					apply(s, minutes, reasons[choice]);
 					return;
 				}
-				ADMIN_ReplyToCommandT(s, "Type the reason in chat, or cancel to stop.\n");
+				CS2A_ReplyToCommandT(s, "Type the reason in chat, or cancel to stop.\n");
 				g_AdminMenus.Suspend(s);
 				g_CS2ACommandSystem.PromptText(
 					s,
@@ -916,11 +916,11 @@ namespace
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, !timed || cmd == "ban");
 		if (players.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			CS2A_ReplyToCommandT(slot, "No valid targets online.\n");
 			return;
 		}
 
-		std::string pickTitle = ADMIN_Format(slot, "%s: select player", ADMIN_Translate(slot, verb.c_str()).c_str());
+		std::string pickTitle = CS2A_Format(slot, "%s: select player", CS2A_Translate(slot, verb.c_str()).c_str());
 		AdminMenuBridge::Options options;
 		options.push = push;
 		options.rebuild = [cmd, verb, timed, push](int s) { StartPunishFlow(s, cmd, verb, timed, push); };
@@ -945,13 +945,13 @@ namespace
 		int secs = seconds > 0.0 ? static_cast<int>(seconds) : 0;
 		if (secs < 60)
 		{
-			return ADMIN_Format(slot, "%ds ago", secs);
+			return CS2A_Format(slot, "%ds ago", secs);
 		}
 		if (secs < 3600)
 		{
-			return ADMIN_Format(slot, "%dm ago", secs / 60);
+			return CS2A_Format(slot, "%dm ago", secs / 60);
 		}
-		return ADMIN_Format(slot, "%dh ago", secs / 3600);
+		return CS2A_Format(slot, "%dh ago", secs / 3600);
 	}
 
 	// recently disconnected -> duration and reason -> !addban <steamid64> time=<minutes> reason=<reason>
@@ -976,7 +976,7 @@ namespace
 		}
 		if (items.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No recently disconnected players.\n");
+			CS2A_ReplyToCommandT(slot, "No recently disconnected players.\n");
 			return;
 		}
 
@@ -984,7 +984,7 @@ namespace
 		options.push = push;
 		options.rebuild = [push](int s) { StartOfflineBanFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Add ban: select player").c_str(), items,
+			slot, CS2A_Translate(slot, "Add ban: select player").c_str(), items,
 			[items](int s, int item, const std::string &steamid)
 			{
 				ShowPunishForm(s, "Ban", items[item].text, true,
@@ -1005,11 +1005,11 @@ namespace
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, includeBots, excludeSelf, commFilter);
 		if (std::none_of(players.begin(), players.end(), [](const AdminMenuItem &p) { return !p.disabled; }))
 		{
-			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			CS2A_ReplyToCommandT(slot, "No valid targets online.\n");
 			return;
 		}
 
-		std::string title = ADMIN_Format(slot, "%s: select player", ADMIN_Translate(slot, verb.c_str()).c_str());
+		std::string title = CS2A_Format(slot, "%s: select player", CS2A_Translate(slot, verb.c_str()).c_str());
 		AdminMenuBridge::Options options;
 		options.push = push;
 		options.rebuild = [cmd, verb, includeBots, excludeSelf, commFilter, push](int s)
@@ -1051,7 +1051,7 @@ namespace
 			item.text = rtv->GetMapMenuLabel(i, item.disabled);
 			if (item.disabled)
 			{
-				item.text += " " + ADMIN_Translate(slot, "[current]");
+				item.text += " " + CS2A_Translate(slot, "[current]");
 			}
 			item.info = workshopId.empty() ? mapName : workshopId;
 			items.push_back(std::move(item));
@@ -1075,7 +1075,7 @@ namespace
 		}
 		if (items.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No maps loaded. Check cfg/maplist.txt\n");
+			CS2A_ReplyToCommandT(slot, "No maps loaded. Check cfg/maplist.txt\n");
 			return;
 		}
 
@@ -1084,7 +1084,7 @@ namespace
 		options.mapList = true;
 		options.rebuild = [push](int s) { StartMapFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Change Map").c_str(), items, [](int s, int, const std::string &mapArg)
+			slot, CS2A_Translate(slot, "Change Map").c_str(), items, [](int s, int, const std::string &mapArg)
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
 	}
 
@@ -1106,7 +1106,7 @@ namespace
 		AdminMenuBridge::Options options;
 		options.mapList = true;
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Matching Maps").c_str(), items, [](int s, int, const std::string &mapArg)
+			slot, CS2A_Translate(slot, "Matching Maps").c_str(), items, [](int s, int, const std::string &mapArg)
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
 	}
 
@@ -1205,7 +1205,7 @@ namespace
 			AdminMenuItem item;
 			item.text = w.display;
 			item.info = w.classname;
-			item.section = ADMIN_Translate(slot, w.category);
+			item.section = CS2A_Translate(slot, w.category);
 			// Icons are named after the classname without its prefix.
 			const std::string classname = w.classname;
 			item.image = classname.substr(classname.find('_') + 1);
@@ -1222,7 +1222,7 @@ namespace
 		options.layout = MenuLayout::Grid;
 		options.tiles = MenuTileSize::Medium;
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Give: select weapon").c_str(), BuildWeaponItems(slot),
+			slot, CS2A_Translate(slot, "Give: select weapon").c_str(), BuildWeaponItems(slot),
 			[target](int s, int, const std::string &classname)
 			{
 				mmu::Args args;
@@ -1238,7 +1238,7 @@ namespace
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, true, false);
 		if (players.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			CS2A_ReplyToCommandT(slot, "No valid targets online.\n");
 			return;
 		}
 
@@ -1246,7 +1246,7 @@ namespace
 		options.push = push;
 		options.rebuild = [push](int s) { StartGiveFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Give: select player").c_str(), players,
+			slot, CS2A_Translate(slot, "Give: select player").c_str(), players,
 			[](int s, int, const std::string &target) { ShowWeaponPicker(s, target); }, options);
 	}
 
@@ -1276,7 +1276,7 @@ namespace
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, false, false);
 		if (players.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			CS2A_ReplyToCommandT(slot, "No valid targets online.\n");
 			return;
 		}
 
@@ -1284,13 +1284,13 @@ namespace
 		pickOptions.push = push;
 		pickOptions.rebuild = [push](int s) { StartCommsFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Gag / Mute: select player").c_str(), players,
+			slot, CS2A_Translate(slot, "Gag / Mute: select player").c_str(), players,
 			[players](int s, int item, const std::string &target)
 			{
 				PlayerInfo *p = g_CS2APlayerManager.GetPlayer(SlotFromTargetInfo(target));
 				if (!p)
 				{
-					ADMIN_ReplyToCommandT(s, "No valid targets online.\n");
+					CS2A_ReplyToCommandT(s, "No valid targets online.\n");
 					return;
 				}
 				const bool muted = p->isMuted || p->isSessionMuted;
@@ -1316,12 +1316,12 @@ namespace
 				{
 					if (action.show && g_CS2ACommandSystem.CanRun(s, action.cmd))
 					{
-						items.push_back({ADMIN_Translate(s, action.verb), action.cmd, false});
+						items.push_back({CS2A_Translate(s, action.verb), action.cmd, false});
 					}
 				}
 				if (items.empty())
 				{
-					ADMIN_ReplyToCommandT(s, "You do not have permission to use this command.\n");
+					CS2A_ReplyToCommandT(s, "You do not have permission to use this command.\n");
 					return;
 				}
 
@@ -1329,7 +1329,7 @@ namespace
 				AdminMenuBridge::Options actionOptions;
 				actionOptions.push = true;
 				g_AdminMenus.ShowMenu(
-					s, (ADMIN_Translate(s, "Gag / Mute") + ": " + name).c_str(), items,
+					s, (CS2A_Translate(s, "Gag / Mute") + ": " + name).c_str(), items,
 					[name, target](int s2, int, const std::string &cmd)
 					{
 						if (cmd != "mute" && cmd != "gag" && cmd != "silence")
@@ -1359,7 +1359,7 @@ namespace
 		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(targetSlot);
 		if (!p)
 		{
-			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			CS2A_ReplyToCommandT(slot, "No valid targets online.\n");
 			return;
 		}
 		CCSPlayerController *controller = CCSPlayerController::FromSlot(targetSlot);
@@ -1401,15 +1401,15 @@ namespace
 			if (action.show && g_CS2ACommandSystem.CanRun(slot, action.cmd))
 			{
 				AdminMenuItem item;
-				item.text = ADMIN_Translate(slot, action.label);
+				item.text = CS2A_Translate(slot, action.label);
 				item.info = action.cmd;
-				item.section = ADMIN_Translate(slot, action.section);
+				item.section = CS2A_Translate(slot, action.section);
 				items.push_back(std::move(item));
 			}
 		}
 		if (items.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+			CS2A_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 
@@ -1455,14 +1455,14 @@ namespace
 		std::vector<AdminMenuItem> players = BuildPlayerItems(slot, true, false);
 		if (players.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No valid targets online.\n");
+			CS2A_ReplyToCommandT(slot, "No valid targets online.\n");
 			return;
 		}
 		AdminMenuBridge::Options options;
 		options.push = push;
 		options.rebuild = [push](int s) { StartPlayersFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Players").c_str(), players, [](int s, int, const std::string &target) { ShowPlayerPage(s, target, true); },
+			slot, CS2A_Translate(slot, "Players").c_str(), players, [](int s, int, const std::string &target) { ShowPlayerPage(s, target, true); },
 			options);
 	}
 
@@ -1490,14 +1490,14 @@ namespace
 		std::vector<AdminMenuItem> items = LoadMenuConfigs();
 		if (items.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n");
+			CS2A_ReplyToCommandT(slot, "No configs listed. Add them to cfg/cs2admin/adminmenu_cfgs.txt\n");
 			return;
 		}
 		AdminMenuBridge::Options options;
 		options.push = push;
 		options.rebuild = [push](int s) { StartExecCfgFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Execute Config").c_str(), items, [](int s, int, const std::string &file)
+			slot, CS2A_Translate(slot, "Execute Config").c_str(), items, [](int s, int, const std::string &file)
 			{ g_CS2ACommandSystem.DispatchConsoleCommand("execcfg", mmu::Args().Set("file", file), s); }, options);
 	}
 
@@ -1540,20 +1540,20 @@ namespace
 				continue;
 			}
 			AdminMenuItem item;
-			item.text = ADMIN_Translate(slot, entry.label);
+			item.text = CS2A_Translate(slot, entry.label);
 			item.info = std::to_string(i);
-			item.section = ADMIN_Translate(slot, entry.section);
+			item.section = CS2A_Translate(slot, entry.section);
 			items.push_back(std::move(item));
 		}
 		if (items.empty())
 		{
-			ADMIN_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
+			CS2A_ReplyToCommandT(slot, "You do not have permission to use this command.\n");
 			return;
 		}
 		AdminMenuBridge::Options options;
 		options.rebuild = &StartAdminMenu;
 		g_AdminMenus.ShowMenu(
-			slot, ADMIN_Translate(slot, "Admin Menu").c_str(), items,
+			slot, CS2A_Translate(slot, "Admin Menu").c_str(), items,
 			[](int s, int, const std::string &info) { kAdminMenu[atoi(info.c_str())].open(s); }, options);
 	}
 
@@ -1578,7 +1578,7 @@ namespace
 		}
 
 		// Replacing a block makes the caller its issuer, so it needs the standing to lift it.
-		int target = ADMIN_FindTarget(slot, args.Get("player")->c_str());
+		int target = CS2A_FindTarget(slot, args.Get("player")->c_str());
 		if (target < 0 || !CheckImmunity(slot, target) || !CheckCanLift(slot, target, type))
 		{
 			return;
@@ -1588,7 +1588,7 @@ namespace
 		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
 		if (targetPlayer && targetPlayer->fakePlayer)
 		{
-			ADMIN_ReplyToCommandT(slot, "This command cannot target bots.\n");
+			CS2A_ReplyToCommandT(slot, "This command cannot target bots.\n");
 			return;
 		}
 
@@ -1655,7 +1655,7 @@ namespace
 			return;
 		}
 
-		int target = ADMIN_FindTarget(slot, args.Get("player")->c_str());
+		int target = CS2A_FindTarget(slot, args.Get("player")->c_str());
 		if (target < 0 || !CheckImmunity(slot, target) || !CheckCanLift(slot, target, type))
 		{
 			return;
@@ -1678,7 +1678,7 @@ namespace
 		const char *action = CommActionName(lifted, "Unsilence", "Unmute", "Ungag");
 		if (!action)
 		{
-			ADMIN_ReplyToCommandT(slot, notBlocked, discordTarget.name.c_str());
+			CS2A_ReplyToCommandT(slot, notBlocked, discordTarget.name.c_str());
 			return;
 		}
 		NotifyDiscordOnPlayer(action, discordTarget);
@@ -1707,7 +1707,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						int target = ADMIN_FindTarget(slot, args.Get("player")->c_str());
+						int target = CS2A_FindTarget(slot, args.Get("player")->c_str());
 						if (target < 0)
 						{
 							return;
@@ -1715,14 +1715,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (target == slot)
 						{
-							ADMIN_ReplyToCommandT(slot, "You cannot ban yourself.\n");
+							CS2A_ReplyToCommandT(slot, "You cannot ban yourself.\n");
 							return;
 						}
 
 						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
 						if (targetPlayer && targetPlayer->fakePlayer)
 						{
-							ADMIN_ReplyToCommandT(slot, "Bots cannot be banned.\n");
+							CS2A_ReplyToCommandT(slot, "Bots cannot be banned.\n");
 							return;
 						}
 
@@ -1740,7 +1740,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (!g_CS2ADatabase.IsInitialized())
 						{
-							ADMIN_ReplyToCommandT(slot, "Database not available.\n");
+							CS2A_ReplyToCommandT(slot, "Database not available.\n");
 							return;
 						}
 
@@ -1757,7 +1757,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					{
 						if (!g_CS2AConfig.unban)
 						{
-							ADMIN_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
+							CS2A_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
 							return;
 						}
 
@@ -1770,7 +1770,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (!g_CS2ABanManager.Unban(authid.c_str(), slot))
 						{
-							ADMIN_ReplyToCommandT(slot, "Database not available.\n");
+							CS2A_ReplyToCommandT(slot, "Database not available.\n");
 							return;
 						}
 
@@ -1784,7 +1784,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					{
 						if (!g_CS2AConfig.addban)
 						{
-							ADMIN_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
+							CS2A_ReplyToCommandT(slot, "This command is disabled on this server. Use the web panel instead.\n");
 							return;
 						}
 
@@ -1829,7 +1829,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (!g_CS2ABanManager.AddBan(authid.c_str(), time, reason.c_str(), slot))
 						{
-							ADMIN_ReplyToCommandT(slot, "Database not available.\n");
+							CS2A_ReplyToCommandT(slot, "Database not available.\n");
 							return;
 						}
 
@@ -1885,7 +1885,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						const char *ip = args.Get("ip")->c_str();
 						if (!IsValidIPv4(ip))
 						{
-							ADMIN_ReplyToCommandT(slot, "Invalid IP address format.\n");
+							CS2A_ReplyToCommandT(slot, "Invalid IP address format.\n");
 							return;
 						}
 
@@ -1907,7 +1907,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							}
 							if (i == slot)
 							{
-								ADMIN_ReplyToCommandT(slot, "You cannot ban yourself.\n");
+								CS2A_ReplyToCommandT(slot, "You cannot ban yourself.\n");
 								return;
 							}
 							if (!CheckImmunity(slot, i))
@@ -1918,7 +1918,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (!g_CS2ABanManager.BanIP(ip, time, reason.c_str(), slot))
 						{
-							ADMIN_ReplyToCommandT(slot, "Database not available.\n");
+							CS2A_ReplyToCommandT(slot, "Database not available.\n");
 							return;
 						}
 
@@ -1932,7 +1932,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						int target = slot;
 						if (const std::string *player = args.Get("player"))
 						{
-							target = ADMIN_FindTarget(slot, player->c_str());
+							target = CS2A_FindTarget(slot, player->c_str());
 							if (target < 0)
 							{
 								return;
@@ -1992,7 +1992,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					{
 						if (slot < 0)
 						{
-							ADMIN_ReplyToCommandT(slot, "This command cannot be used from console.\n");
+							CS2A_ReplyToCommandT(slot, "This command cannot be used from console.\n");
 							return;
 						}
 
@@ -2019,11 +2019,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (reporter->lastReportTime > 0.0 && (now - reporter->lastReportTime) < g_CS2AConfig.reportCooldown)
 						{
 							int remaining = (int)(g_CS2AConfig.reportCooldown - (now - reporter->lastReportTime));
-							ADMIN_ReplyToCommandT(slot, "You must wait %d seconds before reporting again.\n", remaining);
+							CS2A_ReplyToCommandT(slot, "You must wait %d seconds before reporting again.\n", remaining);
 							return;
 						}
 
-						int target = ADMIN_FindTarget(slot, args.Get("player")->c_str());
+						int target = CS2A_FindTarget(slot, args.Get("player")->c_str());
 						if (target < 0)
 						{
 							return;
@@ -2031,7 +2031,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (target == slot)
 						{
-							ADMIN_ReplyToCommandT(slot, "You cannot report yourself.\n");
+							CS2A_ReplyToCommandT(slot, "You cannot report yourself.\n");
 							return;
 						}
 
@@ -2043,7 +2043,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (targetPlayer->fakePlayer)
 						{
-							ADMIN_ReplyToCommandT(slot, "This command cannot target bots.\n");
+							CS2A_ReplyToCommandT(slot, "This command cannot target bots.\n");
 							return;
 						}
 
@@ -2054,12 +2054,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						const bool preset = std::find(presets.begin(), presets.end(), reason) != presets.end();
 						if (!preset && (int)reason.size() < g_CS2AConfig.reportMinLength)
 						{
-							ADMIN_ReplyToCommandT(slot, "Report reason must be at least %d characters.\n", g_CS2AConfig.reportMinLength);
+							CS2A_ReplyToCommandT(slot, "Report reason must be at least %d characters.\n", g_CS2AConfig.reportMinLength);
 							return;
 						}
 
 						// Cap reason length to prevent buffer overflow in query
-						ADMIN_TruncateUtf8(reason, 512);
+						CS2A_TruncateUtf8(reason, 512);
 
 						g_CS2AForwards.FireOnReportPlayer(slot, target, reason.c_str());
 
@@ -2070,7 +2070,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							// SteamId/name are the suspect and subname/ip the submitter, the way the SourceBans panel writes them.
 							// ModID is NOT NULL in both schemas, so leaving it out makes strict mode reject the row.
 							std::string submitter = reporter->name + " (" + reporter->authid + ")";
-							ADMIN_TruncateUtf8(submitter, 128);
+							CS2A_TruncateUtf8(submitter, 128);
 
 							std::string escTargetAuth = g_CS2ADatabase.Escape(targetPlayer->authid.c_str());
 							std::string escTargetName = g_CS2ADatabase.Escape(targetPlayer->name.c_str());
@@ -2090,13 +2090,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							g_CS2ADatabase.Query(query, [](ISQLQuery *) {});
 						}
 
-						ADMIN_ChatToAdminsT("%s reported %s: %s\n", reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str());
-						ADMIN_ReplyToCommandT(slot, "Report submitted against %s.\n", targetPlayer->name.c_str());
+						CS2A_ChatToAdminsT("%s reported %s: %s\n", reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str());
+						CS2A_ReplyToCommandT(slot, "Report submitted against %s.\n", targetPlayer->name.c_str());
 
 						g_CS2ADiscord.NotifyReport(reporter->name.c_str(), targetPlayer->name.c_str(), reason.c_str(), reporter->steamid64,
 												   targetPlayer->steamid64);
 
-						ADMIN_LogAction(slot, (std::string("Reported ") + targetPlayer->name + ": " + reason).c_str());
+						CS2A_LogAction(slot, (std::string("Reported ") + targetPlayer->name + ": " + reason).c_str());
 					});
 
 	// !kick <target> [reason=]
@@ -2114,7 +2114,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						int target = ADMIN_FindTarget(slot, args.Get("player")->c_str());
+						int target = CS2A_FindTarget(slot, args.Get("player")->c_str());
 						if (target < 0)
 						{
 							return;
@@ -2122,7 +2122,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (target == slot)
 						{
-							ADMIN_ReplyToCommandT(slot, "You cannot kick yourself.\n");
+							CS2A_ReplyToCommandT(slot, "You cannot kick yourself.\n");
 							return;
 						}
 
@@ -2145,12 +2145,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 
 						DiscordTarget discordTarget = CaptureDiscordTarget(slot, target);
-						ADMIN_ChatToAllT("%s kicked %s. Reason: %s\n", discordTarget.adminName.c_str(), targetPlayer->name.c_str(), reason.c_str());
+						CS2A_ChatToAllT("%s kicked %s. Reason: %s\n", discordTarget.adminName.c_str(), targetPlayer->name.c_str(), reason.c_str());
 						NotifyDiscordOnPlayer("Kick", discordTarget, reason.c_str());
 
-						ADMIN_LogAction(slot, (std::string("Kicked ") + targetPlayer->name + ": " + reason).c_str());
+						CS2A_LogAction(slot, (std::string("Kicked ") + targetPlayer->name + ": " + reason).c_str());
 
-						ADMIN_PrintToClientT(target, "[ADMIN] You have been kicked. Reason: %s\n", reason.c_str());
+						CS2A_PrintToClientT(target, "[ADMIN] You have been kicked. Reason: %s\n", reason.c_str());
 						g_pEngine->DisconnectClient(CPlayerSlot(target), NETWORK_DISCONNECT_KICKED);
 					});
 
@@ -2192,14 +2192,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						{
 							if (targets.isMultiTarget)
 							{
-								ADMIN_ChatToAllT("%s slayed %d players.\n", adminName.c_str(), slayed);
-								ADMIN_LogAction(slot, (std::string("Slayed ") + std::to_string(slayed) + " players").c_str());
+								CS2A_ChatToAllT("%s slayed %d players.\n", adminName.c_str(), slayed);
+								CS2A_LogAction(slot, (std::string("Slayed ") + std::to_string(slayed) + " players").c_str());
 							}
 							else
 							{
 								std::string targetName = PlayerName(targets.slots[0]);
-								ADMIN_ChatToAllT("%s slayed %s.\n", adminName.c_str(), targetName.c_str());
-								ADMIN_LogAction(slot, (std::string("Slayed ") + targetName).c_str());
+								CS2A_ChatToAllT("%s slayed %s.\n", adminName.c_str(), targetName.c_str());
+								CS2A_LogAction(slot, (std::string("Slayed ") + targetName).c_str());
 							}
 						}
 					});
@@ -2210,7 +2210,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					{
 						if (!MenuPickerAvailable(slot))
 						{
-							ADMIN_ReplyToCommandT(slot, "The admin menu needs the mm-cs2menus plugin.\n");
+							CS2A_ReplyToCommandT(slot, "The admin menu needs the mm-cs2menus plugin.\n");
 							return;
 						}
 						StartAdminMenu(slot);
@@ -2221,8 +2221,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					[](int slot, const mmu::Args &args, bool silent)
 					{
 						g_CS2AAdminManager.ReloadAdmins();
-						ADMIN_ReplyToCommandT(slot, "Admin cache has been refreshed.\n");
-						ADMIN_LogAction(slot, "Reloaded admins");
+						CS2A_ReplyToCommandT(slot, "Admin cache has been refreshed.\n");
+						CS2A_LogAction(slot, "Reloaded admins");
 					});
 
 	// !execcfg [file] - Execute a config under cfg/
@@ -2248,18 +2248,18 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 						if (!valid)
 						{
-							ADMIN_ReplyToCommandT(slot, "Invalid config file '%s'.\n", file.c_str());
+							CS2A_ReplyToCommandT(slot, "Invalid config file '%s'.\n", file.c_str());
 							return;
 						}
 						// exec only reports to the server console.
 						if (!std::ifstream(std::string(g_SMAPI->GetBaseDir()) + "/cfg/" + file).good())
 						{
-							ADMIN_ReplyToCommandT(slot, "Config not found: %s\n", file.c_str());
+							CS2A_ReplyToCommandT(slot, "Config not found: %s\n", file.c_str());
 							return;
 						}
 						g_pEngine->ServerCommand(("exec " + file + "\n").c_str());
-						ADMIN_ReplyToCommandT(slot, "Executed config %s.\n", file.c_str());
-						ADMIN_LogAction(slot, ("Executed config " + file).c_str());
+						CS2A_ReplyToCommandT(slot, "Executed config %s.\n", file.c_str());
+						CS2A_LogAction(slot, ("Executed config " + file).c_str());
 					});
 
 	// !who [target] - List online admins, or one player's admin info
@@ -2268,7 +2268,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					{
 						if (const std::string *player = args.Get("player"))
 						{
-							int target = ADMIN_FindTarget(slot, player->c_str());
+							int target = CS2A_FindTarget(slot, player->c_str());
 							PlayerInfo *p = target >= 0 ? g_CS2APlayerManager.GetPlayer(target) : nullptr;
 							if (!p)
 							{
@@ -2277,7 +2277,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(target);
 							if (!admin)
 							{
-								ADMIN_ReplyToCommandT(slot, "%s is not an admin.\n", p->name.c_str());
+								CS2A_ReplyToCommandT(slot, "%s is not an admin.\n", p->name.c_str());
 								return;
 							}
 							ReplyAdminLine(slot, *p, *admin);
@@ -2287,7 +2287,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						CGlobalVars *globals = GetGameGlobals();
 						int maxClients = globals ? globals->maxClients : MAXPLAYERS;
 
-						ADMIN_ReplyToCommandT(slot, "Online Admins:\n");
+						CS2A_ReplyToCommandT(slot, "Online Admins:\n");
 						int count = 0;
 
 						for (int i = 0; i < maxClients; i++)
@@ -2310,11 +2310,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (count == 0)
 						{
-							ADMIN_ReplyToCommandT(slot, "  No admins currently online.\n");
+							CS2A_ReplyToCommandT(slot, "  No admins currently online.\n");
 						}
 						else
 						{
-							ADMIN_ReplyToCommandT(slot, "%d admin(s) online\n", count);
+							CS2A_ReplyToCommandT(slot, "%d admin(s) online\n", count);
 						}
 					});
 
@@ -2324,25 +2324,25 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 					{
 						if (slot < 0)
 						{
-							ADMIN_ReplyToCommandT(slot, "This command cannot be used from the server console.\n");
+							CS2A_ReplyToCommandT(slot, "This command cannot be used from the server console.\n");
 							return;
 						}
 
 						// Nothing to pick when neither surface can show a tag.
 						// Config asking for them isn't enough, another plugin may own both.
-						if (!ADMIN_ChatTagsActive() && !ADMIN_BoardTagsActive())
+						if (!CS2A_ChatTagsActive() && !CS2A_BoardTagsActive())
 						{
 							const char *chatOwner = g_CS2AForeignPlugins.ChatOwner();
 							const char *boardOwner = g_CS2AForeignPlugins.ClanTagOwner();
 							const char *blocker = chatOwner ? chatOwner : boardOwner;
 
-							if (blocker && (g_CS2AConfig.chatTagsEnabled || g_CS2AConfig.boardTagsEnabled))
+							if (blocker && (g_CS2AConfig.chatTags || g_CS2AConfig.leaderboardTags))
 							{
-								ADMIN_ReplyToCommandT(slot, "Tags are unavailable while %s is loaded.\n", blocker);
+								CS2A_ReplyToCommandT(slot, "Tags are unavailable while %s is loaded.\n", blocker);
 							}
 							else
 							{
-								ADMIN_ReplyToCommandT(slot, "Tags are disabled on this server.\n");
+								CS2A_ReplyToCommandT(slot, "Tags are disabled on this server.\n");
 							}
 							return;
 						}
@@ -2350,7 +2350,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						std::vector<const TagDef *> eligible = g_CS2ATagManager.EligibleFor(slot);
 						if (eligible.empty())
 						{
-							ADMIN_ReplyToCommandT(slot, "You do not have any tags.\n");
+							CS2A_ReplyToCommandT(slot, "You do not have any tags.\n");
 							return;
 						}
 
@@ -2361,27 +2361,27 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							if (want == "none" || want == "off")
 							{
 								g_CS2ATagManager.SelectTag(slot, "");
-								ADMIN_ReplyToCommandT(slot, "Your tag is now hidden.\n");
+								CS2A_ReplyToCommandT(slot, "Your tag is now hidden.\n");
 								return;
 							}
 
 							if (!g_CS2ATagManager.SelectTag(slot, want.c_str()))
 							{
-								ADMIN_ReplyToCommandT(slot, "You do not have a tag called \"%s\".\n", want.c_str());
+								CS2A_ReplyToCommandT(slot, "You do not have a tag called \"%s\".\n", want.c_str());
 								return;
 							}
-							ADMIN_ReplyToCommandT(slot, "Your tag is now \"%s\".\n", want.c_str());
+							CS2A_ReplyToCommandT(slot, "Your tag is now \"%s\".\n", want.c_str());
 							return;
 						}
 
 						if (!g_AdminMenus.Available())
 						{
-							ADMIN_ReplyToCommandT(slot, "Your tags:\n");
+							CS2A_ReplyToCommandT(slot, "Your tags:\n");
 							for (const TagDef *tag : eligible)
 							{
-								ADMIN_ReplyToCommandT(slot, "  %s\n", tag->id.c_str());
+								CS2A_ReplyToCommandT(slot, "  %s\n", tag->id.c_str());
 							}
-							ADMIN_ReplyToCommandT(slot, "Use %stag <name>, or %stag none to hide it.\n", g_CS2AConfig.general.commandPrefix.c_str(),
+							CS2A_ReplyToCommandT(slot, "Use %stag <name>, or %stag none to hide it.\n", g_CS2AConfig.general.commandPrefix.c_str(),
 												  g_CS2AConfig.general.commandPrefix.c_str());
 							return;
 						}
@@ -2393,31 +2393,31 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							AdminMenuItem item;
 							item.text = tag->id;
 							item.info = tag->id;
-							item.subtext = tag == shown ? ADMIN_Translate(slot, "current") : "";
+							item.subtext = tag == shown ? CS2A_Translate(slot, "current") : "";
 							items.push_back(item);
 						}
 						// Empty info is what SelectTag reads as "show nothing".
 						AdminMenuItem none;
-						none.text = ADMIN_Translate(slot, "No tag");
+						none.text = CS2A_Translate(slot, "No tag");
 						none.info = "";
-						none.subtext = shown ? "" : ADMIN_Translate(slot, "current");
+						none.subtext = shown ? "" : CS2A_Translate(slot, "current");
 						items.push_back(none);
 
-						g_AdminMenus.ShowMenu(slot, ADMIN_Translate(slot, "Choose your tag").c_str(), items,
+						g_AdminMenus.ShowMenu(slot, CS2A_Translate(slot, "Choose your tag").c_str(), items,
 											  [](int s, int, const std::string &info)
 											  {
 												  if (!g_CS2ATagManager.SelectTag(s, info.c_str()))
 												  {
-													  ADMIN_ReplyToCommandT(s, "That tag is no longer available to you.\n");
+													  CS2A_ReplyToCommandT(s, "That tag is no longer available to you.\n");
 													  return;
 												  }
 												  if (info.empty())
 												  {
-													  ADMIN_ReplyToCommandT(s, "Your tag is now hidden.\n");
+													  CS2A_ReplyToCommandT(s, "Your tag is now hidden.\n");
 												  }
 												  else
 												  {
-													  ADMIN_ReplyToCommandT(s, "Your tag is now \"%s\".\n", info.c_str());
+													  CS2A_ReplyToCommandT(s, "Your tag is now \"%s\".\n", info.c_str());
 												  }
 											  });
 					});
@@ -2430,13 +2430,13 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (disconnected.empty())
 						{
-							ADMIN_ReplyToCommandT(slot, "No recently disconnected players.\n");
+							CS2A_ReplyToCommandT(slot, "No recently disconnected players.\n");
 							return;
 						}
 
 						double curtime = Plat_FloatTime();
 
-						ADMIN_ReplyToCommandT(slot, "Recently Disconnected Players:\n");
+						CS2A_ReplyToCommandT(slot, "Recently Disconnected Players:\n");
 
 						// Show most recent first
 						for (int i = (int)disconnected.size() - 1; i >= 0; i--)
@@ -2446,10 +2446,10 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							std::string authid = SteamID64ToAuthId(dc.steamid64);
 							std::string timeAgo = FormatAgo(slot, curtime > 0.0 && dc.disconnectTime > 0.0 ? curtime - dc.disconnectTime : 0.0);
 
-							ADMIN_ReplyToCommandT(slot, "  %s (%s) [%s] - %s\n", dc.name.c_str(), authid.c_str(), dc.ip.c_str(), timeAgo.c_str());
+							CS2A_ReplyToCommandT(slot, "  %s (%s) [%s] - %s\n", dc.name.c_str(), authid.c_str(), dc.ip.c_str(), timeAgo.c_str());
 						}
 
-						ADMIN_ReplyToCommandT(slot, "%d player(s) recently disconnected\n", (int)disconnected.size());
+						CS2A_ReplyToCommandT(slot, "%d player(s) recently disconnected\n", (int)disconnected.size());
 					});
 
 	// !adminpass <password> - Unlock admin rights held behind a password
@@ -2469,7 +2469,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 
 						// The prompt is hidden from a relay whose say hook runs before ours, a password typed after the command is not.
-						ADMIN_ReplyToCommandT(slot, "Type your admin password in chat, or cancel to stop.\n");
+						CS2A_ReplyToCommandT(slot, "Type your admin password in chat, or cancel to stop.\n");
 						g_CS2ACommandSystem.PromptText(slot, &SubmitAdminPassword);
 					});
 
@@ -2495,14 +2495,14 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						int endIdx = 0;
 						int totalPages = PageRange(page, static_cast<int>(cmds.size()), startIdx, endIdx);
 
-						ADMIN_ReplyToCommandT(slot, "Commands (page %d/%d):\n", page, totalPages);
+						CS2A_ReplyToCommandT(slot, "Commands (page %d/%d):\n", page, totalPages);
 						for (int i = startIdx; i < endIdx; i++)
 						{
-							ADMIN_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.general.commandPrefix.c_str(), cmds[i].c_str());
+							CS2A_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.general.commandPrefix.c_str(), cmds[i].c_str());
 						}
 						if (page < totalPages)
 						{
-							ADMIN_ReplyToCommandT(slot, "Use !adminhelp %d for next page.\n", page + 1);
+							CS2A_ReplyToCommandT(slot, "Use !adminhelp %d for next page.\n", page + 1);
 						}
 					});
 
@@ -2530,15 +2530,15 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (matches.empty())
 						{
-							ADMIN_ReplyToCommandT(slot, "No commands found matching '%s'.\n", text.c_str());
+							CS2A_ReplyToCommandT(slot, "No commands found matching '%s'.\n", text.c_str());
 							return;
 						}
 
 						std::sort(matches.begin(), matches.end());
-						ADMIN_ReplyToCommandT(slot, "Commands matching '%s':\n", text.c_str());
+						CS2A_ReplyToCommandT(slot, "Commands matching '%s':\n", text.c_str());
 						for (const auto &cmd : matches)
 						{
-							ADMIN_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.general.commandPrefix.c_str(), cmd.c_str());
+							CS2A_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.general.commandPrefix.c_str(), cmd.c_str());
 						}
 					});
 
@@ -2598,7 +2598,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 										LoggingSystem_UnregisterLoggingListener(&listener);
 									}
 									CUtlString cur = cvar.GetString();
-									ADMIN_PrintToClientT(slot, "%s = %s\n", cvar.GetName(), cur.Get());
+									CS2A_PrintToClientT(slot, "%s = %s\n", cvar.GetName(), cur.Get());
 									if (!listener.Buffer().empty())
 									{
 										ReplyConsoleOutput(slot, listener.Buffer(), listener.Truncated());
@@ -2610,7 +2610,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						if (dispatched)
 						{
-							ADMIN_ReplyToCommandT(slot, "Executed: %s, check console for output.\n", cmd.c_str());
+							CS2A_ReplyToCommandT(slot, "Executed: %s, check console for output.\n", cmd.c_str());
 							ReplyConsoleOutput(slot, listener.Buffer(), listener.Truncated());
 						}
 						else if (!cvarHandled)
@@ -2618,12 +2618,12 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							// Fallback: queue via engine. Output cannot be captured because the command is executed at the next frame boundary.
 							std::string queued = cmd + "\n";
 							g_pEngine->ServerCommand(queued.c_str());
-							ADMIN_ReplyToCommandT(slot, "Queued: %s\n", cmd.c_str());
+							CS2A_ReplyToCommandT(slot, "Queued: %s\n", cmd.c_str());
 						}
 
 						const bool secret = RconTextIsSecret(cmd);
 						const std::string logged = secret ? cmd.substr(0, cmd.find_first_of(" \t;\"")) + " [redacted]" : cmd;
-						ADMIN_LogAction(slot, (std::string("RCON: ") + logged).c_str());
+						CS2A_LogAction(slot, (std::string("RCON: ") + logged).c_str());
 
 						const char *discordOutput = dispatched && !secret && !listener.Buffer().empty() ? listener.Buffer().c_str() : nullptr;
 						NotifyDiscordOnText(slot, "RCON", logged.c_str(), nullptr, -1, discordOutput);
@@ -2639,7 +2639,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						int target = ADMIN_FindTarget(slot, args.Get("player")->c_str());
+						int target = CS2A_FindTarget(slot, args.Get("player")->c_str());
 						if (target < 0)
 						{
 							return;
@@ -2651,11 +2651,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
 						std::string targetName = targetPlayer ? targetPlayer->name : "Unknown";
 
-						ADMIN_PrintToChatT(target, "[PM from %s] %s\n", adminName.c_str(), message.c_str());
+						CS2A_PrintToChatT(target, "[PM from %s] %s\n", adminName.c_str(), message.c_str());
 
 						if (slot >= 0)
 						{
-							ADMIN_PrintToChatT(slot, "[PM to %s] %s\n", targetName.c_str(), message.c_str());
+							CS2A_PrintToChatT(slot, "[PM to %s] %s\n", targetName.c_str(), message.c_str());
 						}
 
 						CGlobalVars *globals = GetGameGlobals();
@@ -2669,11 +2669,11 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 							if (g_CS2AAdminManager.PlayerHasFlag(i, ADMFLAG_GENERIC))
 							{
-								ADMIN_PrintToChatT(i, "[PM %s -> %s] %s\n", adminName.c_str(), targetName.c_str(), message.c_str());
+								CS2A_PrintToChatT(i, "[PM %s -> %s] %s\n", adminName.c_str(), targetName.c_str(), message.c_str());
 							}
 						}
 
-						ADMIN_LogAction(slot, (std::string("PM to ") + targetName + ": " + message).c_str());
+						CS2A_LogAction(slot, (std::string("PM to ") + targetName + ": " + message).c_str());
 					});
 
 	// !map <mapname|workshopid|url> - Change the current map
@@ -2716,7 +2716,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 								ShowMapMatches(slot, std::move(matches));
 								return;
 							}
-							ADMIN_ReplyToCommandT(slot, "%s\n", error.c_str());
+							CS2A_ReplyToCommandT(slot, "%s\n", error.c_str());
 							return;
 						}
 
@@ -2726,9 +2726,9 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						{
 							// A pending one cancels the vote from CS2AMapManager::Tick, once Steam confirms the map.
 							g_CS2AMapManager.CancelRtvVote();
-							ADMIN_ChatToAllT("%s changed map to %s.\n", adminName.c_str(), map.c_str());
+							CS2A_ChatToAllT("%s changed map to %s.\n", adminName.c_str(), map.c_str());
 						}
-						ADMIN_LogAction(slot, (std::string(pending ? "Requested map change to " : "Changed map to ") + map).c_str());
+						CS2A_LogAction(slot, (std::string(pending ? "Requested map change to " : "Changed map to ") + map).c_str());
 						NotifyDiscordOnText(slot, pending ? "Map Change Requested" : "Map Change", map.c_str());
 					});
 
@@ -2747,7 +2747,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						const std::vector<const MapEntry *> maps = g_CS2AMapManager.GetSortedMaps();
 						if (maps.empty())
 						{
-							ADMIN_ReplyToCommandT(slot, "No maps loaded. Check cfg/maplist.txt\n");
+							CS2A_ReplyToCommandT(slot, "No maps loaded. Check cfg/maplist.txt\n");
 							return;
 						}
 
@@ -2757,21 +2757,21 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						int endIdx = 0;
 						int totalPages = PageRange(page, static_cast<int>(maps.size()), startIdx, endIdx);
 
-						ADMIN_ReplyToCommandT(slot, "Maps (page %d/%d):\n", page, totalPages);
+						CS2A_ReplyToCommandT(slot, "Maps (page %d/%d):\n", page, totalPages);
 						for (int i = startIdx; i < endIdx; i++)
 						{
 							if (maps[i]->isWorkshop)
 							{
-								ADMIN_ReplyToCommandT(slot, "  %s [ws:%s]\n", maps[i]->displayName.c_str(), maps[i]->workshopId.c_str());
+								CS2A_ReplyToCommandT(slot, "  %s [ws:%s]\n", maps[i]->displayName.c_str(), maps[i]->workshopId.c_str());
 							}
 							else
 							{
-								ADMIN_ReplyToCommandT(slot, "  %s\n", maps[i]->mapName.c_str());
+								CS2A_ReplyToCommandT(slot, "  %s\n", maps[i]->mapName.c_str());
 							}
 						}
 						if (page < totalPages)
 						{
-							ADMIN_ReplyToCommandT(slot, "Use !maps %d for next page.\n", page + 1);
+							CS2A_ReplyToCommandT(slot, "Use !maps %d for next page.\n", page + 1);
 						}
 					});
 
@@ -2801,8 +2801,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
 
-						ADMIN_ReplyToCommandT(slot, "Fired: %s %s%s\n", entity.c_str(), input.c_str(), value.empty() ? "" : (" " + value).c_str());
-						ADMIN_LogAction(slot, (std::string("EntFire: ") + cmd).c_str());
+						CS2A_ReplyToCommandT(slot, "Fired: %s %s%s\n", entity.c_str(), input.c_str(), value.empty() ? "" : (" " + value).c_str());
+						CS2A_LogAction(slot, (std::string("EntFire: ") + cmd).c_str());
 					});
 
 	// !give <target> weapon=<weapon> - Give a weapon to a player
@@ -2840,7 +2840,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 						if (!known)
 						{
-							ADMIN_ReplyToCommandT(slot, "Unknown weapon '%s'.\n", args.Get("weapon")->c_str());
+							CS2A_ReplyToCommandT(slot, "Unknown weapon '%s'.\n", args.Get("weapon")->c_str());
 							return;
 						}
 
@@ -2887,19 +2887,19 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						{
 							if (targets.isMultiTarget)
 							{
-								ADMIN_ChatToAllT("%s gave %s to %d players.\n", adminName.c_str(), weapon.c_str(), given);
-								ADMIN_LogAction(slot, (std::string("Gave ") + weapon + " to " + std::to_string(given) + " players").c_str());
+								CS2A_ChatToAllT("%s gave %s to %d players.\n", adminName.c_str(), weapon.c_str(), given);
+								CS2A_LogAction(slot, (std::string("Gave ") + weapon + " to " + std::to_string(given) + " players").c_str());
 							}
 							else
 							{
 								std::string targetName = PlayerName(targets.slots[0]);
-								ADMIN_ChatToAllT("%s gave %s to %s.\n", adminName.c_str(), weapon.c_str(), targetName.c_str());
-								ADMIN_LogAction(slot, (std::string("Gave ") + weapon + " to " + targetName).c_str());
+								CS2A_ChatToAllT("%s gave %s to %s.\n", adminName.c_str(), weapon.c_str(), targetName.c_str());
+								CS2A_LogAction(slot, (std::string("Gave ") + weapon + " to " + targetName).c_str());
 							}
 						}
 						else
 						{
-							ADMIN_ReplyToCommandT(slot, "No valid alive targets found.\n");
+							CS2A_ReplyToCommandT(slot, "No valid alive targets found.\n");
 						}
 					});
 
@@ -2941,19 +2941,19 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						{
 							if (targets.isMultiTarget)
 							{
-								ADMIN_ChatToAllT("%s stripped weapons from %d players.\n", adminName.c_str(), stripped);
-								ADMIN_LogAction(slot, (std::string("Stripped weapons from ") + std::to_string(stripped) + " players").c_str());
+								CS2A_ChatToAllT("%s stripped weapons from %d players.\n", adminName.c_str(), stripped);
+								CS2A_LogAction(slot, (std::string("Stripped weapons from ") + std::to_string(stripped) + " players").c_str());
 							}
 							else
 							{
 								std::string targetName = PlayerName(targets.slots[0]);
-								ADMIN_ChatToAllT("%s stripped weapons from %s.\n", adminName.c_str(), targetName.c_str());
-								ADMIN_LogAction(slot, (std::string("Stripped weapons from ") + targetName).c_str());
+								CS2A_ChatToAllT("%s stripped weapons from %s.\n", adminName.c_str(), targetName.c_str());
+								CS2A_LogAction(slot, (std::string("Stripped weapons from ") + targetName).c_str());
 							}
 						}
 						else
 						{
-							ADMIN_ReplyToCommandT(slot, "No valid alive targets found.\n");
+							CS2A_ReplyToCommandT(slot, "No valid alive targets found.\n");
 						}
 					});
 }

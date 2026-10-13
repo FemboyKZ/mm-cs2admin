@@ -170,7 +170,7 @@ void CS2AAdminManager::ReloadAdmins()
 	LoadSimpleAdmins();
 
 	// Then load from DB (async)
-	if (g_CS2AConfig.enableAdmins && g_CS2ADatabase.IsConnected())
+	if (g_CS2AConfig.adminsEnabled && g_CS2ADatabase.IsConnected())
 	{
 		LoadDatabaseAdmins(generation,
 						   [this]()
@@ -182,7 +182,7 @@ void CS2AAdminManager::ReloadAdmins()
 	else
 	{
 		// DB configured but unreachable, so use the last good load.
-		if (g_CS2AConfig.enableAdmins && g_CS2AConfig.backupConfigs && g_CS2ADatabase.IsInitialized())
+		if (g_CS2AConfig.adminsEnabled && g_CS2AConfig.backupConfigs && g_CS2ADatabase.IsInitialized())
 		{
 			LoadBackup();
 		}

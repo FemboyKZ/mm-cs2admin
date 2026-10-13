@@ -1,5 +1,5 @@
-#ifndef _INCLUDE_ADMIN_MAP_MANAGER_H_
-#define _INCLUDE_ADMIN_MAP_MANAGER_H_
+#ifndef _INCLUDE_CS2A_MAP_MANAGER_H_
+#define _INCLUDE_CS2A_MAP_MANAGER_H_
 
 #include "game/workshop.h"
 #include "interfaces/cs2rockthevote/forwards.h"
@@ -100,4 +100,4 @@ private:
 
 extern CS2AMapManager g_CS2AMapManager;
 
-#endif // _INCLUDE_ADMIN_MAP_MANAGER_H_
+#endif // _INCLUDE_CS2A_MAP_MANAGER_H_

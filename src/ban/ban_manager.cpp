@@ -722,8 +722,8 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 
 							 CS2A_ReplyToCommandT(callerSlot, "Ban history for %s (last 10):\n", authid.c_str());
 							 CS2A_ReplyToCommandT(callerSlot, "  %-12s %-16s %-12s %-4s %s\n", CS2A_Translate(callerSlot, "Date").c_str(),
-												   CS2A_Translate(callerSlot, "Banned By").c_str(), CS2A_Translate(callerSlot, "Length").c_str(),
-												   "R", CS2A_Translate(callerSlot, "Reason").c_str());
+												  CS2A_Translate(callerSlot, "Banned By").c_str(), CS2A_Translate(callerSlot, "Length").c_str(), "R",
+												  CS2A_Translate(callerSlot, "Reason").c_str());
 
 							 while (rs->MoreRows())
 							 {
@@ -739,8 +739,8 @@ void CS2ABanManager::ListBans(int callerSlot, const char *authid)
 								 const char *status = (removeType && *removeType) ? removeType : " ";
 
 								 CS2A_ReplyToCommandT(callerSlot, "  %-12s %-16s %-12s %-4s %s\n", FormatDate(rs->GetInt(0)).c_str(),
-													   admin ? admin : CS2A_Translate(callerSlot, "Unknown").c_str(),
-													   FormatLength(callerSlot, rs->GetInt(2)).c_str(), status, reason ? reason : "");
+													  admin ? admin : CS2A_Translate(callerSlot, "Unknown").c_str(),
+													  FormatLength(callerSlot, rs->GetInt(2)).c_str(), status, reason ? reason : "");
 							 }
 						 });
 }
@@ -766,53 +766,52 @@ void CS2ABanManager::ListComms(int callerSlot, const char *authid)
 			 "WHERE %s ORDER BY c.created DESC LIMIT 10",
 			 prefix.c_str(), prefix.c_str(), authCond.c_str());
 
-	g_CS2ADatabase.Query(query,
-						 [callerSlot, callerId = CallerSteamID(callerSlot), authid = std::string(authid)](ISQLQuery *result)
-						 {
-							 if (!CallerStillThere(callerSlot, callerId))
-							 {
-								 return;
-							 }
+	g_CS2ADatabase.Query(
+		query,
+		[callerSlot, callerId = CallerSteamID(callerSlot), authid = std::string(authid)](ISQLQuery *result)
+		{
+			if (!CallerStillThere(callerSlot, callerId))
+			{
+				return;
+			}
 
-							 if (!result)
-							 {
-								 CS2A_ReplyToCommandT(callerSlot, "Query failed.\n");
-								 return;
-							 }
+			if (!result)
+			{
+				CS2A_ReplyToCommandT(callerSlot, "Query failed.\n");
+				return;
+			}
 
-							 ISQLResult *rs = result->GetResultSet();
-							 if (!rs || rs->GetRowCount() == 0)
-							 {
-								 CS2A_ReplyToCommandT(callerSlot, "No comm blocks found for %s.\n", authid.c_str());
-								 return;
-							 }
+			ISQLResult *rs = result->GetResultSet();
+			if (!rs || rs->GetRowCount() == 0)
+			{
+				CS2A_ReplyToCommandT(callerSlot, "No comm blocks found for %s.\n", authid.c_str());
+				return;
+			}
 
-							 CS2A_ReplyToCommandT(callerSlot, "Comm history for %s (last 10):\n", authid.c_str());
-							 CS2A_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", CS2A_Translate(callerSlot, "Date").c_str(),
-												   CS2A_Translate(callerSlot, "Admin").c_str(), CS2A_Translate(callerSlot, "Type").c_str(),
-												   CS2A_Translate(callerSlot, "Length").c_str(), "R", CS2A_Translate(callerSlot, "Reason").c_str());
+			CS2A_ReplyToCommandT(callerSlot, "Comm history for %s (last 10):\n", authid.c_str());
+			CS2A_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", CS2A_Translate(callerSlot, "Date").c_str(),
+								 CS2A_Translate(callerSlot, "Admin").c_str(), CS2A_Translate(callerSlot, "Type").c_str(),
+								 CS2A_Translate(callerSlot, "Length").c_str(), "R", CS2A_Translate(callerSlot, "Reason").c_str());
 
-							 while (rs->MoreRows())
-							 {
-								 ISQLRow *row = rs->FetchRow();
-								 if (!row)
-								 {
-									 break;
-								 }
+			while (rs->MoreRows())
+			{
+				ISQLRow *row = rs->FetchRow();
+				if (!row)
+				{
+					break;
+				}
 
-								 const char *admin = rs->GetString(1);
-								 int type = rs->GetInt(3);
-								 const char *removeType = rs->GetString(4);
-								 const char *reason = rs->GetString(5);
+				const char *admin = rs->GetString(1);
+				int type = rs->GetInt(3);
+				const char *removeType = rs->GetString(4);
+				const char *reason = rs->GetString(5);
 
-								 const std::string typeStr = (type == 1)   ? CS2A_Translate(callerSlot, "Mute")
-															 : (type == 2) ? CS2A_Translate(callerSlot, "Gag")
-																		   : "?";
-								 const char *status = (removeType && *removeType) ? removeType : " ";
+				const std::string typeStr = (type == 1) ? CS2A_Translate(callerSlot, "Mute") : (type == 2) ? CS2A_Translate(callerSlot, "Gag") : "?";
+				const char *status = (removeType && *removeType) ? removeType : " ";
 
-								 CS2A_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", FormatDate(rs->GetInt(0)).c_str(),
-													   admin ? admin : CS2A_Translate(callerSlot, "Unknown").c_str(), typeStr.c_str(),
-													   FormatLength(callerSlot, rs->GetInt(2)).c_str(), status, reason ? reason : "");
-							 }
-						 });
+				CS2A_ReplyToCommandT(callerSlot, "  %-12s %-16s %-6s %-12s %-4s %s\n", FormatDate(rs->GetInt(0)).c_str(),
+									 admin ? admin : CS2A_Translate(callerSlot, "Unknown").c_str(), typeStr.c_str(),
+									 FormatLength(callerSlot, rs->GetInt(2)).c_str(), status, reason ? reason : "");
+			}
+		});
 }

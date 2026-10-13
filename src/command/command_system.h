@@ -34,7 +34,7 @@ public:
 	// Call once after RegisterBuiltinCommands().
 	void RegisterConsoleCommands();
 
-	// mm-cs2rockthevote has a maps command of its own, so ours steps aside in chat and the console while it is loaded.
+	// Ours steps aside while mm-cs2rockthevote is loaded, it has its own.
 	void YieldMapsCommand(bool yield);
 
 	// Unregister and delete all dynamically created ConCommand objects.

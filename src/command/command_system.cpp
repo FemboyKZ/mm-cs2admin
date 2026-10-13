@@ -408,8 +408,8 @@ static void ReplyAdminLine(int slot, const PlayerInfo &player, const AdminEntry 
 		group += (group.empty() ? "" : ", ") + groupName;
 	}
 	CS2A_ReplyToCommandT(slot, "  %s [%s] flags: %s imm: %d\n", player.name.c_str(),
-						  group.empty() ? CS2A_Translate(slot, "(no group)").c_str() : group.c_str(),
-						  CS2AAdminManager::FlagsToString(admin.flags).c_str(), admin.immunity);
+						 group.empty() ? CS2A_Translate(slot, "(no group)").c_str() : group.c_str(),
+						 CS2AAdminManager::FlagsToString(admin.flags).c_str(), admin.immunity);
 }
 
 // Clamps `page` and gives the [start, end) index range for a listing of `count` entries.
@@ -791,8 +791,7 @@ namespace
 					}
 					if ((commFilter & COMM_GAG) && (p->isGagged || p->isSessionGagged))
 					{
-						blocks.push_back(
-							CS2A_Format(callerSlot, "gag %s", BlockRemaining(callerSlot, p->isSessionGagged, p->gagExpireTime).c_str()));
+						blocks.push_back(CS2A_Format(callerSlot, "gag %s", BlockRemaining(callerSlot, p->isSessionGagged, p->gagExpireTime).c_str()));
 					}
 					item.disabled = blocks.empty();
 					for (const std::string &block : blocks)
@@ -2382,7 +2381,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 								CS2A_ReplyToCommandT(slot, "  %s\n", tag->id.c_str());
 							}
 							CS2A_ReplyToCommandT(slot, "Use %stag <name>, or %stag none to hide it.\n", g_CS2AConfig.general.commandPrefix.c_str(),
-												  g_CS2AConfig.general.commandPrefix.c_str());
+												 g_CS2AConfig.general.commandPrefix.c_str());
 							return;
 						}
 

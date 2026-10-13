@@ -115,7 +115,7 @@ static void ApplyStoredBlock(int slot, PlayerInfo *player, int type, int remaini
 	else
 	{
 		CS2A_PrintToChatT(slot, mute ? "You are muted (%d seconds remaining). Reason: %s\n" : "You are gagged (%d seconds remaining). Reason: %s\n",
-						   remaining, why.c_str());
+						  remaining, why.c_str());
 	}
 	MMU_LOG_INFO("Player \"%s\" has active %s. Reason: %s\n", player->name.c_str(), mute ? "mute" : "gag", why.c_str());
 }

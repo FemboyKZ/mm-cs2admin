@@ -151,7 +151,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 
 	g_CS2ACommandSystem.RegisterBuiltinCommands();
 
-	// Before the console commands, so a load after mm-cs2rockthevote leaves mm_maps to it.
+	// First, so mm_maps is left to a loaded mm-cs2rockthevote.
 	g_CS2AMapManager.RefreshRtv();
 	g_CS2ACommandSystem.RegisterConsoleCommands();
 
@@ -762,7 +762,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 											  if (p && p->connected && p->steamid64 == steamid64)
 											  {
 												  CS2A_ChatToAdminsT("Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n",
-																	  p->name.c_str(), p->authid.c_str(), banCount, muteCount, gagCount);
+																	 p->name.c_str(), p->authid.c_str(), banCount, muteCount, gagCount);
 											  }
 										  }
 									  });

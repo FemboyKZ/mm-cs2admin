@@ -16,7 +16,7 @@ CS2AConfig g_CS2AConfig;
 // Recurses into subsections.
 typedef kv::Handler KVHandler;
 
-// A color name, or the {name} tag these keys took before.
+// {name} is the old form.
 static std::string ColorTag(const std::string &value)
 {
 	return (value.empty() || value[0] == '{') ? value : "{" + value + "}";
@@ -130,7 +130,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	}
 	else if (sec == "database")
 	{
-		// Not cleaned up like ApplyDatabaseKey would, a bad one fails the load instead of pointing at other tables.
+		// Raw, so a bad one fails the load.
 		if (k == "prefix")
 		{
 			cfg->database.prefix = value;

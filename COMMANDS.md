@@ -39,7 +39,7 @@
 
 Every chat command is also a console command as `mm_<name>`.
 
-`!maps` steps aside while mm-cs2rockthevote is loaded, which answers it with its own map list. `!map` still opens the picker.
+`!maps` is left to mm-cs2rockthevote while that is loaded.
 
 Arguments are `key=value` pairs in any order.
 The one argument shown without `key=` goes first and needs no key,

@@ -16,6 +16,12 @@ CS2AConfig g_CS2AConfig;
 // Recurses into subsections.
 typedef kv::Handler KVHandler;
 
+// A color name, or the {name} tag these keys took before.
+static std::string ColorTag(const std::string &value)
+{
+	return (value.empty() || value[0] == '{') ? value : "{" + value + "}";
+}
+
 static void ConfigHandler(const std::string &section, const std::string &key, const std::string &value, void *userdata)
 {
 	CS2AConfig *cfg = static_cast<CS2AConfig *>(userdata);
@@ -82,7 +88,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			}
 			cfg->maxReconnectAttempts = v;
 		}
-		else if (k == "processqueuetime")
+		else if (k == "processqueueminutes" || k == "processqueuetime")
 		{
 			// Zero or less would rescan the queue every frame.
 			int v = std::atoi(value.c_str());
@@ -123,7 +129,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	}
 	else if (sec == "comms")
 	{
-		if (k == "defaulttime")
+		if (k == "defaultminutes" || k == "defaulttime")
 		{
 			cfg->commsDefaultTime = std::atoi(value.c_str());
 		}
@@ -135,7 +141,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->consoleImmunity = std::atoi(value.c_str());
 		}
-		else if (k == "maxlength")
+		else if (k == "maxminutes" || k == "maxlength")
 		{
 			cfg->commsMaxLength = std::atoi(value.c_str());
 		}
@@ -160,15 +166,15 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	}
 	else if (sec == "sleuth")
 	{
-		if (k == "actions")
+		if (k == "action" || k == "actions")
 		{
 			cfg->sleuthActions = std::atoi(value.c_str());
 		}
-		else if (k == "duration")
+		else if (k == "banminutes" || k == "duration")
 		{
 			cfg->sleuthDuration = std::atoi(value.c_str());
 		}
-		else if (k == "bansallowed")
+		else if (k == "maxbans" || k == "bansallowed")
 		{
 			cfg->sleuthBansAllowed = std::atoi(value.c_str());
 		}
@@ -210,7 +216,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->chatFloodMaxMessages = std::atoi(value.c_str());
 		}
-		else if (k == "muteduration")
+		else if (k == "muteminutes" || k == "muteduration")
 		{
 			cfg->chatFloodMuteDuration = std::atoi(value.c_str());
 		}
@@ -247,15 +253,15 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		}
 		else if (k == "teamcolorct")
 		{
-			cfg->teamColorCT = value;
+			cfg->teamColorCT = ColorTag(value);
 		}
 		else if (k == "teamcolort")
 		{
-			cfg->teamColorT = value;
+			cfg->teamColorT = ColorTag(value);
 		}
 		else if (k == "teamcolorspec")
 		{
-			cfg->teamColorSpec = value;
+			cfg->teamColorSpec = ColorTag(value);
 		}
 	}
 	else if (sec == "menu")

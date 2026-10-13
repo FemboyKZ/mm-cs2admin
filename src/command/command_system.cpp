@@ -355,7 +355,7 @@ static const char *CommActionName(int applied, const char *both, const char *mut
 	return nullptr;
 }
 
-// A block command's time= and reason=. No time uses DefaultTime.
+// A block command's time= and reason=. No time uses DefaultMinutes.
 // minutes is 0 for permanent, -1 for session. False after replying.
 static bool ParseBlockArgs(int slot, const mmu::Args &args, const char *defaultReason, int &minutes, std::string &reason)
 {

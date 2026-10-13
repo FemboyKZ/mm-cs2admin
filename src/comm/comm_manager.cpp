@@ -18,7 +18,7 @@
 
 CS2ACommManager g_CS2ACommManager;
 
-// Bypasses MaxLength and the unblock immunity check, as in SourceComms.
+// Bypasses MaxMinutes and the unblock immunity check, as in SourceComms.
 static const uint32_t COMM_BYPASS_FLAG = ADMFLAG_CHEATS;
 
 static void RecordIssuer(int adminSlot, int &immunity, uint64_t &steamid64)

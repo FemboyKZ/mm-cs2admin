@@ -61,7 +61,7 @@ public:
 	// or at least the issuer's immunity unless DisableUnblockImmunityCheck is set.
 	bool CanLiftBlock(int callerSlot, int targetSlot, int type) const;
 
-	// MaxLength check, 0 = permanent. The console and the cheats flag are exempt.
+	// MaxMinutes check, 0 = permanent. The console and the cheats flag are exempt.
 	bool IsAllowedLength(int callerSlot, int minutes) const;
 
 	// Check and auto-expire timed comm blocks. Called periodically from GameFrame.

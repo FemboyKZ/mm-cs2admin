@@ -65,7 +65,7 @@ Override names are case-insensitive and work with or without the `mm_`/`sm_` pre
 
 Commands that act on a player need strictly higher immunity than the target. Root, console and self-targeting bypass it.
 
-Comm blocks follow the `Comms` section, SourceComms' `CommsConfig`. `DefaultTime` fills a missing time, `MaxLength` caps it, and lifting a block needs at least the immunity of whoever placed it. The `n` flag bypasses both limits.
+Comm blocks follow the `Comms` section, SourceComms' `CommsConfig`. `DefaultMinutes` fills a missing time, `MaxMinutes` caps it, and lifting a block needs at least the immunity of whoever placed it. The `n` flag bypasses both limits.
 
 ## Console / RCON Commands
 

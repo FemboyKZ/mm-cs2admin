@@ -63,7 +63,7 @@ std::string ADMIN_SlotLanguage(int slot)
 void ADMIN_LoadTranslations()
 {
 	g_CS2ATranslations.Load(g_SMAPI->GetBaseDir(), "cs2admin");
-	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.defaultLanguage);
+	g_CS2ATranslations.SetDefaultLanguage(g_CS2AConfig.general.defaultLanguage);
 }
 
 PLUGIN_EXPOSE(CS2APlugin, g_CS2APlugin);

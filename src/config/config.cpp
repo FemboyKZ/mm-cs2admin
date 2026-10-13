@@ -22,7 +22,17 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	std::string sec = str::ToLower(section);
 	std::string k = str::ToLower(key);
 
+	// Old section names.
 	if (sec == "config")
+	{
+		sec = "general";
+	}
+	else if (sec.size() > 6 && sec.compare(sec.size() - 6, 6, "config") == 0)
+	{
+		sec.resize(sec.size() - 6);
+	}
+
+	if (sec == "general")
 	{
 		if (k == "website")
 		{
@@ -33,22 +43,11 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->chatPrefix = mmu::ResolveColorTags(value);
 		}
-		else if (k == "defaultlanguage")
-		{
-			cfg->defaultLanguage = value;
-		}
-		else if (mmu::config::ApplyLogKey(cfg->log, k, value))
+		else if (mmu::config::ApplyGeneralKey(cfg->general, k, value) || mmu::config::ApplyLogKey(cfg->log, k, value))
 		{
 			// consumed
 		}
-		else if (k == "commandprefix")
-		{
-			cfg->commandPrefix = value;
-		}
-		else if (k == "silentcommandprefix")
-		{
-			cfg->silentCommandPrefix = value;
-		}
+		// Old name.
 		else if (k == "databaseprefix")
 		{
 			cfg->database.prefix = value;
@@ -105,7 +104,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 		{
 			cfg->backupConfigs = (value != "0");
 		}
-		else if (k == "enableadmins")
+		else if (k == "adminsenabled" || k == "enableadmins")
 		{
 			cfg->enableAdmins = (value != "0");
 		}
@@ -122,7 +121,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 	{
 		mmu::config::ApplyDatabaseKey(cfg->database, k, value);
 	}
-	else if (sec == "commsconfig")
+	else if (sec == "comms")
 	{
 		if (k == "defaulttime")
 		{
@@ -141,14 +140,14 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->commsMaxLength = std::atoi(value.c_str());
 		}
 	}
-	else if (sec == "checkerconfig")
+	else if (sec == "checker")
 	{
 		if (k == "printcheckonconnect")
 		{
 			cfg->printCheckOnConnect = (value != "0");
 		}
 	}
-	else if (sec == "reportconfig")
+	else if (sec == "report")
 	{
 		if (k == "cooldown")
 		{
@@ -159,7 +158,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->reportMinLength = std::atoi(value.c_str());
 		}
 	}
-	else if (sec == "sleuthconfig")
+	else if (sec == "sleuth")
 	{
 		if (k == "actions")
 		{
@@ -190,7 +189,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->sleuthExcludeTime = std::atoi(value.c_str());
 		}
 	}
-	else if (sec == "discordconfig")
+	else if (sec == "discord")
 	{
 		if (k == "webhookurl")
 		{
@@ -201,7 +200,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->discordFooterText = value;
 		}
 	}
-	else if (sec == "chatfloodconfig")
+	else if (sec == "chatflood")
 	{
 		if (k == "cooldown")
 		{
@@ -216,7 +215,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->chatFloodMuteDuration = std::atoi(value.c_str());
 		}
 	}
-	else if (sec == "tagsconfig")
+	else if (sec == "tags")
 	{
 		if (k == "chatownership")
 		{
@@ -259,7 +258,7 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 			cfg->teamColorSpec = value;
 		}
 	}
-	else if (sec == "menuconfig")
+	else if (sec == "menu")
 	{
 		if (cfg->menu.ApplyKey(k, value))
 		{
@@ -321,18 +320,18 @@ bool ADMIN_LoadConfig(const char *path, CS2AConfig &config)
 	}
 
 	// Ensure command prefixes are different
-	if (!config.commandPrefix.empty() && config.commandPrefix == config.silentCommandPrefix)
+	if (!config.general.commandPrefix.empty() && config.general.commandPrefix == config.general.silentCommandPrefix)
 	{
 		MMU_LOG_WARN("commandPrefix and silentCommandPrefix are the same ('%s'). Silent commands will not work. Resetting "
 					 "silentCommandPrefix to '/'.\n",
-					 config.commandPrefix.c_str());
-		config.silentCommandPrefix = "/";
+					 config.general.commandPrefix.c_str());
+		config.general.silentCommandPrefix = "/";
 	}
 
 	// A tag can only be injected into a line we render ourselves.
 	if (config.chatTagsEnabled && !config.chatOwnership)
 	{
-		MMU_LOG_WARN("TagsConfig: ChatTags needs ChatOwnership to render the tag. Enabling ChatOwnership.\n");
+		MMU_LOG_WARN("Tags: ChatTags needs ChatOwnership to render the tag. Enabling ChatOwnership.\n");
 		config.chatOwnership = true;
 	}
 

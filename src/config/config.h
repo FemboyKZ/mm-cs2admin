@@ -11,9 +11,7 @@ struct CS2AConfig
 	// Shown to banned players on kick. Empty = not shown.
 	std::string website;
 	std::string chatPrefix = "\x03[CS2 Admin]\x01 ";
-	std::string commandPrefix = "!";
-	std::string silentCommandPrefix = "/";
-	std::string defaultLanguage = "en";
+	mmu::config::GeneralBlock general;
 
 	mmu::config::LogBlock log;
 	mmu::config::DatabaseBlock database = mmu::config::DatabaseBlock::Defaults("sourcemod", "addons/cs2admin/data/cs2admin.db", "sb");

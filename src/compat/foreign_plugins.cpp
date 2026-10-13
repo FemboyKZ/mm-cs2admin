@@ -133,7 +133,7 @@ void CS2AForeignPlugins::Refresh(PluginId unloading)
 		}
 		else if (!m_chatOwner && previousChat)
 		{
-			MMU_LOG_INFO("%s no longer renders chat. Chat tags follow TagsConfig again.\n", previousChat);
+			MMU_LOG_INFO("%s no longer renders chat. Chat tags follow the Tags config again.\n", previousChat);
 		}
 	}
 
@@ -147,7 +147,7 @@ void CS2AForeignPlugins::Refresh(PluginId unloading)
 		}
 		else if (!m_clanTagOwner && previousClanTag)
 		{
-			MMU_LOG_INFO("%s no longer writes the clan tag. Leaderboard tags follow TagsConfig again.\n", previousClanTag);
+			MMU_LOG_INFO("%s no longer writes the clan tag. Leaderboard tags follow the Tags config again.\n", previousClanTag);
 		}
 	}
 

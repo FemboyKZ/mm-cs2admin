@@ -622,8 +622,8 @@ bool CS2ACommandSystem::ConsumePromptedText(int slot, const char *message)
 	{
 		return false;
 	}
-	const bool prefixed =
-		g_CS2AConfig.commandPrefix.find(text[0]) != std::string::npos || g_CS2AConfig.silentCommandPrefix.find(text[0]) != std::string::npos;
+	const bool prefixed = g_CS2AConfig.general.commandPrefix.find(text[0]) != std::string::npos
+						  || g_CS2AConfig.general.silentCommandPrefix.find(text[0]) != std::string::npos;
 	std::string word = str::ToLower(prefixed ? text.substr(1) : text);
 	if (word == "cancel")
 	{
@@ -659,7 +659,7 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 	}
 
 	mmu::ChatCommand cmd;
-	if (!mmu::ParseChatCommand(msg, g_CS2AConfig.commandPrefix, g_CS2AConfig.silentCommandPrefix, cmd))
+	if (!mmu::ParseChatCommand(msg, g_CS2AConfig.general.commandPrefix, g_CS2AConfig.general.silentCommandPrefix, cmd))
 	{
 		return false;
 	}
@@ -2381,8 +2381,8 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							{
 								ADMIN_ReplyToCommandT(slot, "  %s\n", tag->id.c_str());
 							}
-							ADMIN_ReplyToCommandT(slot, "Use %stag <name>, or %stag none to hide it.\n", g_CS2AConfig.commandPrefix.c_str(),
-												  g_CS2AConfig.commandPrefix.c_str());
+							ADMIN_ReplyToCommandT(slot, "Use %stag <name>, or %stag none to hide it.\n", g_CS2AConfig.general.commandPrefix.c_str(),
+												  g_CS2AConfig.general.commandPrefix.c_str());
 							return;
 						}
 
@@ -2498,7 +2498,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						ADMIN_ReplyToCommandT(slot, "Commands (page %d/%d):\n", page, totalPages);
 						for (int i = startIdx; i < endIdx; i++)
 						{
-							ADMIN_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmds[i].c_str());
+							ADMIN_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.general.commandPrefix.c_str(), cmds[i].c_str());
 						}
 						if (page < totalPages)
 						{
@@ -2538,7 +2538,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						ADMIN_ReplyToCommandT(slot, "Commands matching '%s':\n", text.c_str());
 						for (const auto &cmd : matches)
 						{
-							ADMIN_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.commandPrefix.c_str(), cmd.c_str());
+							ADMIN_ReplyToCommandT(slot, "  %s%s\n", g_CS2AConfig.general.commandPrefix.c_str(), cmd.c_str());
 						}
 					});
 

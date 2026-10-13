@@ -192,7 +192,7 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// Unregister and delete all dynamically created mm_* ConCommands.
 	g_CS2ACommandSystem.Shutdown();
 
-	// Explicitly unregister the static CON_COMMAND_F commands (mm_reload, etc.)
+	// Explicitly unregister the static CON_COMMAND_F commands (mm_admin_reload, etc.)
 	ShutdownConsoleCommands();
 
 	// Drop all registered forward callbacks so lambdas captured from other

@@ -122,7 +122,7 @@ public:
 	// Calls the callback when all DB loading is done.
 	void LoadDatabaseAdmins(uint32_t generation, std::function<void()> onComplete = nullptr);
 
-	// Reload everything (flatfile + DB). Called on mm_reload, map change, etc.
+	// Reload everything (flatfile + DB). Called on mm_admin_reload, map change, etc.
 	void ReloadAdmins();
 
 	// Apply loaded admin data to all connected players.

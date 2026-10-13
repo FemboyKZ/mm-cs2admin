@@ -140,7 +140,7 @@ void CS2AAdminManager::ReloadAdmins()
 	m_passwordFailures.clear();
 
 	// Startup fires this from both the DB connect callback and the first level init,
-	// and a map change can land on top of an mm_reload. Run one chain at a time.
+	// and a map change can land on top of an mm_admin_reload. Run one chain at a time.
 	double now = Plat_FloatTime();
 	if (m_reloadInFlight)
 	{

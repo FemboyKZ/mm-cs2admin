@@ -18,7 +18,7 @@
 // Note: most mm_ commands are auto-registered by CS2ACommandSystem::RegisterConsoleCommands() as mirrors of chat commands.
 // Only console-only commands are defined here.
 
-CON_COMMAND_F(mm_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
+CON_COMMAND_F(mm_admin_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 {
 	g_CS2APlugin.ReloadConfig();
 
@@ -44,7 +44,7 @@ CON_COMMAND_F(mm_rehash, "Rebuild admin cache from database and flat files", FCV
 	MMU_LOG_INFO("Admin cache rebuilt.\n");
 }
 
-CON_COMMAND_F(cs2admin_version, "Display CS2Admin version", FCVAR_NONE)
+CON_COMMAND_F(mm_admin_version, "Display CS2Admin version", FCVAR_NONE)
 {
 	META_CONPRINTF("CS2Admin version %s (%s)\n", PLUGIN_FULL_VERSION, __DATE__);
 }
@@ -176,9 +176,9 @@ void ShutdownConsoleCommands()
 		return;
 	}
 
-	g_pICvar->UnregisterConCommandCallbacks(mm_reload_command);
+	g_pICvar->UnregisterConCommandCallbacks(mm_admin_reload_command);
 	g_pICvar->UnregisterConCommandCallbacks(mm_rehash_command);
-	g_pICvar->UnregisterConCommandCallbacks(cs2admin_version_command);
+	g_pICvar->UnregisterConCommandCallbacks(mm_admin_version_command);
 	g_pICvar->UnregisterConCommandCallbacks(sc_fw_block_command);
 	g_pICvar->UnregisterConCommandCallbacks(sc_fw_ungag_command);
 	g_pICvar->UnregisterConCommandCallbacks(sc_fw_unmute_command);

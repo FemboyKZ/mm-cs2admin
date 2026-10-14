@@ -344,7 +344,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 
 	if (found && !merged.password.empty() && merged.password != m_playerPassword[slot])
 	{
-		MMU_LOG_DEBUG("Admin \"%s\" (%s) has not given their password, no rights assigned.\n", player->name.c_str(), normalized.c_str());
+		MMU_LOG_INFO("Admin \"%s\" (%s) has not given their password, no rights assigned.\n", player->name.c_str(), normalized.c_str());
 		found = false;
 	}
 

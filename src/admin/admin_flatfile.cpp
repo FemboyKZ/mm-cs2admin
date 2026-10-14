@@ -253,6 +253,9 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			continue;
 		}
 
+		// A CR from a Windows-edited file or a trailing comment would otherwise be read as the password token.
+		line.erase(line.find_last_not_of(" \t\r\n") + 1);
+
 		std::vector<std::string> tokens;
 		size_t pos = 0;
 		while (pos < line.size() && tokens.size() < 4)
@@ -261,7 +264,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 			{
 				pos++;
 			}
-			if (pos >= line.size())
+			if (pos >= line.size() || line[pos] == ';' || line.compare(pos, 2, "//") == 0)
 			{
 				break;
 			}

@@ -34,8 +34,8 @@
 #include <interfaces/interfaces.h>
 #include <entity2/entitysystem.h>
 #include <networksystem/inetworkmessages.h>
-#include <engine/igameeventsystem.h>
-#include <filesystem.h>
+#include <engine2/igameeventsystem.h>
+#include <filesystem/ifilesystem.h>
 
 // Entity system global (declared extern in common.h)
 // Note: g_pSchemaSystem and g_pGameResourceServiceServer are already defined by the SDK's interfaces.lib

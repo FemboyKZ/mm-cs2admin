@@ -8,7 +8,7 @@
 #include "src/tags/tag_manager.h"
 
 #include "interfaces/cs2kz/ics2kz.h"
-#include <tier1/convar.h>
+#include <tier0/convar.h>
 
 #include <cstdio>
 #include <cstring>

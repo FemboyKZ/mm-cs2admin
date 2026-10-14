@@ -13,7 +13,6 @@
 
 #include <networksystem/inetworkmessages.h>
 #include <networksystem/inetworkserializer.h>
-#include <networksystem/netmessage.h>
 #include <recipientfilter.h>
 #include <usermessages.pb.h>
 

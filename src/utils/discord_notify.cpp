@@ -8,7 +8,7 @@
 #include "src/player/player_manager.h"
 #include "version_gen.h"
 
-#include "tier1/convar.h"
+#include "tier0/convar.h"
 
 #include <cstdio>
 #include <cstring>

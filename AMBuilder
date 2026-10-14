@@ -10,11 +10,10 @@ for sdk_target in MMSPlugin.sdk_targets:
     )
 
     binary.sources += [
-        os.path.join(sdk["path"], "tier1", "keyvalues3.cpp"),
+        os.path.join(sdk["path"], "tier0_perproject", "keyvalues3.cpp"),
         os.path.join(sdk["path"], "entity2", "entitysystem.cpp"),
         os.path.join(sdk["path"], "entity2", "entityidentity.cpp"),
         os.path.join(sdk["path"], "entity2", "entitykeyvalues.cpp"),
-
         "src/cs2admin.cpp",
         "src/chat/chat_processor.cpp",
         "src/compat/foreign_plugins.cpp",
@@ -36,7 +35,6 @@ for sdk_target in MMSPlugin.sdk_targets:
         "src/queue/offline_queue.cpp",
         "src/utils/print_utils.cpp",
         "src/utils/discord_notify.cpp",
-
         "mm-utils/utils/chat_colors.cpp",
         "mm-utils/game/cvarquery.cpp",
         "mm-utils/utils/http_client.cpp",

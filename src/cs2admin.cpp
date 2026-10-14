@@ -3,7 +3,6 @@
 #include <ctime>
 #include "cs2admin.h"
 
-void ShutdownConsoleCommands();
 #include "config/config.h"
 #include "db/database.h"
 #include "player/player_manager.h"
@@ -113,9 +112,7 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	char configPath[512];
 	snprintf(configPath, sizeof(configPath), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
 
-	// A temporary, so a file that fails validation leaves nothing half applied.
-	CS2AConfig fresh;
-	if (!CS2A_LoadConfig(configPath, fresh))
+	if (!CS2A_LoadConfig(configPath, g_CS2AConfig))
 	{
 		MMU_LOG_ERROR("Could not load config from %s\n", configPath);
 		MMU_LOG_WARN("Make sure the file exists at: <game_root>/cfg/cs2admin/core.cfg\n");
@@ -124,11 +121,9 @@ bool CS2APlugin::Load(PluginId id, ISmmAPI *ismm, char *error, size_t maxlen, bo
 	}
 	else
 	{
-		g_CS2AConfig = fresh;
 		m_bConfigLoaded = true;
 		MMU_LOG_INFO("Config loaded. DB: %s@%s:%d/%s, Prefix: %s\n", g_CS2AConfig.database.user.c_str(), g_CS2AConfig.database.host.c_str(),
 					 g_CS2AConfig.database.port, g_CS2AConfig.database.name.c_str(), g_CS2AConfig.database.prefix.c_str());
-		mmu::config::ApplyLogBlock(g_CS2AConfig.log);
 	}
 
 	CS2A_LoadTranslations();
@@ -194,8 +189,7 @@ bool CS2APlugin::Unload(char *error, size_t maxlen)
 	// Unregister and delete all dynamically created mm_* ConCommands.
 	g_CS2ACommandSystem.Shutdown();
 
-	// Explicitly unregister the static CON_COMMAND_F commands (mm_admin_reload, etc.)
-	ShutdownConsoleCommands();
+	ConVar_Unregister();
 
 	// Drop all registered forward callbacks so lambdas captured from other
 	g_CS2AForwards.Shutdown();
@@ -530,23 +524,18 @@ void CS2APlugin::ReloadConfig()
 	char path[512];
 	snprintf(path, sizeof(path), "%s/cfg/cs2admin/core.cfg", g_SMAPI->GetBaseDir());
 
-	// Parsed into a temporary, so a file that fails validation leaves the live config untouched.
-	// Starting from defaults also means a key removed from the file goes back to its default rather than keeping the old value.
-	CS2AConfig fresh;
-	if (!CS2A_LoadConfig(path, fresh))
+	// The server ID lookup only runs on connect, so an auto-detected one would otherwise be lost.
+	const int serverId = g_CS2AConfig.general.serverId;
+	if (!CS2A_LoadConfig(path, g_CS2AConfig))
 	{
 		MMU_LOG_WARN("Failed to reload config from %s, keeping the loaded one.\n", path);
 		return;
 	}
-
-	// The server ID lookup only runs on connect, so an auto-detected one would otherwise be lost.
-	if (fresh.general.serverId == -1 && g_CS2AConfig.general.serverId != -1)
+	if (g_CS2AConfig.general.serverId == -1)
 	{
-		fresh.general.serverId = g_CS2AConfig.general.serverId;
+		g_CS2AConfig.general.serverId = serverId;
 	}
-	g_CS2AConfig = fresh;
 	MMU_LOG_INFO("Config reloaded from %s\n", path);
-	mmu::config::ApplyLogBlock(g_CS2AConfig.log);
 	OnConfigReloaded();
 }
 

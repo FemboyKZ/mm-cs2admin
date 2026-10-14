@@ -336,29 +336,15 @@ static void ConfigHandler(const std::string &section, const std::string &key, co
 
 bool CS2A_LoadConfig(const char *path, CS2AConfig &config)
 {
-	std::ifstream file(path);
-	if (!file.is_open())
+	// Fresh, so a removed key reverts to its default and a file that fails validation leaves `config` as it was.
+	CS2AConfig fresh;
+	if (!kv::LoadFile(path, ConfigHandler, &fresh))
 	{
 		return false;
 	}
-
-	// Expect: "cs2admin" { ... }
-	kv::Token root = kv::NextToken(file);
-	if (root.kind != kv::TokenType::String)
-	{
-		return false;
-	}
-
-	kv::Token brace = kv::NextToken(file);
-	if (brace.kind != kv::TokenType::OpenBrace)
-	{
-		return false;
-	}
-
-	kv::ParseSection(file, root.value, ConfigHandler, &config);
 
 	// Validate databasePrefix: only alphanumeric and underscore allowed
-	for (char c : config.database.prefix)
+	for (char c : fresh.database.prefix)
 	{
 		if (!isalnum(static_cast<unsigned char>(c)) && c != '_')
 		{
@@ -366,33 +352,35 @@ bool CS2A_LoadConfig(const char *path, CS2AConfig &config)
 			return false;
 		}
 	}
-	if (config.database.prefix.empty())
+	if (fresh.database.prefix.empty())
 	{
 		MMU_LOG_ERROR("databasePrefix cannot be empty.\n");
 		return false;
 	}
 
 	// Clamp chatFloodMaxMessages to sane range
-	if (config.chatFlood.maxMessages < 1)
+	if (fresh.chatFlood.maxMessages < 1)
 	{
-		config.chatFlood.maxMessages = 1;
+		fresh.chatFlood.maxMessages = 1;
 	}
 
 	// Ensure command prefixes are different
-	if (!config.general.commandPrefix.empty() && config.general.commandPrefix == config.general.silentCommandPrefix)
+	if (!fresh.general.commandPrefix.empty() && fresh.general.commandPrefix == fresh.general.silentCommandPrefix)
 	{
 		MMU_LOG_WARN("commandPrefix and silentCommandPrefix are the same ('%s'). Silent commands will not work. Resetting "
 					 "silentCommandPrefix to '/'.\n",
-					 config.general.commandPrefix.c_str());
-		config.general.silentCommandPrefix = "/";
+					 fresh.general.commandPrefix.c_str());
+		fresh.general.silentCommandPrefix = "/";
 	}
 
 	// A tag can only be injected into a line we render ourselves.
-	if (config.tags.chatTags && !config.tags.chatOwnership)
+	if (fresh.tags.chatTags && !fresh.tags.chatOwnership)
 	{
 		MMU_LOG_WARN("Tags: ChatTags needs ChatOwnership to render the tag. Enabling ChatOwnership.\n");
-		config.tags.chatOwnership = true;
+		fresh.tags.chatOwnership = true;
 	}
 
+	config = fresh;
+	mmu::config::ApplyLogBlock(config.log);
 	return true;
 }

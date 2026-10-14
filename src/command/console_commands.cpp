@@ -169,18 +169,3 @@ CON_COMMAND_F(sc_fw_unmute, "Web panel: unmute a player (RCON)", FCVAR_NONE)
 	g_CS2ACommManager.UnmutePlayer(targetSlot, -1, false);
 	MMU_LOG_INFO("sc_fw_unmute: Unmuted %s.\n", raw[0].c_str());
 }
-
-void ShutdownConsoleCommands()
-{
-	if (!g_pICvar)
-	{
-		return;
-	}
-
-	g_pICvar->UnregisterConCommandCallbacks(mm_admin_reload_command);
-	g_pICvar->UnregisterConCommandCallbacks(mm_rehash_command);
-	g_pICvar->UnregisterConCommandCallbacks(mm_admin_version_command);
-	g_pICvar->UnregisterConCommandCallbacks(sc_fw_block_command);
-	g_pICvar->UnregisterConCommandCallbacks(sc_fw_ungag_command);
-	g_pICvar->UnregisterConCommandCallbacks(sc_fw_unmute_command);
-}

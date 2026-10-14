@@ -2,7 +2,7 @@
 
 ## Chat Commands (in-game)
 
-| Command         | Usage                                      | Permissions     | Description                                                                                  |
+| Command         | Usage                                      | Default flag    | Description                                                                                  |
 | --------------- | ------------------------------------------ | --------------- | -------------------------------------------------------------------------------------------- |
 | `!ban`          | `!ban <target> time=<time> [reason=]`      | `d` (Ban)       | Ban a connected player. Time in minutes (supports suffixes: h/d/w/m), 0 = permanent.         |
 | `!unban`        | `!unban <steamid>`                         | `e` (Unban)     | Unban a player by SteamID. Off when `Unban` is 0.                                            |

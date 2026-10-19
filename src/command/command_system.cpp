@@ -3022,6 +3022,17 @@ void CS2ACommandSystem::RegisterConsoleCommands()
 	}
 }
 
+// Created after META_CONVAR_REGISTER, so Metamod tracks the pointer and walks it again at plugin unload.
+static void DeleteConsoleCommand(ConCommand *&cmd)
+{
+	if (cmd)
+	{
+		g_SMAPI->UnregisterConCommand(g_PLAPI, cmd);
+		delete cmd;
+		cmd = nullptr;
+	}
+}
+
 void CS2ACommandSystem::YieldMapsCommand(bool yield)
 {
 	m_mapsYielded = yield;
@@ -3033,8 +3044,7 @@ void CS2ACommandSystem::YieldMapsCommand(bool yield)
 		}
 		if (yield)
 		{
-			delete entry.cmd;
-			entry.cmd = nullptr;
+			DeleteConsoleCommand(entry.cmd);
 		}
 		else if (!entry.cmd)
 		{
@@ -3047,8 +3057,7 @@ void CS2ACommandSystem::Shutdown()
 {
 	for (auto &entry : m_consoleCommands)
 	{
-		delete entry.cmd;
-		entry.cmd = nullptr;
+		DeleteConsoleCommand(entry.cmd);
 	}
 	m_consoleCommands.clear();
 	m_commands.clear();

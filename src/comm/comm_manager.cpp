@@ -30,7 +30,7 @@ static void RecordIssuer(int adminSlot, int &immunity, uint64_t &steamid64)
 		return;
 	}
 	const AdminEntry *admin = g_CS2AAdminManager.GetPlayerAdmin(adminSlot);
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(adminSlot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(adminSlot);
 	immunity = admin ? admin->immunity : 0;
 	steamid64 = player ? player->steamid64 : 0;
 }
@@ -42,7 +42,7 @@ bool CS2ACommManager::CanLiftBlock(int callerSlot, int targetSlot, int type) con
 		return true;
 	}
 
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return true;
@@ -57,7 +57,7 @@ bool CS2ACommManager::CanLiftBlock(int callerSlot, int targetSlot, int type) con
 	uint64_t issuer = (type == COMM_MUTE) ? target->muteIssuerSteamid64 : target->gagIssuerSteamid64;
 	int issuerImmunity = (type == COMM_MUTE) ? target->muteIssuerImmunity : target->gagIssuerImmunity;
 
-	PlayerInfo *caller = g_CS2APlayerManager.GetPlayer(callerSlot);
+	PlayerInfo *caller = g_CS2APlayerManager.Get(callerSlot);
 	if (caller && issuer != 0 && caller->steamid64 == issuer)
 	{
 		return true;
@@ -122,7 +122,7 @@ static void ApplyStoredBlock(int slot, PlayerInfo *player, int type, int remaini
 
 void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player)
 	{
 		return;
@@ -175,7 +175,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 								 return;
 							 }
 
-							 PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+							 PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 							 if (!player || !player->connected || player->steamid64 != steamid64)
 							 {
 								 return;
@@ -262,13 +262,13 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 
 bool CS2ACommManager::IsGagged(int slot)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	return player && player->isGagged;
 }
 
 bool CS2ACommManager::IsMuted(int slot)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	return player && player->isMuted;
 }
 
@@ -431,7 +431,7 @@ bool CS2ACommManager::GagPlayer(int targetSlot, int timeMinutes, const char *rea
 void CS2ACommManager::AnnounceBlock(int targetSlot, int adminSlot, int timeMinutes, const char *reason, const char *permanentPhrase,
 									const char *timedPhrase, const char *allPhrase, const char *allPermanentPhrase)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return;
@@ -452,7 +452,7 @@ void CS2ACommManager::AnnounceBlock(int targetSlot, int adminSlot, int timeMinut
 
 void CS2ACommManager::AnnounceLift(int targetSlot, int adminSlot, const char *selfPhrase, const char *allPhrase)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return;
@@ -464,7 +464,7 @@ void CS2ACommManager::AnnounceLift(int targetSlot, int adminSlot, const char *se
 
 bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return false;
@@ -505,7 +505,7 @@ bool CS2ACommManager::ApplyMute(int targetSlot, int timeMinutes, const char *rea
 
 bool CS2ACommManager::ApplyGag(int targetSlot, int timeMinutes, const char *reason, int adminSlot, bool persist)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return false;
@@ -618,7 +618,7 @@ int CS2ACommManager::UnsilencePlayer(int targetSlot, int adminSlot)
 
 bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot, bool persist)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return false;
@@ -655,7 +655,7 @@ bool CS2ACommManager::LiftMute(int targetSlot, int adminSlot, bool persist)
 
 bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot, bool persist)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return false;
@@ -691,7 +691,7 @@ bool CS2ACommManager::LiftGag(int targetSlot, int adminSlot, bool persist)
 
 bool CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return false;
@@ -722,7 +722,7 @@ bool CS2ACommManager::SessionMutePlayer(int targetSlot, int adminSlot)
 
 bool CS2ACommManager::SessionGagPlayer(int targetSlot, int adminSlot)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		return false;
@@ -768,7 +768,7 @@ void CS2ACommManager::CheckExpiredComms()
 
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
+		PlayerInfo *player = g_CS2APlayerManager.Get(i);
 		if (!player)
 		{
 			continue;
@@ -796,7 +796,7 @@ void CS2ACommManager::CheckExpiredComms()
 
 void CS2ACommManager::OnClientDisconnect(int slot)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player)
 	{
 		return;
@@ -819,7 +819,7 @@ void CS2ACommManager::OnClientDisconnect(int slot)
 
 void CS2ACommManager::PrintCommsStatus(int targetSlot, int callerSlot)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		CS2A_ReplyToCommandT(callerSlot, "Invalid target.\n");

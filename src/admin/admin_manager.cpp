@@ -186,7 +186,7 @@ void CS2AAdminManager::MergeAndApplyAll()
 	// Apply to all currently connected players
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+		PlayerInfo *p = g_CS2APlayerManager.Get(i);
 		if (p && p->connected)
 		{
 			AssignAdminToPlayer(i);
@@ -279,7 +279,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 		return;
 	}
 
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player || !player->connected || !player->authenticated)
 	{
 		return;
@@ -324,7 +324,7 @@ void CS2AAdminManager::ClearPlayerAdmin(int slot)
 
 bool CS2AAdminManager::SubmitPassword(int slot, const std::string &password)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player || m_passwordFailures[player->steamid64] >= MAX_PASSWORD_TRIES)
 	{
 		return false;

@@ -16,7 +16,7 @@
 
 static bool SlotIsHuman(int slot)
 {
-	PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 	return p && p->connected && !p->fakePlayer;
 }
 

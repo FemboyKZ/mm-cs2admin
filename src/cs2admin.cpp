@@ -23,9 +23,9 @@
 
 #include "utils/chat_command.h"
 #include "game/cvarquery.h"
+#include "game/say.h"
 #include "sdk/entity/ccsplayercontroller.h"
 #include "utils/log.h"
-#include "utils/str.h"
 #include "game/voice_block.h"
 
 #include "interfaces/sql_mm/sql_mm.h"
@@ -252,31 +252,31 @@ public:
 
 	bool IsPlayerConnected(int slot) override
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 		return p && p->connected;
 	}
 
 	const char *GetPlayerName(int slot) override
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 		return (p && p->connected) ? p->name.c_str() : nullptr;
 	}
 
 	const char *GetPlayerAuthId(int slot) override
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 		return (p && p->connected) ? p->authid.c_str() : nullptr;
 	}
 
 	uint64_t GetPlayerSteamID64(int slot) override
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 		return (p && p->connected) ? p->steamid64 : 0;
 	}
 
 	const char *GetPlayerIP(int slot) override
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+		PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 		return (p && p->connected) ? p->ip.c_str() : nullptr;
 	}
 
@@ -304,7 +304,7 @@ public:
 
 	void KickPlayer(int targetSlot, int adminSlot, const char *reason) override
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(targetSlot);
+		PlayerInfo *p = g_CS2APlayerManager.Get(targetSlot);
 		if (!p || !p->connected)
 		{
 			return;
@@ -383,7 +383,7 @@ void CS2A_RecheckConnectedPlayers()
 {
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+		PlayerInfo *p = g_CS2APlayerManager.Get(i);
 		if (!p || !p->connected || p->fakePlayer || !p->inGame)
 		{
 			continue;
@@ -395,7 +395,7 @@ void CS2A_RecheckConnectedPlayers()
 		g_CS2ABanManager.VerifyBan(i, p->steamid64, p->ip.c_str(),
 								   [i, steamid64 = p->steamid64](bool banned, const std::string &reason)
 								   {
-									   PlayerInfo *pp = g_CS2APlayerManager.GetPlayer(i);
+									   PlayerInfo *pp = g_CS2APlayerManager.Get(i);
 									   if (!pp || !pp->connected || pp->steamid64 != steamid64)
 									   {
 										   return;
@@ -674,7 +674,7 @@ KHook::Return<void> CS2APlugin::Hook_OnClientConnected(IServerGameClients *, CPl
 	g_CS2AAdminManager.ClearPlayerAdmin(slotIdx);
 
 	// Track player - but defer the ban check until ClientPutInServer, and admin until Steam confirms the SteamID
-	g_CS2APlayerManager.OnClientConnected(slotIdx, pszName, xuid, pszNetworkID, pszAddress, bFakePlayer);
+	g_CS2APlayerManager.OnClientConnected(slotIdx, pszName, xuid, pszAddress, bFakePlayer);
 	mmu::cvarquery::OnClientConnected(slotIdx, bFakePlayer);
 
 	if (bFakePlayer)
@@ -699,13 +699,12 @@ KHook::Return<void> CS2APlugin::Hook_ClientActive(IServerGameClients *, CPlayerS
 KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
 {
 	int slotIdx = slot.Get();
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slotIdx);
+	g_CS2APlayerManager.OnClientPutInServer(slotIdx);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slotIdx);
 	if (!player || player->fakePlayer)
 	{
 		return {KHook::Action::Ignore};
 	}
-
-	player->inGame = true;
 
 	// Check for active bans
 	// On the SteamID the client claims: Steam may not have confirmed it yet, and a ban must not wait on that.
@@ -717,7 +716,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 							   {
 								   if (banned)
 								   {
-									   PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slotIdx);
+									   PlayerInfo *p = g_CS2APlayerManager.Get(slotIdx);
 									   if (p && p->connected && p->steamid64 == steamid64)
 									   {
 										   CS2ABanManager::PrintBanNotice(slotIdx, reason.c_str());
@@ -740,7 +739,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 									  {
 										  if (banCount > 0 || commCount > 0)
 										  {
-											  PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slotIdx);
+											  PlayerInfo *p = g_CS2APlayerManager.Get(slotIdx);
 											  if (p && p->connected && p->steamid64 == steamid64)
 											  {
 												  CS2A_ChatToAdminsT("Player \"%s\" (%s) has %d ban(s), %d mute(s), %d gag(s) on record.\n",
@@ -761,7 +760,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPl
 // In server and confirmed by Steam, whichever came last.
 void CS2APlugin::OnClientAuthorized(int slot)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player)
 	{
 		return;
@@ -799,43 +798,20 @@ KHook::Return<void> CS2APlugin::Hook_ClientDisconnect(IServerGameClients *, CPla
 	return {KHook::Action::Ignore};
 }
 
-// A player's say or say_team. The pre and post hooks must agree on this exactly, since each tracked say pushes in one and pops in the other.
-static bool IsTrackedSay(ConCommandRef cmd, const CCommandContext &ctx, bool *isSayTeam = nullptr)
-{
-	// Server console commands have slot -1.
-	int slotIdx = ctx.GetPlayerSlot().Get();
-	if (!cmd.IsValidRef() || !mmu::ValidSlot(slotIdx))
-	{
-		return false;
-	}
-	const char *cmdName = cmd.GetName();
-	if (!cmdName)
-	{
-		return false;
-	}
-	// The registered name, not what the client typed, but compared loosely anyway since "SAY" dispatches to say too.
-	bool team = V_stricmp(cmdName, "say_team") == 0;
-	if (isSayTeam)
-	{
-		*isSayTeam = team;
-	}
-	return team || V_stricmp(cmdName, "say") == 0;
-}
-
 KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
 	bool isSayTeam = false;
-	if (!IsTrackedSay(cmd, ctx, &isSayTeam))
+	int slotIdx = mmu::SaySlot(cmd, ctx, &isSayTeam);
+	if (slotIdx < 0)
 	{
 		return {KHook::Action::Ignore};
 	}
-	int slotIdx = ctx.GetPlayerSlot().Get();
 
 	// Before any early return, the post hook pops this no matter how the pre hooks end.
 	g_CS2AChatProcessor.PushSay(slotIdx);
 
 	// A client that isn't put in server yet can't legitimately chat, and the game can print its line as a console message.
-	PlayerInfo *speaker = g_CS2APlayerManager.GetPlayer(slotIdx);
+	PlayerInfo *speaker = g_CS2APlayerManager.Get(slotIdx);
 	if (!speaker || (!speaker->fakePlayer && !speaker->inGame))
 	{
 		MMU_LOG_INFO("Blocked chat from slot %d, not fully in game.\n", slotIdx);
@@ -853,7 +829,7 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 	// Chat flood detection (before command processing)
 	if (g_CS2AConfig.chatFlood.cooldown > 0.0f)
 	{
-		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slotIdx);
+		PlayerInfo *player = g_CS2APlayerManager.Get(slotIdx);
 		if (player && player->connected && !player->fakePlayer)
 		{
 			// Not curtime, which restarts every map and would make every message after a map change look like flooding.
@@ -917,7 +893,8 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommand(ICvar *, ConCommandRef c
 
 KHook::Return<void> CS2APlugin::Hook_DispatchConCommandPost(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args)
 {
-	if (IsTrackedSay(cmd, ctx))
+	// Must match the pre hook, which pushes each say popped here.
+	if (mmu::SaySlot(cmd, ctx) >= 0)
 	{
 		g_CS2AChatProcessor.PopSay();
 		g_CS2ACommandSystem.EndSay(ctx.GetPlayerSlot().Get());
@@ -963,7 +940,7 @@ KHook::Return<void> CS2APlugin::Hook_PostEventFilter(IGameEventSystem *, CSplitS
 KHook::Return<void> CS2APlugin::Hook_ClientSettingsChanged(IServerGameClients *, CPlayerSlot slot)
 {
 	// Without this, announcements, logs and ban rows keep the name the player joined with.
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot.Get());
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot.Get());
 	if (!player || player->fakePlayer)
 	{
 		return {KHook::Action::Ignore};
@@ -992,19 +969,14 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	g_CS2ABanManager.RunFrame();
 
 	// Steam confirms a SteamID some time after the client connects, before or after ClientPutInServer.
-	for (int i = 0; i < MAXPLAYERS; i++)
-	{
-		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
-		if (!player || player->fakePlayer || player->authenticated || !g_pEngine->IsClientFullyAuthenticated(CPlayerSlot(i)))
+	g_CS2APlayerManager.RunFrame(
+		[this](int slot)
 		{
-			continue;
-		}
-		player->authenticated = true;
-		if (player->inGame)
-		{
-			OnClientAuthorized(i);
-		}
-	}
+			if (g_CS2APlayerManager.Get(slot)->inGame)
+			{
+				OnClientAuthorized(slot);
+			}
+		});
 
 	const double now = Plat_FloatTime();
 
@@ -1086,54 +1058,30 @@ void CS2APlugin::OnLateLoad()
 		return;
 	}
 
+	g_CS2APlayerManager.OnLateLoad();
 	for (int i = 0; i < globals->maxClients; i++)
 	{
-		CPlayerSlot slot(i);
-		uint64 xuid = g_pEngine->GetClientXUID(slot);
-		CCSPlayerController *bot = xuid == 0 ? CCSPlayerController::FromSlot(i) : nullptr;
-		if (xuid == 0 && !ControllerIsBot(bot))
+		PlayerInfo *player = g_CS2APlayerManager.Get(i);
+		if (!player)
 		{
-			continue; // No player in this slot
-		}
-
-		PlayerInfo *existing = g_CS2APlayerManager.GetPlayer(i);
-		if (!existing)
-		{
-			g_CS2APlayerManager.OnClientConnected(i, bot ? bot->GetPlayerName() : "", xuid, "", "", bot != nullptr);
-		}
-
-		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
-		if (!player || player->fakePlayer)
-		{
+			CCSPlayerController *bot = CCSPlayerController::FromSlot(i);
+			if (ControllerIsBot(bot))
+			{
+				g_CS2APlayerManager.OnClientConnected(i, bot->GetPlayerName(), 0, "", true);
+			}
 			continue;
 		}
 
-		// ClientPutInServer fired before the plugin was there to see it. Hook_GameFrame authorizes the ones Steam has confirmed.
+		// Hook_GameFrame authorizes the ones Steam has confirmed.
 		// The ban and comm checks need the DB, so they run from CS2A_RecheckConnectedPlayers once it is ready.
-		player->inGame = true;
 		// Their language was never queried either.
 		mmu::cvarquery::OnClientConnected(i, false);
+		player->authid = SteamID64ToAuthId(player->steamid64);
 
-		if (player->authid.empty() && player->steamid64 != 0)
+		// Never handed to us, and an empty one breaks rendered chat, ban and comm log rows and sleuth.
+		if (CCSPlayerController *controller = CCSPlayerController::FromSlot(i))
 		{
-			player->authid = SteamID64ToAuthId(player->steamid64);
-		}
-
-		// Neither was ever handed to us, and an empty one breaks rendered chat, ban and comm log rows, IP bans and sleuth.
-		if (player->name.empty())
-		{
-			if (CCSPlayerController *controller = CCSPlayerController::FromSlot(i))
-			{
-				player->name = controller->GetPlayerName();
-			}
-		}
-		if (player->ip.empty())
-		{
-			INetChannelInfo *netinfo = g_pEngine->GetPlayerNetInfo(slot);
-			if (netinfo)
-			{
-				player->ip = str::StripPort(netinfo->GetAddress());
-			}
+			player->name = controller->GetPlayerName();
 		}
 
 		MMU_LOG_INFO("Late load: processing player (%s) in slot %d\n", player->authid.c_str(), i);

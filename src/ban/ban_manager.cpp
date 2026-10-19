@@ -185,7 +185,7 @@ void CS2ABanManager::VerifyBan(int slot, uint64_t steamid64, const char *ip, std
 
 bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int adminSlot)
 {
-	PlayerInfo *target = g_CS2APlayerManager.GetPlayer(targetSlot);
+	PlayerInfo *target = g_CS2APlayerManager.Get(targetSlot);
 	if (!target)
 	{
 		MMU_LOG_WARN("BanPlayer: invalid target slot %d\n", targetSlot);
@@ -224,7 +224,7 @@ bool CS2ABanManager::BanPlayer(int targetSlot, int time, const char *reason, int
 	std::string adminName = "Console";
 	if (adminSlot >= 0)
 	{
-		PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot);
+		PlayerInfo *admin = g_CS2APlayerManager.Get(adminSlot);
 		if (admin)
 		{
 			adminName = admin->name;
@@ -308,7 +308,7 @@ bool CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 	std::vector<int> targets;
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
+		PlayerInfo *player = g_CS2APlayerManager.Get(i);
 		if (player && !player->fakePlayer && i != adminSlot && player->ip == ip)
 		{
 			targets.push_back(i);
@@ -316,7 +316,7 @@ bool CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 	}
 	for (int i : targets)
 	{
-		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
+		PlayerInfo *player = g_CS2APlayerManager.Get(i);
 		if (!player)
 		{
 			continue;
@@ -588,7 +588,7 @@ void CS2ABanManager::CheckSleuth(int slot, uint64_t steamid64, const char *ip)
 				return;
 			}
 
-			PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+			PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 			if (!player || !player->connected || player->steamid64 != steamid64)
 			{
 				return;
@@ -649,7 +649,7 @@ static bool CallerStillThere(int callerSlot, uint64_t callerSteamid64)
 	{
 		return true;
 	}
-	PlayerInfo *caller = g_CS2APlayerManager.GetPlayer(callerSlot);
+	PlayerInfo *caller = g_CS2APlayerManager.Get(callerSlot);
 	return caller && caller->steamid64 == callerSteamid64;
 }
 
@@ -674,7 +674,7 @@ static std::string FormatLength(int slot, int seconds)
 
 static uint64_t CallerSteamID(int callerSlot)
 {
-	PlayerInfo *caller = g_CS2APlayerManager.GetPlayer(callerSlot);
+	PlayerInfo *caller = g_CS2APlayerManager.Get(callerSlot);
 	return caller ? caller->steamid64 : 0;
 }
 

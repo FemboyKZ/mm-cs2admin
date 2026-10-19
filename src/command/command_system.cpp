@@ -305,11 +305,11 @@ static DiscordTarget CaptureDiscordTarget(int adminSlot, int targetSlot)
 {
 	DiscordTarget target;
 	target.adminName = g_CS2APlayerManager.GetAdminName(adminSlot);
-	if (PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot))
+	if (PlayerInfo *admin = g_CS2APlayerManager.Get(adminSlot))
 	{
 		target.adminSteamid64 = admin->steamid64;
 	}
-	if (PlayerInfo *player = g_CS2APlayerManager.GetPlayer(targetSlot))
+	if (PlayerInfo *player = g_CS2APlayerManager.Get(targetSlot))
 	{
 		target.name = player->name;
 		target.steamid64 = player->steamid64;
@@ -386,7 +386,7 @@ static bool ResolveHistoryTarget(int slot, const std::string &arg, std::string &
 		return true;
 	}
 	int target = CS2A_FindTarget(slot, arg.c_str());
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(target);
+	PlayerInfo *player = g_CS2APlayerManager.Get(target);
 	if (!player)
 	{
 		return false;
@@ -446,7 +446,7 @@ static int ForEachTarget(int slot, const std::string &pattern, TargetResult &tar
 	int applied = 0;
 	for (int targetSlot : targets.slots)
 	{
-		if (CheckImmunity(slot, targetSlot) && g_CS2APlayerManager.GetPlayer(targetSlot) && apply(targetSlot))
+		if (CheckImmunity(slot, targetSlot) && g_CS2APlayerManager.Get(targetSlot) && apply(targetSlot))
 		{
 			applied++;
 		}
@@ -462,13 +462,13 @@ static CCSPlayerPawn *AlivePawn(int slot)
 
 static std::string PlayerName(int slot)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	return player ? player->name : "Unknown";
 }
 
 static void SubmitAdminPassword(int slot, const std::string &password)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player)
 	{
 		return;
@@ -570,7 +570,7 @@ bool CS2ACommandSystem::ShouldBlockChat(int slot)
 
 void CS2ACommandSystem::PromptText(int slot, std::function<void(int slot, const std::string &text)> onText, std::function<void(int slot)> onCancel)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!mmu::ValidSlot(slot) || !player)
 	{
 		return;
@@ -584,7 +584,7 @@ bool CS2ACommandSystem::PromptWaiting(int slot)
 	{
 		return false;
 	}
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player || player->steamid64 != m_prompts[slot].steamid64 || Plat_FloatTime() > m_prompts[slot].expires)
 	{
 		m_prompts[slot] = {};
@@ -746,7 +746,7 @@ namespace
 		{
 			for (int i = 0; i < maxClients; i++)
 			{
-				PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+				PlayerInfo *p = g_CS2APlayerManager.Get(i);
 				if (!p || !p->connected)
 				{
 					continue;
@@ -1259,7 +1259,7 @@ namespace
 		if (info[0] == '#')
 		{
 			int slot = atoi(info.c_str() + 1);
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+			PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 			return p && p->connected ? slot : -1;
 		}
 		return -1;
@@ -1282,7 +1282,7 @@ namespace
 			slot, CS2A_Translate(slot, "Gag / Mute: select player").c_str(), players,
 			[players](int s, int item, const std::string &target)
 			{
-				PlayerInfo *p = g_CS2APlayerManager.GetPlayer(SlotFromTargetInfo(target));
+				PlayerInfo *p = g_CS2APlayerManager.Get(SlotFromTargetInfo(target));
 				if (!p)
 				{
 					CS2A_ReplyToCommandT(s, "No valid targets online.\n");
@@ -1351,7 +1351,7 @@ namespace
 	void ShowPlayerPage(int slot, const std::string &target, bool push)
 	{
 		const int targetSlot = SlotFromTargetInfo(target);
-		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(targetSlot);
+		PlayerInfo *p = g_CS2APlayerManager.Get(targetSlot);
 		if (!p)
 		{
 			CS2A_ReplyToCommandT(slot, "No valid targets online.\n");
@@ -1580,7 +1580,7 @@ namespace
 		}
 
 		// A bot has no SteamID for the comms row.
-		PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+		PlayerInfo *targetPlayer = g_CS2APlayerManager.Get(target);
 		if (targetPlayer && targetPlayer->fakePlayer)
 		{
 			CS2A_ReplyToCommandT(slot, "This command cannot target bots.\n");
@@ -1714,7 +1714,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+						PlayerInfo *targetPlayer = g_CS2APlayerManager.Get(target);
 						if (targetPlayer && targetPlayer->fakePlayer)
 						{
 							CS2A_ReplyToCommandT(slot, "Bots cannot be banned.\n");
@@ -1895,7 +1895,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						// One protected player on that address refuses the whole command.
 						for (int i = 0; i < MAXPLAYERS; i++)
 						{
-							PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
+							PlayerInfo *player = g_CS2APlayerManager.Get(i);
 							if (!player || player->fakePlayer || player->ip != ip)
 							{
 								continue;
@@ -2003,7 +2003,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						PlayerInfo *reporter = g_CS2APlayerManager.GetPlayer(slot);
+						PlayerInfo *reporter = g_CS2APlayerManager.Get(slot);
 						if (!reporter || !reporter->connected)
 						{
 							return;
@@ -2030,7 +2030,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+						PlayerInfo *targetPlayer = g_CS2APlayerManager.Get(target);
 						if (!targetPlayer || !targetPlayer->connected)
 						{
 							return;
@@ -2126,7 +2126,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+						PlayerInfo *targetPlayer = g_CS2APlayerManager.Get(target);
 						if (!targetPlayer || !targetPlayer->connected)
 						{
 							return;
@@ -2264,7 +2264,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						if (const std::string *player = args.Get("player"))
 						{
 							int target = CS2A_FindTarget(slot, player->c_str());
-							PlayerInfo *p = target >= 0 ? g_CS2APlayerManager.GetPlayer(target) : nullptr;
+							PlayerInfo *p = target >= 0 ? g_CS2APlayerManager.Get(target) : nullptr;
 							if (!p)
 							{
 								return;
@@ -2287,7 +2287,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						for (int i = 0; i < maxClients; i++)
 						{
-							PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
+							PlayerInfo *p = g_CS2APlayerManager.Get(i);
 							if (!p || !p->connected || p->fakePlayer)
 							{
 								continue;
@@ -2451,7 +2451,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 	RegisterCommand("adminpass", "cs2admin", ADMFLAG_NONE, {{{"password"}}, "password"}, "Usage: !adminpass <password>\n",
 					[](int slot, const mmu::Args &args, bool silent)
 					{
-						if (!g_CS2APlayerManager.GetPlayer(slot))
+						if (!g_CS2APlayerManager.Get(slot))
 						{
 							g_CS2ACommandSystem.ReplyUsage(slot, "adminpass");
 							return;
@@ -2643,7 +2643,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						const std::string &message = *args.Get("message");
 
 						std::string adminName = g_CS2APlayerManager.GetAdminName(slot);
-						PlayerInfo *targetPlayer = g_CS2APlayerManager.GetPlayer(target);
+						PlayerInfo *targetPlayer = g_CS2APlayerManager.Get(target);
 						std::string targetName = targetPlayer ? targetPlayer->name : "Unknown";
 
 						CS2A_PrintToChatT(target, "[PM from %s] %s\n", adminName.c_str(), message.c_str());

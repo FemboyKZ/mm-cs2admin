@@ -62,7 +62,7 @@ static int FindWebTarget(const std::string &steamid)
 		return -1;
 	}
 	int slot = g_CS2APlayerManager.FindSlotBySteamID64(steamid64);
-	PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 	return (p && !p->fakePlayer) ? slot : -1;
 }
 

@@ -2,24 +2,14 @@
 #define _INCLUDE_CS2A_PLAYER_MANAGER_H_
 
 #include "../common.h"
-#include "game/player_table.h"
+#include "game/players.h"
 #include <string>
 #include <vector>
 #include <tuple>
 
-struct PlayerInfo
+struct PlayerInfo : mmu::Player
 {
-	bool connected = false;
-	uint64_t steamid64 = 0;
 	std::string authid; // "STEAM_0:X:Y"
-	std::string name;
-	std::string ip;
-	bool fakePlayer = false;
-
-	// Past ClientPutInServer.
-	bool inGame = false;
-	// Steam has confirmed steamid64. Until then it is only what the client claimed, so nothing may be granted on it.
-	bool authenticated = false;
 
 	// Comm state
 	bool isMuted = false;
@@ -53,13 +43,12 @@ struct DisconnectedPlayer
 	double disconnectTime = 0.0;
 };
 
-class CS2APlayerManager
+class CS2APlayerManager : public mmu::Players<PlayerInfo>
 {
 public:
-	void OnClientConnected(int slot, const char *name, uint64_t xuid, const char *networkID, const char *address, bool fakePlayer);
+	void OnClientConnected(int slot, const char *name, uint64_t xuid, const char *address, bool fakePlayer);
 	void OnClientDisconnect(int slot);
 
-	PlayerInfo *GetPlayer(int slot);
 	PlayerInfo *FindPlayerBySteamID64(uint64_t steamid64);
 	int FindSlotBySteamID64(uint64_t steamid64);
 
@@ -75,8 +64,6 @@ public:
 	}
 
 private:
-	mmu::PlayerTable<PlayerInfo> m_players;
-
 	// Circular buffer of last 20 disconnected players
 	std::vector<DisconnectedPlayer> m_disconnected;
 	static const int MAX_DISCONNECTED = 20;

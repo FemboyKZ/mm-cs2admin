@@ -145,7 +145,7 @@ bool CS2AChatProcessor::ShouldRender(int slot) const
 		return false;
 	}
 
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	return player && player->connected && !player->fakePlayer;
 }
 
@@ -256,7 +256,7 @@ void CS2AChatProcessor::RenderPending(int slot, const CPlayerBitVec &recipients)
 
 std::string CS2AChatProcessor::ComposeLine(int slot, const char *message, bool teamOnly) const
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	const int team = PlayerTeam(slot);
 	const bool alive = PlayerIsAlive(slot);
 

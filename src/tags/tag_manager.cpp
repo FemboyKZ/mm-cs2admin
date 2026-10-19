@@ -245,7 +245,7 @@ void CS2ATagManager::LoadTags()
 
 bool CS2ATagManager::PlayerMatches(int slot, const TagDef &tag) const
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player || !player->connected)
 	{
 		return false;
@@ -428,7 +428,7 @@ void CS2ATagManager::ApplyClanTag(int slot)
 		return;
 	}
 
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player || !player->connected || player->fakePlayer)
 	{
 		return;
@@ -626,7 +626,7 @@ void CS2ATagManager::LoadPlayerPref(int slot, uint64_t steamid64)
 
 			// The slot may have been recycled by another player while the query was in flight,
 			// so confirm it still holds the one we asked about.
-			PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+			PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 			if (!player || !player->connected || player->steamid64 != steamid64)
 			{
 				return;
@@ -650,7 +650,7 @@ void CS2ATagManager::ApplyLoadedPref(int slot, const char *tagId, bool disabled)
 
 void CS2ATagManager::SavePlayerPref(int slot)
 {
-	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
+	PlayerInfo *player = g_CS2APlayerManager.Get(slot);
 	if (!player || !player->connected || player->fakePlayer || player->steamid64 == 0)
 	{
 		return;

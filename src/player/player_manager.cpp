@@ -1,5 +1,4 @@
 #include "player_manager.h"
-#include "utils/str.h"
 #include "utils/log.h"
 #include "src/admin/admin_manager.h"
 #include "src/lang/translations.h"
@@ -17,56 +16,31 @@
 
 CS2APlayerManager g_CS2APlayerManager;
 
-void CS2APlayerManager::OnClientConnected(int slot, const char *name, uint64_t xuid, const char *networkID, const char *address, bool fakePlayer)
+void CS2APlayerManager::OnClientConnected(int slot, const char *name, uint64_t xuid, const char *address, bool fakePlayer)
 {
-	PlayerInfo *p = m_players.Get(slot);
-	if (!p)
+	Players::OnClientConnected(slot, name, xuid, address, fakePlayer);
+	if (PlayerInfo *p = Get(slot))
 	{
-		return;
+		p->authid = SteamID64ToAuthId(xuid);
 	}
-
-	*p = PlayerInfo();
-	p->connected = true;
-	p->steamid64 = xuid;
-	p->authid = SteamID64ToAuthId(xuid);
-	p->name = name ? name : "";
-	p->fakePlayer = fakePlayer;
-	p->ip = str::StripPort(address);
 }
 
 void CS2APlayerManager::OnClientDisconnect(int slot)
 {
-	PlayerInfo *p = m_players.Get(slot);
-	if (!p)
-	{
-		return;
-	}
-
-	if (p->connected && !p->fakePlayer && p->steamid64 != 0)
+	const PlayerInfo *p = Get(slot);
+	if (p && !p->fakePlayer && p->steamid64 != 0)
 	{
 		AddDisconnectedPlayer(*p);
 	}
-
-	*p = PlayerInfo();
-}
-
-PlayerInfo *CS2APlayerManager::GetPlayer(int slot)
-{
-	PlayerInfo *p = m_players.Get(slot);
-	if (!p || !p->connected)
-	{
-		return nullptr;
-	}
-
-	return p;
+	Players::OnClientDisconnect(slot);
 }
 
 PlayerInfo *CS2APlayerManager::FindPlayerBySteamID64(uint64_t steamid64)
 {
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		PlayerInfo *p = m_players.Get(i);
-		if (p->connected && p->steamid64 == steamid64)
+		PlayerInfo *p = Get(i);
+		if (p && p->steamid64 == steamid64)
 		{
 			return p;
 		}
@@ -78,8 +52,8 @@ int CS2APlayerManager::FindSlotBySteamID64(uint64_t steamid64)
 {
 	for (int i = 0; i < MAXPLAYERS; i++)
 	{
-		const PlayerInfo *p = m_players.Get(i);
-		if (p->connected && p->steamid64 == steamid64)
+		const PlayerInfo *p = Get(i);
+		if (p && p->steamid64 == steamid64)
 		{
 			return i;
 		}
@@ -120,7 +94,7 @@ std::string CS2APlayerManager::GetAdminName(int adminSlot)
 		return "Console";
 	}
 
-	PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot);
+	PlayerInfo *admin = g_CS2APlayerManager.Get(adminSlot);
 	if (admin)
 	{
 		return admin->name;
@@ -136,7 +110,7 @@ std::string GetAdminAuthId(int adminSlot)
 		return "STEAM_ID_SERVER";
 	}
 
-	PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot);
+	PlayerInfo *admin = g_CS2APlayerManager.Get(adminSlot);
 	if (admin)
 	{
 		return admin->authid;
@@ -152,7 +126,7 @@ std::string GetAdminIP(int adminSlot)
 		return "";
 	}
 
-	PlayerInfo *admin = g_CS2APlayerManager.GetPlayer(adminSlot);
+	PlayerInfo *admin = g_CS2APlayerManager.Get(adminSlot);
 	if (admin)
 	{
 		return admin->ip;
@@ -167,7 +141,7 @@ static TargetResult FindTargets(int callerSlot, const char *pattern, mmu::Target
 		callerSlot, pattern ? pattern : "",
 		[](int slot, mmu::TargetCandidate &who)
 		{
-			PlayerInfo *p = g_CS2APlayerManager.GetPlayer(slot);
+			PlayerInfo *p = g_CS2APlayerManager.Get(slot);
 			if (!p || !p->connected)
 			{
 				return false;

@@ -306,7 +306,7 @@ bool CS2ABanManager::BanIP(const char *ip, int time, const char *reason, int adm
 	// Anyone already on that IP would otherwise stay until they reconnect.
 	// Collected first, since DisconnectClient resets the PlayerInfo synchronously.
 	std::vector<int> targets;
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
 		if (player && !player->fakePlayer && i != adminSlot && player->ip == ip)

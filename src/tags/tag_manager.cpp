@@ -133,8 +133,7 @@ namespace
 		if (raw.match == "steamid")
 		{
 			out.match = TagMatch::SteamID;
-			std::string normalized = CS2AAdminManager::NormalizeSteamID(raw.value.c_str());
-			out.steamid64 = normalized.empty() ? 0 : CS2AAdminManager::AuthIdToSteamID64(normalized.c_str());
+			out.steamid64 = ParseSteamID64(raw.value);
 			if (out.steamid64 == 0)
 			{
 				MMU_LOG_WARN("tags.cfg: tag '%s' has an unreadable SteamID '%s', skipping.\n", raw.id.c_str(), raw.value.c_str());
@@ -292,7 +291,7 @@ bool CS2ATagManager::PlayerMatches(int slot, const TagDef &tag) const
 std::vector<const TagDef *> CS2ATagManager::EligibleFor(int slot) const
 {
 	std::vector<const TagDef *> out;
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return out;
 	}
@@ -325,7 +324,7 @@ const TagDef *CS2ATagManager::FindTag(const char *id) const
 
 const TagDef *CS2ATagManager::Resolve(int slot) const
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return nullptr;
 	}
@@ -358,7 +357,7 @@ const TagDef *CS2ATagManager::Resolve(int slot) const
 
 bool CS2ATagManager::SelectTag(int slot, const char *id)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return false;
 	}
@@ -388,7 +387,7 @@ bool CS2ATagManager::SelectTag(int slot, const char *id)
 
 void CS2ATagManager::UpdateClanTag(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}
@@ -506,7 +505,7 @@ void CS2ATagManager::ReassertClanTags()
 	{
 		return;
 	}
-	for (int slot = 0; slot <= MAXPLAYERS; slot++)
+	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
 		if (!m_clanTag[slot][0])
 		{
@@ -525,7 +524,7 @@ void CS2ATagManager::ReassertClanTags()
 
 void CS2ATagManager::UpdateAllClanTags()
 {
-	for (int slot = 0; slot <= MAXPLAYERS; slot++)
+	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
 		UpdateClanTag(slot);
 	}
@@ -534,7 +533,7 @@ void CS2ATagManager::UpdateAllClanTags()
 void CS2ATagManager::ReleaseClanTags()
 {
 	ICS2KZ *cs2kz = g_CS2AForeignPlugins.CS2KZ();
-	for (int slot = 0; slot <= MAXPLAYERS; slot++)
+	for (int slot = 0; slot < MAXPLAYERS; slot++)
 	{
 		if (!m_clanTag[slot][0])
 		{
@@ -554,7 +553,7 @@ void CS2ATagManager::ReleaseClanTags()
 
 void CS2ATagManager::OnClientDisconnect(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}
@@ -603,7 +602,7 @@ void CS2ATagManager::EnsureSchema()
 
 void CS2ATagManager::LoadPlayerPref(int slot, uint64_t steamid64)
 {
-	if (slot < 0 || slot > MAXPLAYERS || steamid64 == 0)
+	if (!mmu::ValidSlot(slot) || steamid64 == 0)
 	{
 		return;
 	}
@@ -640,7 +639,7 @@ void CS2ATagManager::LoadPlayerPref(int slot, uint64_t steamid64)
 
 void CS2ATagManager::ApplyLoadedPref(int slot, const char *tagId, bool disabled)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}

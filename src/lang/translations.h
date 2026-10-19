@@ -9,10 +9,6 @@
 extern mmu::Translations g_CS2ATranslations;
 
 // Defined in cs2admin.cpp.
-// Returns the mapped phrase-file language key for the client in `slot`, or the default language when unavailable.
-std::string CS2A_SlotLanguage(int slot);
-
-// Defined in cs2admin.cpp.
 // Reloads phrase tables. Call after (re)loading the plugin config.
 void CS2A_LoadTranslations();
 

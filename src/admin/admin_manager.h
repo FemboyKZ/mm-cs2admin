@@ -96,12 +96,6 @@ public:
 	// Check if a flag set includes a specific flag (root always passes)
 	static bool HasFlag(uint32_t playerFlags, uint32_t requiredFlag);
 
-	// Convert a SteamID in any format to STEAM_0:X:Y normalized form
-	static std::string NormalizeSteamID(const char *input);
-
-	// Convert STEAM_X:Y:Z to SteamID64
-	static uint64_t AuthIdToSteamID64(const char *authid);
-
 	// Admin management
 	// The group and override loaders below fill the reload staging set,
 	// so they only make sense as part of a ReloadAdmins pass.

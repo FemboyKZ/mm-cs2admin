@@ -56,7 +56,7 @@ CON_COMMAND_F(mm_admin_version, "Display CS2Admin version", FCVAR_NONE)
 // Human player slot for a SteamID in any format, or -1.
 static int FindWebTarget(const std::string &steamid)
 {
-	uint64_t steamid64 = CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(steamid.c_str()).c_str());
+	uint64_t steamid64 = ParseSteamID64(steamid);
 	if (steamid64 == 0)
 	{
 		return -1;

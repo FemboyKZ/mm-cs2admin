@@ -82,13 +82,13 @@ public:
 	// Bumped whenever an admin applies or lifts a block, so an older VerifyComms answer can be dropped.
 	uint32_t Generation(int slot) const
 	{
-		return (slot >= 0 && slot <= MAXPLAYERS) ? m_commGeneration[slot] : 0;
+		return (mmu::ValidSlot(slot)) ? m_commGeneration[slot] : 0;
 	}
 
 private:
 	void BumpGeneration(int slot)
 	{
-		if (slot >= 0 && slot <= MAXPLAYERS)
+		if (mmu::ValidSlot(slot))
 		{
 			m_commGeneration[slot]++;
 		}

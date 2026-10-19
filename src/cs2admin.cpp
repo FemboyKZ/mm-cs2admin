@@ -47,17 +47,10 @@ CS2AForwards g_CS2AForwards;
 IServerGameDLL *g_pServerGameDLL = nullptr;
 IServerGameClients *g_pGameClients = nullptr;
 IVEngineServer *g_pEngine = nullptr;
-IGameEventManager2 *g_pGameEvents = nullptr;
 ICvar *g_pICvar = nullptr;
 IGameEventSystem *g_pGameEventSystem = nullptr;
 
 // g_pFullFileSystem is defined by interfaces.lib
-
-std::string CS2A_SlotLanguage(int slot)
-{
-	const char *raw = mmu::cvarquery::GetClientLanguage(slot);
-	return g_CS2ATranslations.MapClientLanguage(raw);
-}
 
 void CS2A_LoadTranslations()
 {
@@ -388,7 +381,7 @@ void *CS2APlugin::OnMetamodQuery(const char *iface, int *ret)
 
 void CS2A_RecheckConnectedPlayers()
 {
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
 		if (!p || !p->connected || p->fakePlayer || !p->inGame)
@@ -811,7 +804,7 @@ static bool IsTrackedSay(ConCommandRef cmd, const CCommandContext &ctx, bool *is
 {
 	// Server console commands have slot -1.
 	int slotIdx = ctx.GetPlayerSlot().Get();
-	if (!cmd.IsValidRef() || slotIdx < 0 || slotIdx > MAXPLAYERS)
+	if (!cmd.IsValidRef() || !mmu::ValidSlot(slotIdx))
 	{
 		return false;
 	}
@@ -988,7 +981,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientSettingsChanged(IServerGameClients *,
 
 KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating, bool bFirstTick, bool bLastTick)
 {
-	CGlobalVars *globals = GetGameGlobals();
+	CGlobalVars *globals = mmu::GetGameGlobals();
 	if (!globals)
 	{
 		return {KHook::Action::Ignore};
@@ -999,7 +992,7 @@ KHook::Return<void> CS2APlugin::Hook_GameFrame(IServerGameDLL *, bool simulating
 	g_CS2ABanManager.RunFrame();
 
 	// Steam confirms a SteamID some time after the client connects, before or after ClientPutInServer.
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
 		if (!player || player->fakePlayer || player->authenticated || !g_pEngine->IsClientFullyAuthenticated(CPlayerSlot(i)))
@@ -1087,7 +1080,7 @@ void CS2APlugin::OnLateLoad()
 		g_pEntitySystem = GameEntitySystem();
 	}
 
-	CGlobalVars *globals = GetGameGlobals();
+	CGlobalVars *globals = mmu::GetGameGlobals();
 	if (!globals)
 	{
 		return;

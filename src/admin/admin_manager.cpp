@@ -85,53 +85,6 @@ void CS2AAdminManager::AddGroup(std::vector<std::string> &groups, const std::str
 	}
 }
 
-uint64_t CS2AAdminManager::AuthIdToSteamID64(const char *authid)
-{
-	// Parse STEAM_X:Y:Z format
-	if (!authid)
-	{
-		return 0;
-	}
-
-	unsigned int x, y, z;
-	if (sscanf(authid, "STEAM_%u:%u:%u", &x, &y, &z) != 3)
-	{
-		return 0;
-	}
-
-	// AccountID = Z * 2 + Y
-	uint32_t accountId = z * 2 + y;
-	// SteamID64 = AccountID + 76561197960265728 (the base for individual accounts)
-	return static_cast<uint64_t>(accountId) + 76561197960265728ULL;
-}
-
-std::string CS2AAdminManager::NormalizeSteamID(const char *input)
-{
-	if (!input || !*input)
-	{
-		return "";
-	}
-
-	std::string authid = SteamID2Or3ToAuthId(input);
-	if (!authid.empty())
-	{
-		return authid;
-	}
-
-	// If it's a raw SteamID64 number
-	if (strlen(input) >= 15)
-	{
-		char *end;
-		uint64_t id64 = strtoull(input, &end, 10);
-		if (*end == '\0' && id64 > 0)
-		{
-			return SteamID64ToAuthId(id64);
-		}
-	}
-
-	return input;
-}
-
 // Flat file loading is in admin_flatfile.cpp
 // Database loading is in admin_db.cpp
 
@@ -231,7 +184,7 @@ void CS2AAdminManager::FinishReload()
 void CS2AAdminManager::MergeAndApplyAll()
 {
 	// Apply to all currently connected players
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		PlayerInfo *p = g_CS2APlayerManager.GetPlayer(i);
 		if (p && p->connected)
@@ -243,7 +196,7 @@ void CS2AAdminManager::MergeAndApplyAll()
 
 bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 {
-	std::string normalized = NormalizeSteamID(authid);
+	std::string normalized = NormalizeAuthId(authid);
 	if (normalized.empty())
 	{
 		return false;
@@ -251,7 +204,7 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 
 	merged = AdminEntry {};
 	merged.identity = normalized;
-	merged.steamid64 = AuthIdToSteamID64(normalized.c_str());
+	merged.steamid64 = ParseSteamID64(normalized);
 	bool found = false;
 
 	// Check flatfile admins
@@ -321,7 +274,7 @@ bool CS2AAdminManager::LookupAdmin(const char *authid, AdminEntry &merged) const
 
 void CS2AAdminManager::AssignAdminToPlayer(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}
@@ -360,7 +313,7 @@ void CS2AAdminManager::AssignAdminToPlayer(int slot)
 
 void CS2AAdminManager::ClearPlayerAdmin(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return;
 	}
@@ -388,7 +341,7 @@ bool CS2AAdminManager::SubmitPassword(int slot, const std::string &password)
 
 bool CS2AAdminManager::PlayerHasFlag(int slot, uint32_t flag)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return false;
 	}
@@ -409,7 +362,7 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 		return true;
 	}
 
-	if (slot > MAXPLAYERS)
+	if (slot >= MAXPLAYERS)
 	{
 		return false;
 	}
@@ -489,7 +442,7 @@ bool CS2AAdminManager::CanPlayerUseCommand(int slot, const char *commandName, co
 
 const AdminEntry *CS2AAdminManager::GetPlayerAdmin(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS)
+	if (!mmu::ValidSlot(slot))
 	{
 		return nullptr;
 	}
@@ -526,7 +479,7 @@ void CS2AAdminManager::Clear()
 	m_loadingGroups.clear();
 	m_loadingGroupIdToName.clear();
 	m_loadingGlobalOverrides.clear();
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		m_playerHasAdmin[i] = false;
 		m_playerAdmins[i] = {};

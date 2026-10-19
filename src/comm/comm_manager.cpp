@@ -228,10 +228,7 @@ void CS2ACommManager::VerifyComms(int slot, uint64_t steamid64)
 									 issuerImmunity = -1;
 								 }
 								 const char *issuerAuth = rs->GetString(9);
-								 uint64_t issuerSteamid64 =
-									 (noAid || !issuerAuth)
-										 ? 0
-										 : CS2AAdminManager::AuthIdToSteamID64(CS2AAdminManager::NormalizeSteamID(issuerAuth).c_str());
+								 uint64_t issuerSteamid64 = (noAid || !issuerAuth) ? 0 : ParseSteamID64(issuerAuth);
 
 								 if (type != COMM_MUTE && type != COMM_GAG)
 								 {
@@ -769,7 +766,7 @@ void CS2ACommManager::CheckExpiredComms()
 {
 	double curtime = Plat_FloatTime();
 
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
 		if (!player)

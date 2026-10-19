@@ -42,33 +42,6 @@ struct PlayerInfo
 	// Chat flood tracking
 	double lastChatTime = 0.0;
 	int chatMessageCount = 0;
-
-	void Reset()
-	{
-		connected = false;
-		steamid64 = 0;
-		authid.clear();
-		name.clear();
-		ip.clear();
-		fakePlayer = false;
-		inGame = false;
-		authenticated = false;
-		isMuted = false;
-		isGagged = false;
-		isSessionMuted = false;
-		isSessionGagged = false;
-		muteExpireTime = 0.0;
-		gagExpireTime = 0.0;
-		muteReason.clear();
-		gagReason.clear();
-		muteIssuerImmunity = 0;
-		gagIssuerImmunity = 0;
-		muteIssuerSteamid64 = 0;
-		gagIssuerSteamid64 = 0;
-		lastReportTime = 0.0;
-		lastChatTime = 0.0;
-		chatMessageCount = 0;
-	}
 };
 
 // Disconnected player record for !listdc

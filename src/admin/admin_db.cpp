@@ -332,8 +332,8 @@ void CS2AAdminManager::LoadAdminsFromDB(uint32_t generation, std::function<void(
 					continue;
 				}
 
-				entry.identity = NormalizeSteamID(authid);
-				entry.steamid64 = AuthIdToSteamID64(entry.identity.c_str());
+				entry.identity = NormalizeAuthId(authid);
+				entry.steamid64 = ParseSteamID64(entry.identity);
 
 				const char *flags = rs->GetString(2);
 				entry.flags = FlagsFromString(flags);

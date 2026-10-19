@@ -39,7 +39,7 @@ bool AdminMenuBridge::Available() const
 
 void AdminMenuBridge::CancelMenu(int slot)
 {
-	if (m_menus && slot >= 0 && slot <= MAXPLAYERS)
+	if (m_menus && mmu::ValidSlot(slot))
 	{
 		m_menus->CancelMenu(slot);
 	}
@@ -47,7 +47,7 @@ void AdminMenuBridge::CancelMenu(int slot)
 
 void AdminMenuBridge::Suspend(int slot)
 {
-	if (m_menus && slot >= 0 && slot <= MAXPLAYERS)
+	if (m_menus && mmu::ValidSlot(slot))
 	{
 		m_menus->SuspendMenu(slot);
 	}
@@ -55,7 +55,7 @@ void AdminMenuBridge::Suspend(int slot)
 
 void AdminMenuBridge::Resume(int slot)
 {
-	if (m_menus && slot >= 0 && slot <= MAXPLAYERS)
+	if (m_menus && mmu::ValidSlot(slot))
 	{
 		m_menus->ResumeMenu(slot);
 	}
@@ -63,7 +63,7 @@ void AdminMenuBridge::Resume(int slot)
 
 bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<AdminMenuItem> &items, SelectFn onSelect, const Options &options)
 {
-	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
+	if (!m_menus || !mmu::ValidSlot(slot))
 	{
 		return false;
 	}
@@ -130,7 +130,7 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 bool AdminMenuBridge::ShowForm(int slot, const char *title, const std::vector<AdminFormField> &fields, const char *confirmText, ConfirmFn onConfirm,
 							   const Options &options)
 {
-	if (!m_menus || slot < 0 || slot > MAXPLAYERS)
+	if (!m_menus || !mmu::ValidSlot(slot))
 	{
 		return false;
 	}

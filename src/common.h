@@ -15,8 +15,6 @@
 #include <cstdio>
 
 // Plugin-specific engine interfaces. Shared ones live in sdk/plugin_globals.h.
-extern IGameEventManager2 *g_pGameEvents;
-
 class INetworkMessages;
 
 class IGameEventSystem;
@@ -34,11 +32,6 @@ extern CGameEntitySystem *g_pEntitySystem;
 
 // CGlobalVars accessor, only valid during active game
 #include "game/print.h"
-
-inline CGlobalVars *GetGameGlobals()
-{
-	return mmu::GetGameGlobals();
-}
 
 // Shorten to at most maxBytes without cutting a UTF-8 sequence in half,
 // which would leave invalid text in a JSON body or a strict-mode SQL column.

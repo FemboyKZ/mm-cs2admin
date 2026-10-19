@@ -281,12 +281,8 @@ static bool ParseDurationArg(int slot, const std::string &arg, int &minutes)
 // Anything else is rejected, since the unban and addban queries match on the suffix and a LIKE wildcard would match every row.
 static bool ParseSteamIDArg(const std::string &arg, std::string &out)
 {
-	std::string normalized = CS2AAdminManager::NormalizeSteamID(arg.c_str());
-
-	unsigned int y = 0;
-	unsigned int z = 0;
-	int consumed = 0;
-	if (sscanf(normalized.c_str(), "STEAM_0:%u:%u%n", &y, &z, &consumed) != 2 || consumed != (int)normalized.size())
+	std::string normalized = NormalizeAuthId(arg);
+	if (normalized.empty())
 	{
 		return false;
 	}
@@ -575,7 +571,7 @@ bool CS2ACommandSystem::ShouldBlockChat(int slot)
 void CS2ACommandSystem::PromptText(int slot, std::function<void(int slot, const std::string &text)> onText, std::function<void(int slot)> onCancel)
 {
 	PlayerInfo *player = g_CS2APlayerManager.GetPlayer(slot);
-	if (slot < 0 || slot > MAXPLAYERS || !player)
+	if (!mmu::ValidSlot(slot) || !player)
 	{
 		return;
 	}
@@ -584,7 +580,7 @@ void CS2ACommandSystem::PromptText(int slot, std::function<void(int slot, const 
 
 bool CS2ACommandSystem::PromptWaiting(int slot)
 {
-	if (slot < 0 || slot > MAXPLAYERS || !m_prompts[slot].onText)
+	if (!mmu::ValidSlot(slot) || !m_prompts[slot].onText)
 	{
 		return false;
 	}
@@ -599,12 +595,12 @@ bool CS2ACommandSystem::PromptWaiting(int slot)
 
 bool CS2ACommandSystem::IsChatHidden(int slot)
 {
-	return PromptWaiting(slot) || (slot >= 0 && slot <= MAXPLAYERS && m_sayHidden[slot]);
+	return PromptWaiting(slot) || (mmu::ValidSlot(slot) && m_sayHidden[slot]);
 }
 
 void CS2ACommandSystem::EndSay(int slot)
 {
-	if (slot >= 0 && slot <= MAXPLAYERS)
+	if (mmu::ValidSlot(slot))
 	{
 		m_sayHidden[slot] = false;
 	}
@@ -672,7 +668,7 @@ bool CS2ACommandSystem::ProcessChatMessage(int slot, const char *message, bool t
 
 	// A password must never reach chat, nor a relay asking IsChatHidden.
 	silent = cmd.silent || it->first == "adminpass";
-	if (it->first == "adminpass" && slot >= 0 && slot <= MAXPLAYERS)
+	if (it->first == "adminpass" && mmu::ValidSlot(slot))
 	{
 		m_sayHidden[slot] = true;
 	}
@@ -743,7 +739,7 @@ namespace
 	std::vector<AdminMenuItem> BuildPlayerItems(int callerSlot, bool includeBots, bool excludeSelf, int commFilter = 0)
 	{
 		std::vector<AdminMenuItem> items;
-		CGlobalVars *globals = GetGameGlobals();
+		CGlobalVars *globals = mmu::GetGameGlobals();
 		int maxClients = globals ? globals->maxClients : MAXPLAYERS;
 
 		for (const TeamSection &section : kTeamSections)
@@ -1559,7 +1555,7 @@ namespace
 	// True when slot is a real player and the menu plugin can render a picker.
 	bool MenuPickerAvailable(int slot)
 	{
-		return slot >= 0 && slot <= MAXPLAYERS && g_AdminMenus.Available();
+		return mmu::ValidSlot(slot) && g_AdminMenus.Available();
 	}
 
 	// !mute, !gag and !silence. `type` holds the COMM_MUTE/COMM_GAG bits to place.
@@ -1807,7 +1803,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						}
 
 						// An offline target still has an admin record to respect, so check whichever of the two we can see.
-						int online = g_CS2APlayerManager.FindSlotBySteamID64(CS2AAdminManager::AuthIdToSteamID64(authid.c_str()));
+						int online = g_CS2APlayerManager.FindSlotBySteamID64(ParseSteamID64(authid));
 						if (online >= 0)
 						{
 							if (!CheckImmunity(slot, online))
@@ -1897,7 +1893,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 
 						// The reconnect ban check runs before admin rights are assigned, so an IP ban locks a higher-immunity admin out permanently.
 						// One protected player on that address refuses the whole command.
-						for (int i = 0; i <= MAXPLAYERS; i++)
+						for (int i = 0; i < MAXPLAYERS; i++)
 						{
 							PlayerInfo *player = g_CS2APlayerManager.GetPlayer(i);
 							if (!player || player->fakePlayer || player->ip != ip)
@@ -2283,7 +2279,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							return;
 						}
 
-						CGlobalVars *globals = GetGameGlobals();
+						CGlobalVars *globals = mmu::GetGameGlobals();
 						int maxClients = globals ? globals->maxClients : MAXPLAYERS;
 
 						CS2A_ReplyToCommandT(slot, "Online Admins:\n");
@@ -2657,7 +2653,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 							CS2A_PrintToChatT(slot, "[PM to %s] %s\n", targetName.c_str(), message.c_str());
 						}
 
-						CGlobalVars *globals = GetGameGlobals();
+						CGlobalVars *globals = mmu::GetGameGlobals();
 						int maxClients = globals ? globals->maxClients : MAXPLAYERS;
 						for (int i = 0; i < maxClients; i++)
 						{

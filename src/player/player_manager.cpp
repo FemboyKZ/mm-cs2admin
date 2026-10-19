@@ -25,7 +25,7 @@ void CS2APlayerManager::OnClientConnected(int slot, const char *name, uint64_t x
 		return;
 	}
 
-	p->Reset();
+	*p = PlayerInfo();
 	p->connected = true;
 	p->steamid64 = xuid;
 	p->authid = SteamID64ToAuthId(xuid);
@@ -47,7 +47,7 @@ void CS2APlayerManager::OnClientDisconnect(int slot)
 		AddDisconnectedPlayer(*p);
 	}
 
-	p->Reset();
+	*p = PlayerInfo();
 }
 
 PlayerInfo *CS2APlayerManager::GetPlayer(int slot)
@@ -63,7 +63,7 @@ PlayerInfo *CS2APlayerManager::GetPlayer(int slot)
 
 PlayerInfo *CS2APlayerManager::FindPlayerBySteamID64(uint64_t steamid64)
 {
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		PlayerInfo *p = m_players.Get(i);
 		if (p->connected && p->steamid64 == steamid64)
@@ -76,7 +76,7 @@ PlayerInfo *CS2APlayerManager::FindPlayerBySteamID64(uint64_t steamid64)
 
 int CS2APlayerManager::FindSlotBySteamID64(uint64_t steamid64)
 {
-	for (int i = 0; i <= MAXPLAYERS; i++)
+	for (int i = 0; i < MAXPLAYERS; i++)
 	{
 		const PlayerInfo *p = m_players.Get(i);
 		if (p->connected && p->steamid64 == steamid64)

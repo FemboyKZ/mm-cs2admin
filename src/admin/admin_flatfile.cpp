@@ -147,11 +147,11 @@ void CS2AAdminManager::LoadFlatFileAdmins()
 			{
 				if (!currentEntry.identity.empty())
 				{
-					std::string normalized = NormalizeSteamID(currentEntry.identity.c_str());
+					std::string normalized = NormalizeAuthId(currentEntry.identity);
 					if (!normalized.empty())
 					{
 						currentEntry.identity = normalized;
-						currentEntry.steamid64 = AuthIdToSteamID64(normalized.c_str());
+						currentEntry.steamid64 = ParseSteamID64(normalized);
 						currentEntry.name = currentAdminName;
 						currentEntry.fromDatabase = false;
 						m_flatFileAdmins[normalized] = currentEntry;
@@ -301,7 +301,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 
 		// Token 0: identity (SteamID)
 		std::string identity = tokens[0];
-		std::string normalized = NormalizeSteamID(identity.c_str());
+		std::string normalized = NormalizeAuthId(identity);
 		if (normalized.empty())
 		{
 			continue;
@@ -309,7 +309,7 @@ void CS2AAdminManager::LoadSimpleAdmins()
 
 		AdminEntry entry;
 		entry.identity = normalized;
-		entry.steamid64 = AuthIdToSteamID64(normalized.c_str());
+		entry.steamid64 = ParseSteamID64(normalized);
 		entry.fromDatabase = false;
 
 		if (tokens.size() >= 2)

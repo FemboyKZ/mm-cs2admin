@@ -153,7 +153,7 @@ bool CS2AAdminManager::LoadBackup()
 		{
 			AdminEntry entry;
 			entry.identity = fields[1];
-			entry.steamid64 = AuthIdToSteamID64(entry.identity.c_str());
+			entry.steamid64 = ParseSteamID64(entry.identity);
 			entry.adminId = std::atoi(fields[2].c_str());
 			entry.flags = FlagsFromString(fields[3].c_str());
 			entry.immunity = std::atoi(fields[4].c_str());

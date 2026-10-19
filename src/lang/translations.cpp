@@ -1,5 +1,7 @@
 #include "translations.h"
 
+#include "game/cvarquery.h"
+
 #include <cstdarg>
 #include <cstdio>
 
@@ -7,7 +9,7 @@ mmu::Translations g_CS2ATranslations;
 
 std::string CS2A_Translate(int slot, const char *phrase)
 {
-	return g_CS2ATranslations.Translate(CS2A_SlotLanguage(slot), phrase ? phrase : "");
+	return mmu::cvarquery::Translate(g_CS2ATranslations, slot, phrase);
 }
 
 std::string CS2A_Format(int slot, const char *phrase, ...)

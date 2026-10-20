@@ -414,9 +414,9 @@ static int PageRange(int &page, int count, int &start, int &end)
 {
 	const int perPage = 8;
 	int totalPages = (count + perPage - 1) / perPage;
-	page = (std::max)(1, (std::min)(page, totalPages));
+	page = std::max(1, std::min(page, totalPages));
 	start = (page - 1) * perPage;
-	end = (std::min)(start + perPage, count);
+	end = std::min(start + perPage, count);
 	return totalPages;
 }
 
@@ -722,7 +722,7 @@ namespace
 			return CS2A_Translate(slot, "permanent");
 		}
 		int minutes = static_cast<int>(std::ceil((expires - Plat_FloatTime()) / 60.0));
-		return CS2A_Format(slot, "%s left", CS2A_FormatDuration(slot, (std::max)(1, minutes)).c_str());
+		return CS2A_Format(slot, "%s left", CS2A_FormatDuration(slot, std::max(1, minutes)).c_str());
 	}
 
 	struct TeamSection

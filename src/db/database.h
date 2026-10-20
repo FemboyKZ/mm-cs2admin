@@ -20,6 +20,11 @@ public:
 	// Disconnect and clean up.
 	void Shutdown();
 
+	void Refresh()
+	{
+		m_conn.Refresh();
+	}
+
 	bool IsConnected() const
 	{
 		return m_conn.IsConnected();

@@ -564,10 +564,12 @@ void CS2APlugin::OnPluginLoad(PluginId /*id*/)
 	// A chat owner may have just loaded, in which case we have to stop owning chat.
 	g_CS2AForeignPlugins.Refresh();
 	g_CS2AMapManager.RefreshRtv();
+	g_CS2ADatabase.Refresh();
 }
 
 void CS2APlugin::OnPluginUnload(PluginId id)
 {
+	g_CS2ADatabase.Refresh();
 	// Drop our cached pointer if mm-cs2menus is the one going away.
 	g_AdminMenus.Refresh();
 	// The departing plugin's convars and interface may still be registered at this point.

@@ -30,14 +30,6 @@ static const char *MapLabel(const MapEntry &entry)
 	return entry.displayName.empty() ? entry.mapName.c_str() : entry.displayName.c_str();
 }
 
-static void IssueWorkshopChange(const std::string &workshopId)
-{
-	mmu::EnsureWorkshopMapReady(workshopId);
-	char cmd[256];
-	snprintf(cmd, sizeof(cmd), "host_workshop_map %s\n", workshopId.c_str());
-	g_pEngine->ServerCommand(cmd);
-}
-
 // Scan <gamedir>/maps for *.vpk map files.
 // These are not necessarily in the maplist but can still be changed to
 // via ChangeLevel, so we keep them for the same partial-name matching.
@@ -333,7 +325,7 @@ bool CS2AMapManager::BeginWorkshopChange(int slot, const std::string &workshopId
 
 	if (fileId == 0 || mmu::workshop::IsReady(fileId))
 	{
-		IssueWorkshopChange(workshopId);
+		mmu::ChangeToWorkshopMap(workshopId);
 		m_pending.WatchEngine(fileId);
 		m_pendingWorkshopId = workshopId;
 		m_pendingLabel = label;
@@ -438,7 +430,7 @@ void CS2AMapManager::Tick()
 			break;
 		case mmu::workshop::PendingDownload::Status::Settled:
 			// The id and label stay for the engine watch that takes over from here.
-			IssueWorkshopChange(m_pendingWorkshopId);
+			mmu::ChangeToWorkshopMap(m_pendingWorkshopId);
 			m_pending.WatchEngine(std::strtoull(m_pendingWorkshopId.c_str(), nullptr, 10));
 			break;
 		case mmu::workshop::PendingDownload::Status::Rejected:

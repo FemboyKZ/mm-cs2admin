@@ -15,11 +15,6 @@
 #include <cstdio>
 
 // Plugin-specific engine interfaces. Shared ones live in sdk/plugin_globals.h.
-class INetworkMessages;
-
-class IGameEventSystem;
-extern IGameEventSystem *g_pGameEventSystem;
-
 class IFileSystem;
 extern IFileSystem *g_pFullFileSystem;
 

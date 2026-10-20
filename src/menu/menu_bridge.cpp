@@ -121,8 +121,7 @@ bool AdminMenuBridge::ShowMenu(int slot, const char *title, const std::vector<Ad
 	}
 	if (options.mapList)
 	{
-		m_menus->SetMenuStyle(h, MenuStyle::PagePrefixDelimiter, "_");
-		m_menus->SetMenuTextFeatures(h, kMenuTextIndex);
+		m_menus.SetMapListStyle(h);
 	}
 	return Present(slot, h, options);
 }
@@ -164,11 +163,7 @@ bool AdminMenuBridge::ShowForm(int slot, const char *title, const std::vector<Ad
 			m_menus->AddToggle(h, field.text.c_str(), field.value != 0, "");
 			continue;
 		}
-		std::vector<const char *> labels;
-		for (const std::string &option : field.options)
-		{
-			labels.push_back(option.c_str());
-		}
+		const std::vector<const char *> labels = CS2MenusClient::Labels(field.options);
 		m_menus->AddChoice(h, field.text.c_str(), labels.data(), static_cast<int>(labels.size()), field.value, "");
 	}
 	m_menus->AddItem(h, confirmText, "", false);

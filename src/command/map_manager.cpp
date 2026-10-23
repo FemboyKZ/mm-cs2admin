@@ -409,6 +409,12 @@ void CS2AMapManager::ShutdownRtv()
 	}
 	m_rtvForwards = nullptr;
 	m_rtvVoteStartHandle = kInvalidRTVForwardHandle;
+
+	// StartMapFlow's map menu pick.
+	if (ICS2RTV *rtv = static_cast<ICS2RTV *>(g_SMAPI->MetaFactory(CS2RTV_INTERFACE, nullptr, nullptr)))
+	{
+		rtv->CloseMapMenus(g_PLID);
+	}
 }
 
 void CS2AMapManager::Tick()

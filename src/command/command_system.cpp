@@ -1014,59 +1014,28 @@ namespace
 			{ g_CS2ACommandSystem.DispatchConsoleCommand(cmd.c_str(), mmu::Args().Set("player", target), s); }, options);
 	}
 
-	// rtv's !nominate list, empty without rtv.
-	std::vector<AdminMenuItem> BuildRtvMapItems(int slot)
-	{
-		// Not cached, rtv may unload.
-		ICS2RTV *rtv = static_cast<ICS2RTV *>(g_SMAPI->MetaFactory(CS2RTV_INTERFACE, nullptr, nullptr));
-		std::vector<AdminMenuItem> items;
-		if (!rtv)
-		{
-			return items;
-		}
-		const int count = rtv->GetMapCount();
-		std::vector<std::string> names;
-		std::vector<int> order;
-		for (int i = 0; i < count; i++)
-		{
-			const char *display = rtv->GetMapDisplayName(i);
-			names.emplace_back(display[0] ? display : rtv->GetMapName(i));
-			order.push_back(i);
-		}
-		// Same order as rtv's SortMapsByName.
-		std::stable_sort(order.begin(), order.end(), [&](int a, int b) { return mmu::MapNameLess(names[a], names[b]); });
-
-		const std::string current = rtv->GetCurrentMap();
-		for (int i : order)
-		{
-			const std::string mapName = rtv->GetMapName(i);
-			const std::string workshopId = rtv->GetMapWorkshopId(i);
-			AdminMenuItem item;
-			item.disabled = mapName == current;
-			item.text = rtv->GetMapMenuLabel(i, item.disabled);
-			if (item.disabled)
-			{
-				item.text += " " + CS2A_Translate(slot, "[current]");
-			}
-			item.info = workshopId.empty() ? mapName : workshopId;
-			items.push_back(std::move(item));
-		}
-		return items;
-	}
-
 	// map list -> !map <mapname|workshopid|url>
 	void StartMapFlow(int slot, bool push = false)
 	{
-		std::vector<AdminMenuItem> items = BuildRtvMapItems(slot);
-		if (items.empty())
+		auto changeMap = [](int s, const std::string &mapArg)
+		{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); };
+
+		// Not cached, rtv may unload. ShutdownRtv drops the callback.
+		ICS2RTV *rtv = static_cast<ICS2RTV *>(g_SMAPI->MetaFactory(CS2RTV_INTERFACE, nullptr, nullptr));
+		if (rtv
+			&& rtv->ShowMapMenu(g_PLID, slot, CS2A_Translate(slot, "Change Map").c_str(), push,
+								[changeMap](int s, const char *map) { changeMap(s, map); }))
 		{
-			for (const MapEntry *m : g_CS2AMapManager.GetSortedMaps())
-			{
-				AdminMenuItem item;
-				item.text = m->displayName.empty() ? m->mapName : m->displayName;
-				item.info = (m->isWorkshop && !m->workshopId.empty()) ? m->workshopId : m->mapName;
-				items.push_back(std::move(item));
-			}
+			return;
+		}
+
+		std::vector<AdminMenuItem> items;
+		for (const MapEntry *m : g_CS2AMapManager.GetSortedMaps())
+		{
+			AdminMenuItem item;
+			item.text = m->displayName.empty() ? m->mapName : m->displayName;
+			item.info = (m->isWorkshop && !m->workshopId.empty()) ? m->workshopId : m->mapName;
+			items.push_back(std::move(item));
 		}
 		if (items.empty())
 		{
@@ -1079,8 +1048,8 @@ namespace
 		options.mapList = true;
 		options.rebuild = [push](int s) { StartMapFlow(s, push); };
 		g_AdminMenus.ShowMenu(
-			slot, CS2A_Translate(slot, "Change Map").c_str(), items, [](int s, int, const std::string &mapArg)
-			{ g_CS2ACommandSystem.DispatchConsoleCommand("map", mmu::Args().Set("map", mapArg), s); }, options);
+			slot, CS2A_Translate(slot, "Change Map").c_str(), items, [changeMap](int s, int, const std::string &mapArg) { changeMap(s, mapArg); },
+			options);
 	}
 
 	// !map <partial name> with several matches -> !map <mapname|workshopid|url>

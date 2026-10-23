@@ -1235,10 +1235,6 @@
 	{
 		"en"	"Matching Maps"
 	}
-	"[current]"
-	{
-		"en"	"[current]"
-	}
 
 	// Admin menu: the player list
 	"Counter-Terrorists"

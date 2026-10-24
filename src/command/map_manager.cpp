@@ -120,17 +120,59 @@ std::string CS2AMapManager::MatchLocalMap(int slot, const std::string &input, st
 	return "";
 }
 
+// Not cached, rtv may unload.
+static ICS2RTV *Rtv()
+{
+	return static_cast<ICS2RTV *>(g_SMAPI->MetaFactory(CS2RTV_INTERFACE, nullptr, nullptr));
+}
+
+const std::vector<MapEntry> &CS2AMapManager::Maps() const
+{
+	ICS2RTV *rtv = Rtv();
+	if (!rtv)
+	{
+		return m_maps;
+	}
+
+	m_rtvMaps.clear();
+	const int count = rtv->GetMapCount();
+	for (int i = 0; i < count; i++)
+	{
+		MapEntry entry;
+		entry.displayName = rtv->GetMapDisplayName(i);
+		entry.mapName = rtv->GetMapName(i);
+		entry.workshopId = rtv->GetMapWorkshopId(i);
+		entry.isWorkshop = !entry.workshopId.empty();
+		m_rtvMaps.push_back(std::move(entry));
+	}
+	return m_rtvMaps;
+}
+
 std::vector<const MapEntry *> CS2AMapManager::GetSortedMaps() const
 {
+	const std::vector<MapEntry> &maps = Maps();
 	std::vector<const MapEntry *> sorted;
-	sorted.reserve(m_maps.size());
-	for (const MapEntry &map : m_maps)
+	sorted.reserve(maps.size());
+	for (const MapEntry &map : maps)
 	{
 		sorted.push_back(&map);
 	}
 	auto name = [](const MapEntry *e) -> const std::string & { return e->displayName.empty() ? e->mapName : e->displayName; };
 	std::stable_sort(sorted.begin(), sorted.end(), [&](const MapEntry *a, const MapEntry *b) { return mmu::MapNameLess(name(a), name(b)); });
 	return sorted;
+}
+
+void CS2AMapManager::ReloadRtvMaps()
+{
+	if (ICS2RTV *rtv = Rtv())
+	{
+		rtv->ReloadMaps();
+	}
+}
+
+const char *CS2AMapManager::NoMapsPhrase() const
+{
+	return Rtv() ? "No maps loaded. mm-cs2rockthevote's map list is empty or still loading.\n" : "No maps loaded. Check cfg/maplist.txt\n";
 }
 
 bool CS2AMapManager::LoadMapList()
@@ -145,7 +187,11 @@ bool CS2AMapManager::LoadMapList()
 	std::ifstream file(path);
 	if (!file.is_open())
 	{
-		MMU_LOG_WARN("Could not open maplist file: %s\n", path);
+		// rtv's list stands in.
+		if (!Rtv())
+		{
+			MMU_LOG_WARN("Could not open maplist file: %s\n", path);
+		}
 		return false;
 	}
 
@@ -183,16 +229,17 @@ const MapEntry *CS2AMapManager::FindMap(int slot, const char *input, std::string
 	}
 
 	std::string search = str::ToLower(input);
+	const std::vector<MapEntry> &maps = Maps();
 
-	for (const auto &entry : m_maps)
+	for (const auto &entry : maps)
 	{
-		if (str::ToLower(entry.mapName) == search)
+		if (str::ToLower(entry.mapName) == search || str::ToLower(entry.displayName) == search)
 		{
 			return &entry;
 		}
 	}
 
-	for (const auto &entry : m_maps)
+	for (const auto &entry : maps)
 	{
 		if (entry.isWorkshop && entry.workshopId == input)
 		{
@@ -201,9 +248,9 @@ const MapEntry *CS2AMapManager::FindMap(int slot, const char *input, std::string
 	}
 
 	std::vector<const MapEntry *> matches;
-	for (const auto &entry : m_maps)
+	for (const auto &entry : maps)
 	{
-		if (str::ToLower(entry.mapName).find(search) != std::string::npos)
+		if (str::ToLower(entry.mapName).find(search) != std::string::npos || str::ToLower(entry.displayName).find(search) != std::string::npos)
 		{
 			matches.push_back(&entry);
 		}
@@ -332,14 +379,16 @@ bool CS2AMapManager::BeginWorkshopChange(int slot, const std::string &workshopId
 		return true;
 	}
 
-	if (g_CS2AConfig.general.workshopDownloadTimeout <= 0)
+	ICS2RTV *rtv = Rtv();
+	const int timeout = rtv ? rtv->GetWorkshopDownloadTimeout() : g_CS2AConfig.general.workshopDownloadTimeout;
+	if (timeout <= 0)
 	{
 		error = CS2A_Format(slot, "Map '%s' is not installed on this server.", label.c_str());
 		return false;
 	}
 
 	// The download itself starts from Tick, once Steam has confirmed the id is a CS2 map.
-	if (!m_pending.Begin(fileId, static_cast<float>(g_CS2AConfig.general.workshopDownloadTimeout)))
+	if (!m_pending.Begin(fileId, static_cast<float>(timeout)))
 	{
 		error = CS2A_Format(slot, "Map '%s' is not installed and no download could be started.", label.c_str());
 		return false;

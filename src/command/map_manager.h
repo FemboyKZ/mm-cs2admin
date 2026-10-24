@@ -23,8 +23,9 @@ class CS2AMapManager
 public:
 	// Load maplist from cfg/maplist.txt
 	bool LoadMapList();
+	void ReloadRtvMaps();
 
-	// Find a map by partial name match. Returns nullptr if not found or ambiguous, outMatches then gets the ambiguous ones.
+	// Find a map by partial map or display name. Returns nullptr if not found or ambiguous, outMatches then gets the ambiguous ones.
 	const MapEntry *FindMap(int slot, const char *input, std::string &error, std::vector<const MapEntry *> *outMatches = nullptr) const;
 
 	// Execute the map change. Returns true on success.
@@ -62,18 +63,24 @@ public:
 	// Get number of loaded maps.
 	int GetMapCount() const
 	{
-		return (int)m_maps.size();
+		return (int)Maps().size();
 	}
 
 	const std::vector<MapEntry> &GetMaps() const
 	{
-		return m_maps;
+		return Maps();
 	}
 
-	// GetMaps in menu order, see mmu::MapNameLess. The pointers go stale on the next LoadMapList.
+	// GetMaps in menu order, see mmu::MapNameLess. The pointers go stale on the next lookup.
 	std::vector<const MapEntry *> GetSortedMaps() const;
 
+	// For an empty GetMaps, names the list's source.
+	const char *NoMapsPhrase() const;
+
 private:
+	// rtv's list while it is loaded, cfg/maplist.txt otherwise. Copied anew each call.
+	const std::vector<MapEntry> &Maps() const;
+
 	// Scan <gamedir>/maps for local map files populating m_localMaps.
 	// Used as a fallback when the maplist misses.
 	void ScanLocalMaps();
@@ -88,6 +95,7 @@ private:
 	bool BeginWorkshopChange(int slot, const std::string &workshopId, const std::string &label, std::string &error);
 
 	std::vector<MapEntry> m_maps;
+	mutable std::vector<MapEntry> m_rtvMaps;
 	std::vector<std::string> m_localMaps;
 
 	mmu::workshop::PendingDownload m_pending;

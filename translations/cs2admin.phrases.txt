@@ -835,6 +835,10 @@
 		"en"	"{red}No maps loaded. Check cfg/maplist.txt\n"
 		"chi"	"{red}未加载任何地图。请检查 cfg/maplist.txt\n"
 	}
+	"No maps loaded. mm-cs2rockthevote's map list is empty or still loading.\n"
+	{
+		"en"	"{red}No maps loaded. mm-cs2rockthevote's map list is empty or still loading.\n"
+	}
 
 	// Maps: lookup and change errors
 	"No map specified."

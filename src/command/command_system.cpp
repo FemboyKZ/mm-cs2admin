@@ -1039,7 +1039,7 @@ namespace
 		}
 		if (items.empty())
 		{
-			CS2A_ReplyToCommandT(slot, "No maps loaded. Check cfg/maplist.txt\n");
+			CS2A_ReplyToCommandT(slot, g_CS2AMapManager.NoMapsPhrase());
 			return;
 		}
 
@@ -2711,7 +2711,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 						const std::vector<const MapEntry *> maps = g_CS2AMapManager.GetSortedMaps();
 						if (maps.empty())
 						{
-							CS2A_ReplyToCommandT(slot, "No maps loaded. Check cfg/maplist.txt\n");
+							CS2A_ReplyToCommandT(slot, g_CS2AMapManager.NoMapsPhrase());
 							return;
 						}
 

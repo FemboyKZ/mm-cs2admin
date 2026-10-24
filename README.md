@@ -40,7 +40,7 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
 - (Optional) [mm-cs2menus](https://github.com/FemboyKZ/mm-cs2menus) - when loaded, targeting commands typed with no arguments (e.g. `!ban`, `!kick`, `!mute`, `!report`, `!map`) open an in-game picker instead of printing usage.
   Players are grouped by team, and the ban/mute/gag/silence/kick/report form sets duration and reason on one screen.
   Its "Other" reason takes the next chat line, hidden from everyone. `!addban` picks from recently disconnected players.
-- (Optional) [mm-cs2rockthevote](https://github.com/FemboyKZ/mm-cs2rockthevote) - `!map` shows the same list as `!nominate`, with KZ tiers.
+- (Optional) [mm-cs2rockthevote](https://github.com/FemboyKZ/mm-cs2rockthevote) - `!map` and `!maps` use its map list, and `!map` shows `!nominate`'s table.
 
 ### How to
 
@@ -51,6 +51,7 @@ ICS2AdminForwards *fwd = (ICS2AdminForwards *)g_SMAPI->MetaFactory(
    (these can be directly copied from existing SM cfg with the same names).
    They and `tags.cfg` ship as `*.example.*`, copy each without the `.example`.
 5. Create a new file called `maplist.txt` or rename the bundled `maplist.example.txt` file to it, then add your maps to the file.
+   Not needed when mm-cs2rockthevote uses the CS2KZ API pool (`KzApiMaplist`).
 
 The cs2admin plugin mirrors SourceMod's Admin configuration structure completely.
 This means the following articles are valid here too:

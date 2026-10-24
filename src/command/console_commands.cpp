@@ -25,6 +25,7 @@ CON_COMMAND_F(mm_admin_reload, "Reload CS2Admin config and admins", FCVAR_NONE)
 
 	CS2A_LoadTranslations();
 	g_CS2AMapManager.LoadMapList();
+	g_CS2AMapManager.ReloadRtvMaps();
 
 	// Reload admins (flat file + database)
 	g_CS2AAdminManager.ReloadAdmins();

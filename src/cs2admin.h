@@ -33,7 +33,7 @@ public: // Hooks
 	KHook::Return<void> Hook_ClientActive(IServerGameClients *, CPlayerSlot slot, bool bLoadGame, const char *pszName, uint64 xuid);
 	KHook::Return<void> Hook_ClientDisconnect(IServerGameClients *, CPlayerSlot slot, ENetworkDisconnectionReason reason, const char *pszName,
 											  uint64 xuid, const char *pszNetworkID);
-	KHook::Return<void> Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid);
+	KHook::Return<void> Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, ClientPutInServerType_t type, uint64 xuid);
 	KHook::Return<void> Hook_ClientSettingsChanged(IServerGameClients *, CPlayerSlot slot);
 	KHook::Return<void> Hook_DispatchConCommand(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
 	KHook::Return<void> Hook_DispatchConCommandPost(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
@@ -115,7 +115,7 @@ private:
 	KHook::Virtual<IServerGameDLL, void, bool, bool, bool> m_GameFrame;
 	KHook::Virtual<IServerGameClients, void, CPlayerSlot, bool, const char *, uint64> m_ClientActive;
 	KHook::Virtual<IServerGameClients, void, CPlayerSlot, ENetworkDisconnectionReason, const char *, uint64, const char *> m_ClientDisconnect;
-	KHook::Virtual<IServerGameClients, void, CPlayerSlot, char const *, int, uint64> m_ClientPutInServer;
+	KHook::Virtual<IServerGameClients, void, CPlayerSlot, char const *, ClientPutInServerType_t, uint64> m_ClientPutInServer;
 	KHook::Virtual<IServerGameClients, void, CPlayerSlot> m_ClientSettingsChanged;
 	KHook::Virtual<IServerGameClients, void, CPlayerSlot, const char *, uint64, const char *, const char *, bool> m_OnClientConnected;
 	KHook::Virtual<IServerGameClients, bool, CPlayerSlot, const char *, uint64, const char *, bool, CBufferString *> m_ClientConnect;

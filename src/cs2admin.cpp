@@ -698,7 +698,7 @@ KHook::Return<void> CS2APlugin::Hook_ClientActive(IServerGameClients *, CPlayerS
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, int type, uint64 xuid)
+KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, ClientPutInServerType_t type, uint64 xuid)
 {
 	int slotIdx = slot.Get();
 	g_CS2APlayerManager.OnClientPutInServer(slotIdx);

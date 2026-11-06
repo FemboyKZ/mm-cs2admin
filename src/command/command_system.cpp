@@ -2826,7 +2826,7 @@ void CS2ACommandSystem::RegisterBuiltinCommands()
 													  CPlayer_WeaponServices *weaponServices = pawn->m_pWeaponServices();
 													  if (gearSlot >= 0 && weaponServices && g_pEntitySystem)
 													  {
-														  const CUtlVector<CEntityHandle> &held = weaponServices->m_hMyWeapons();
+														  const CNetworkUtlVectorBase<CEntityHandle> &held = weaponServices->m_hMyWeapons();
 														  for (int i = 0; i < held.Count(); i++)
 														  {
 															  CEntityInstance *heldWeapon = g_pEntitySystem->GetEntityInstance(held[i]);

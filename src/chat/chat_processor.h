@@ -8,7 +8,7 @@
 #include <string>
 #include <vector>
 
-class INetworkMessageInternal;
+struct NetMessageInfo_t;
 class CNetMessage;
 
 // Renders player chat ourselves so tags can be injected into the line.
@@ -37,7 +37,7 @@ public:
 
 	// The speaker slot when this posted event is the game's chat line for the innermost say, otherwise -1.
 	// Say runs synchronously, so the game posts a say's line while that say is on top.
-	int MatchGameLine(INetworkMessageInternal *event, const CNetMessage *data) const;
+	int MatchGameLine(NetMessageInfo_t *event, const CNetMessage *data) const;
 
 	// Send our line to the recipients the game picked for its own.
 	// The game may post several events for one say, so recipients already sent to are skipped.

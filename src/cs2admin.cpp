@@ -69,12 +69,13 @@ CS2APlugin::CS2APlugin()
 	  m_OnClientConnected(&IServerGameClients::OnClientConnected, this, &CS2APlugin::Hook_OnClientConnected, nullptr),
 	  m_ClientConnect(&IServerGameClients::ClientConnect, this, &CS2APlugin::Hook_ClientConnect, nullptr),
 	  m_DispatchConCommand(&ICvar::DispatchConCommand, this, &CS2APlugin::Hook_DispatchConCommand, &CS2APlugin::Hook_DispatchConCommandPost),
-	  m_PostEvent(static_cast<void (IGameEventSystem::*)(CSplitScreenSlot, bool, int, const uint64 *, INetworkMessageInternal *, const CNetMessage *,
+	  m_PostEvent(static_cast<void (IGameEventSystem::*)(CSplitScreenSlot, bool, int, const uint64 *, NetMessageInfo_t *, const CNetMessage *,
 														 unsigned long, NetChannelBufType_t)>(&IGameEventSystem::PostEventAbstract),
 				  this, &CS2APlugin::Hook_PostEvent, nullptr),
-	  m_PostEventFilter(static_cast<void (IGameEventSystem::*)(CSplitScreenSlot, bool, IRecipientFilter *, INetworkMessageInternal *,
-															   const CNetMessage *, unsigned long)>(&IGameEventSystem::PostEventAbstract),
-						this, &CS2APlugin::Hook_PostEventFilter, nullptr)
+	  m_PostEventFilter(
+		  static_cast<void (IGameEventSystem::*)(CSplitScreenSlot, bool, IRecipientFilter *, NetMessageInfo_t *, const CNetMessage *, unsigned long)>(
+			  &IGameEventSystem::PostEventAbstract),
+		  this, &CS2APlugin::Hook_PostEventFilter, nullptr)
 {
 }
 
@@ -698,7 +699,8 @@ KHook::Return<void> CS2APlugin::Hook_ClientActive(IServerGameClients *, CPlayerS
 	return {KHook::Action::Ignore};
 }
 
-KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, ClientPutInServerType_t type, uint64 xuid)
+KHook::Return<void> CS2APlugin::Hook_ClientPutInServer(IServerGameClients *, CPlayerSlot slot, char const *pszName, ClientPutInServerType_t type,
+													   uint64 xuid)
 {
 	int slotIdx = slot.Get();
 	g_CS2APlayerManager.OnClientPutInServer(slotIdx);
@@ -905,8 +907,7 @@ KHook::Return<void> CS2APlugin::Hook_DispatchConCommandPost(ICvar *, ConCommandR
 }
 
 KHook::Return<void> CS2APlugin::Hook_PostEvent(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, int nClientCount, const uint64 *clients,
-											   INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize,
-											   NetChannelBufType_t bufType)
+											   NetMessageInfo_t *pEvent, const CNetMessage *pData, unsigned long nSize, NetChannelBufType_t bufType)
 {
 	int speaker = g_CS2AChatProcessor.MatchGameLine(pEvent, pData);
 	if (speaker < 0)
@@ -928,7 +929,7 @@ KHook::Return<void> CS2APlugin::Hook_PostEvent(IGameEventSystem *, CSplitScreenS
 }
 
 KHook::Return<void> CS2APlugin::Hook_PostEventFilter(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, IRecipientFilter *pFilter,
-													 INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize)
+													 NetMessageInfo_t *pEvent, const CNetMessage *pData, unsigned long nSize)
 {
 	int speaker = g_CS2AChatProcessor.MatchGameLine(pEvent, pData);
 	if (speaker < 0 || !pFilter)

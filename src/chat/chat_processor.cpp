@@ -177,7 +177,7 @@ void CS2AChatProcessor::PopSay()
 	}
 }
 
-int CS2AChatProcessor::MatchGameLine(INetworkMessageInternal *event, const CNetMessage *data) const
+int CS2AChatProcessor::MatchGameLine(NetMessageInfo_t *event, const CNetMessage *data) const
 {
 	if (m_says.empty() || !m_says.back().render || !event || !data)
 	{
@@ -188,7 +188,7 @@ int CS2AChatProcessor::MatchGameLine(INetworkMessageInternal *event, const CNetM
 	// Plugin lines carry the whole text in messagename or text with no sender, the game's carry the sender and message as params.
 	// Same test cs2kz uses to block the game's line, plus the sender, so a line some other plugin triggers mid-say is left alone.
 	// The game's chat SayText2 was seen carrying entityindex = slot + 1.
-	NetworkMessageId id = event->GetNetMessageInfo()->m_MessageId;
+	NetworkMessageId id = event->m_MessageId;
 	if (id == UM_SayText2)
 	{
 		auto *sayText = const_cast<CNetMessage *>(data)->ToPB<CUserMessageSayText2>();

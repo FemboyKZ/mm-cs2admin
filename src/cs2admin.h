@@ -39,9 +39,9 @@ public: // Hooks
 	KHook::Return<void> Hook_DispatchConCommandPost(ICvar *, ConCommandRef cmd, const CCommandContext &ctx, const CCommand &args);
 	// Both PostEventAbstract overloads, since nothing says which one the game sends its chat line through.
 	KHook::Return<void> Hook_PostEvent(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, int nClientCount, const uint64 *clients,
-									   INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize, NetChannelBufType_t bufType);
+									   NetMessageInfo_t *pEvent, const CNetMessage *pData, unsigned long nSize, NetChannelBufType_t bufType);
 	KHook::Return<void> Hook_PostEventFilter(IGameEventSystem *, CSplitScreenSlot nSlot, bool bLocalOnly, IRecipientFilter *pFilter,
-											 INetworkMessageInternal *pEvent, const CNetMessage *pData, unsigned long nSize);
+											 NetMessageInfo_t *pEvent, const CNetMessage *pData, unsigned long nSize);
 
 public:
 	const char *GetAuthor()
@@ -120,10 +120,10 @@ private:
 	KHook::Virtual<IServerGameClients, void, CPlayerSlot, const char *, uint64, const char *, const char *, bool> m_OnClientConnected;
 	KHook::Virtual<IServerGameClients, bool, CPlayerSlot, const char *, uint64, const char *, bool, CBufferString *> m_ClientConnect;
 	KHook::Virtual<ICvar, void, ConCommandRef, const CCommandContext &, const CCommand &> m_DispatchConCommand;
-	KHook::Virtual<IGameEventSystem, void, CSplitScreenSlot, bool, int, const uint64 *, INetworkMessageInternal *, const CNetMessage *, unsigned long,
+	KHook::Virtual<IGameEventSystem, void, CSplitScreenSlot, bool, int, const uint64 *, NetMessageInfo_t *, const CNetMessage *, unsigned long,
 				   NetChannelBufType_t>
 		m_PostEvent;
-	KHook::Virtual<IGameEventSystem, void, CSplitScreenSlot, bool, IRecipientFilter *, INetworkMessageInternal *, const CNetMessage *, unsigned long>
+	KHook::Virtual<IGameEventSystem, void, CSplitScreenSlot, bool, IRecipientFilter *, NetMessageInfo_t *, const CNetMessage *, unsigned long>
 		m_PostEventFilter;
 };
 
